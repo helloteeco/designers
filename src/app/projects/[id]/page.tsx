@@ -7,6 +7,7 @@ import RoomPlanner from "@/components/RoomPlanner";
 import SleepOptimizer from "@/components/SleepOptimizer";
 import FurniturePicker from "@/components/FurniturePicker";
 import DesignBoard from "@/components/DesignBoard";
+import SpacePlanner from "@/components/SpacePlanner";
 import MoodBoardPanel from "@/components/MoodBoardPanel";
 import ExportPanel from "@/components/ExportPanel";
 import TeamChat from "@/components/TeamChat";
@@ -15,6 +16,14 @@ import ActivityFeed from "@/components/ActivityFeed";
 import AIRenderingPanel from "@/components/AIRenderingPanel";
 import ProjectChecklist from "@/components/ProjectChecklist";
 import ProjectSummary from "@/components/ProjectSummary";
+import WorkflowEngine from "@/components/WorkflowEngine";
+import InspirationBoard from "@/components/InspirationBoard";
+import ClientDelivery from "@/components/ClientDelivery";
+import StyleQuiz from "@/components/StyleQuiz";
+import ShoppingList from "@/components/ShoppingList";
+import FinishesPicker from "@/components/FinishesPicker";
+import TeamAssignments from "@/components/TeamAssignments";
+import RenovationScopeBuilder from "@/components/RenovationScopeBuilder";
 import {
   getProject,
   saveProject,
@@ -28,29 +37,47 @@ import type { Project, ProjectStatus } from "@/lib/types";
 
 type Tab =
   | "overview"
+  | "workflow"
   | "scans"
   | "rooms"
   | "sleep"
+  | "space-plan"
   | "design"
   | "furniture"
+  | "finishes"
   | "mood"
+  | "inspiration"
+  | "style-quiz"
   | "render"
+  | "shopping"
   | "summary"
+  | "delivery"
   | "export"
+  | "team"
+  | "scope"
   | "chat";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "scans", label: "3D Scans" },
-  { id: "rooms", label: "Rooms" },
-  { id: "sleep", label: "Sleep Plan" },
-  { id: "design", label: "Design Board" },
-  { id: "furniture", label: "Item List" },
-  { id: "mood", label: "Mood Board" },
-  { id: "render", label: "AI Renders" },
-  { id: "summary", label: "Summary" },
-  { id: "export", label: "Export" },
-  { id: "chat", label: "Team Chat" },
+const TABS: { id: Tab; label: string; group: string }[] = [
+  { id: "overview", label: "Overview", group: "Project" },
+  { id: "workflow", label: "AI Workflow", group: "Project" },
+  { id: "scans", label: "3D Scans", group: "Inputs" },
+  { id: "inspiration", label: "Inspiration", group: "Inputs" },
+  { id: "style-quiz", label: "Style Quiz", group: "Design" },
+  { id: "rooms", label: "Rooms", group: "Design" },
+  { id: "sleep", label: "Sleep Plan", group: "Design" },
+  { id: "space-plan", label: "Space Plan", group: "Design" },
+  { id: "design", label: "Design Board", group: "Design" },
+  { id: "furniture", label: "Catalog", group: "Design" },
+  { id: "finishes", label: "Finishes", group: "Renovation" },
+  { id: "scope", label: "Scope of Work", group: "Renovation" },
+  { id: "team", label: "Team & Tasks", group: "Renovation" },
+  { id: "mood", label: "Mood Board", group: "Design" },
+  { id: "render", label: "AI Renders", group: "Output" },
+  { id: "shopping", label: "Shopping List", group: "Output" },
+  { id: "summary", label: "Summary", group: "Output" },
+  { id: "delivery", label: "Client View", group: "Output" },
+  { id: "export", label: "Export", group: "Output" },
+  { id: "chat", label: "Team Chat", group: "Collab" },
 ];
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -94,10 +121,8 @@ export default function ProjectDetailPage() {
     }
     load();
 
-    // Subscribe to realtime project updates from other team members
     if (isConfigured()) {
       const unsub = subscribeToProject(projectId, () => {
-        // Another user updated this project — reload from DB
         loadProjectFromDatabase(projectId).then(() => reload());
       });
       return () => unsub();
@@ -142,6 +167,14 @@ export default function ProjectDetailPage() {
     reload();
   }
 
+  // Group tabs for display
+  const tabGroups = new Map<string, typeof TABS>();
+  for (const t of TABS) {
+    const list = tabGroups.get(t.group) ?? [];
+    list.push(t);
+    tabGroups.set(t.group, list);
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <Navbar />
@@ -162,7 +195,8 @@ export default function ProjectDetailPage() {
               </h1>
               <p className="text-sm text-brand-600 mt-0.5">
                 {project.property.address || "No address"} &middot;{" "}
-                {project.client.name || "No client"}
+                {project.client.name || "No client"} &middot;{" "}
+                <span className="capitalize">{project.style.replace(/-/g, " ")}</span>
               </p>
             </div>
             <select
@@ -180,47 +214,65 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <QuickStat label="Rooms" value={project.rooms.length} />
-          <QuickStat
-            label="Sleeps"
-            value={sleeping}
-            target={project.targetGuests}
-          />
+          <QuickStat label="Sleeps" value={sleeping} target={project.targetGuests} />
           <QuickStat label="Items" value={totalItems} />
           <QuickStat
-            label="Budget"
+            label="Cost"
             value={`$${totalCost.toLocaleString()}`}
-            target={
-              project.budget ? `$${project.budget.toLocaleString()}` : undefined
-            }
+            target={project.budget ? `$${project.budget.toLocaleString()}` : undefined}
+          />
+          <QuickStat
+            label="$/sqft"
+            value={project.property.squareFootage > 0 ? `$${(totalCost / project.property.squareFootage).toFixed(0)}` : "—"}
+            target="$10-20"
           />
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 flex flex-wrap gap-1 rounded-xl bg-white border border-brand-900/10 p-1 overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`shrink-0 ${tab === t.id ? "tab-active" : "tab"}`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Tabs — grouped */}
+        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto">
+          <div className="flex gap-4">
+            {Array.from(tabGroups.entries()).map(([group, groupTabs]) => (
+              <div key={group} className="flex items-center gap-1">
+                <span className="text-[9px] uppercase tracking-wider text-brand-600/40 font-semibold mr-1 hidden sm:block">
+                  {group}
+                </span>
+                {groupTabs.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`shrink-0 ${tab === t.id ? "tab-active" : "tab"}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+                {group !== "Collab" && <div className="w-px h-4 bg-brand-900/10 mx-1 hidden sm:block" />}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Tab Content */}
         <div className="animate-in">
           {tab === "overview" && <OverviewTab project={project} />}
+          {tab === "workflow" && <WorkflowEngine project={project} onUpdate={reload} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
+          {tab === "inspiration" && <InspirationBoard project={project} onUpdate={reload} />}
+          {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} onComplete={() => setTab("mood")} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
+          {tab === "space-plan" && <SpacePlanner project={project} onUpdate={reload} />}
           {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
           {tab === "furniture" && <FurniturePicker project={project} onUpdate={reload} />}
+          {tab === "finishes" && <FinishesPicker project={project} onUpdate={reload} />}
+          {tab === "scope" && <RenovationScopeBuilder project={project} onUpdate={reload} />}
+          {tab === "team" && <TeamAssignments project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "render" && <AIRenderingPanel project={project} />}
+          {tab === "shopping" && <ShoppingList project={project} />}
           {tab === "summary" && <ProjectSummary project={project} />}
+          {tab === "delivery" && <ClientDelivery project={project} />}
           {tab === "export" && <ExportPanel project={project} />}
           {tab === "chat" && (
             <div className="grid gap-6 lg:grid-cols-3">
@@ -301,12 +353,13 @@ function OverviewTab({ project }: { project: Project }) {
             value={`${project.property.bedrooms} bd / ${project.property.bathrooms} ba`}
           />
           <Field label="Floors" value={project.property.floors || "—"} />
+          <Field label="Design Budget" value={project.budget ? `$${project.budget.toLocaleString()}` : "Not set"} />
         </dl>
 
         <div className="mt-4 pt-4 border-t border-brand-900/5 space-y-2">
-          <ScanLink label="Matterport" url={project.property.matterportLink} />
-          <ScanLink label="Polycam" url={project.property.polycamLink} />
-          <ScanLink label="Spoak" url={project.property.spoakLink} />
+          <ScanLink label="Matterport" url={project.property.matterportLink} color="blue" />
+          <ScanLink label="Polycam" url={project.property.polycamLink} color="emerald" />
+          <ScanLink label="Spoak" url={project.property.spoakLink} color="purple" />
         </div>
       </div>
 
@@ -328,13 +381,29 @@ function OverviewTab({ project }: { project: Project }) {
             </p>
           </div>
         )}
+
+        {/* Quick Action: Send to Spoak */}
+        {project.property.spoakLink && (
+          <div className="mt-4 pt-4 border-t border-brand-900/5">
+            <a
+              href={project.property.spoakLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg bg-purple-50 border border-purple-200 px-3 py-2 text-sm text-purple-700 hover:bg-purple-100 transition"
+            >
+              <span className="font-bold">S</span>
+              <span>Open design in Spoak for delivery</span>
+              <span className="ml-auto">&rarr;</span>
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Design */}
       <div className="card lg:col-span-2">
         <h2 className="text-lg font-semibold mb-4">Design Settings</h2>
         <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <Field label="Style" value={project.style} />
+          <Field label="Style" value={project.style.replace(/-/g, " ")} />
           <Field label="Target Guests" value={project.targetGuests} />
           <Field
             label="Budget"
@@ -342,6 +411,21 @@ function OverviewTab({ project }: { project: Project }) {
           />
           <Field label="Status" value={project.status} />
         </dl>
+
+        {/* Mood board preview */}
+        {project.moodBoards.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-brand-900/5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-2">
+              Active Mood Board
+            </div>
+            <div className="flex h-10 overflow-hidden rounded-lg">
+              {project.moodBoards[0].colorPalette.map((color, i) => (
+                <div key={i} className="flex-1" style={{ backgroundColor: color }} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 pt-4 border-t border-brand-900/5">
           <div className="flex items-center justify-between mb-1">
             <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
@@ -386,16 +470,19 @@ function Field({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
       <dt className="text-[10px] uppercase tracking-wider text-brand-600">{label}</dt>
-      <dd className="font-medium text-brand-900">{value || "—"}</dd>
+      <dd className="font-medium text-brand-900 capitalize">{value || "—"}</dd>
     </div>
   );
 }
 
-function ScanLink({ label, url }: { label: string; url: string }) {
+function ScanLink({ label, url, color }: { label: string; url: string; color: string }) {
   if (!url) return null;
   return (
     <div className="flex items-center justify-between text-sm">
-      <span className="text-brand-600">{label}</span>
+      <div className="flex items-center gap-2">
+        <div className={`h-2 w-2 rounded-full bg-${color}-500`} />
+        <span className="text-brand-600">{label}</span>
+      </div>
       <a
         href={url}
         target="_blank"

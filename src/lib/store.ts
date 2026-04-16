@@ -117,11 +117,14 @@ export async function loadProjectFromDatabase(id: string): Promise<Project | nul
 export function getProjects(): Project[] {
   if (typeof window === "undefined") return [];
   const raw = localStorage.getItem(PROJECTS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  const parsed: Project[] = JSON.parse(raw);
+  return parsed.map(migrateProject);
 }
 
 export function getProject(id: string): Project | null {
-  return getProjects().find((p) => p.id === id) ?? null;
+  const p = getProjects().find((p) => p.id === id);
+  return p ? migrateProject(p) : null;
 }
 
 export function saveProject(project: Project): void {
@@ -323,6 +326,7 @@ export function createEmptyProject(overrides?: Partial<Project>): Project {
   return {
     id: generateId(),
     name: "",
+    projectType: "furnish-only",
     client: { name: "", email: "", phone: "", preferences: "" },
     property: {
       address: "",
@@ -338,6 +342,10 @@ export function createEmptyProject(overrides?: Partial<Project>): Project {
     },
     rooms: [],
     moodBoards: [],
+    team: [],
+    tasks: [],
+    finishes: [],
+    scope: [],
     targetGuests: 12,
     style: "modern",
     budget: 0,
@@ -346,5 +354,17 @@ export function createEmptyProject(overrides?: Partial<Project>): Project {
     updatedAt: now,
     notes: "",
     ...overrides,
+  };
+}
+
+/** Ensures existing projects from before the renovation update have new fields */
+export function migrateProject(project: Project): Project {
+  return {
+    ...project,
+    projectType: project.projectType ?? "furnish-only",
+    team: project.team ?? [],
+    tasks: project.tasks ?? [],
+    finishes: project.finishes ?? [],
+    scope: project.scope ?? [],
   };
 }

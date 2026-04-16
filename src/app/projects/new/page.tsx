@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createEmptyProject, saveProject, logActivity, generateId } from "@/lib/store";
 import { TEMPLATES } from "@/lib/project-templates";
-import type { DesignStyle, Room } from "@/lib/types";
+import type { DesignStyle, Room, ProjectType } from "@/lib/types";
+
+const PROJECT_TYPES: { value: ProjectType; label: string; desc: string; icon: string }[] = [
+  { value: "furnish-only", label: "Furnish Only", desc: "Property is move-in ready. Just need furniture and decor.", icon: "🛋️" },
+  { value: "renovation", label: "Renovation", desc: "Updating kitchens, bathrooms, flooring, paint, or finishes.", icon: "🏗️" },
+  { value: "full-redesign", label: "Full Redesign", desc: "Gut + furnish. Contractor work plus design package.", icon: "🔨" },
+  { value: "new-construction", label: "New Construction", desc: "Building from scratch — full spec from the ground up.", icon: "🏡" },
+];
 
 const STYLES: { value: DesignStyle; label: string }[] = [
   { value: "modern", label: "Modern" },
@@ -128,6 +135,32 @@ export default function NewProjectPage() {
             </div>
           )}
 
+          {/* Project Type */}
+          <section className="card">
+            <h2 className="text-lg font-semibold mb-4">Project Type</h2>
+            <p className="text-sm text-brand-600 mb-4">
+              This determines which tabs and tools show up in your project workspace.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {PROJECT_TYPES.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => update("projectType", t.value)}
+                  className={`rounded-xl border-2 p-4 text-left transition ${
+                    project.projectType === t.value
+                      ? "border-amber bg-amber/5"
+                      : "border-brand-900/10 hover:border-amber/40"
+                  }`}
+                >
+                  <div className="text-2xl mb-2">{t.icon}</div>
+                  <div className="font-semibold text-brand-900 text-sm">{t.label}</div>
+                  <div className="text-[11px] text-brand-600 mt-1">{t.desc}</div>
+                </button>
+              ))}
+            </div>
+          </section>
+
           {/* Project Info */}
           <section className="card">
             <h2 className="text-lg font-semibold mb-4">Project Details</h2>
@@ -169,7 +202,7 @@ export default function NewProjectPage() {
                 />
               </div>
               <div>
-                <label className="label">Budget ($)</label>
+                <label className="label">Furnishing Budget ($)</label>
                 <input
                   type="number"
                   className="input"
@@ -181,6 +214,21 @@ export default function NewProjectPage() {
                   }
                 />
               </div>
+              {(project.projectType === "renovation" || project.projectType === "full-redesign" || project.projectType === "new-construction") && (
+                <div>
+                  <label className="label">Renovation Budget ($)</label>
+                  <input
+                    type="number"
+                    className="input"
+                    min={0}
+                    placeholder="Labor + materials"
+                    value={project.renovationBudget || ""}
+                    onChange={(e) =>
+                      update("renovationBudget", parseInt(e.target.value) || 0)
+                    }
+                  />
+                </div>
+              )}
             </div>
           </section>
 

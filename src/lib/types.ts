@@ -54,6 +54,47 @@ export type DesignStyle =
 
 export type ProjectStatus = "draft" | "in-progress" | "review" | "delivered";
 
+export type ProjectType = "furnish-only" | "renovation" | "full-redesign" | "new-construction";
+
+export type TradeType =
+  | "general-contractor"
+  | "plumber"
+  | "electrician"
+  | "tile-installer"
+  | "flooring-installer"
+  | "painter"
+  | "cabinet-maker"
+  | "carpenter"
+  | "hvac"
+  | "drywall"
+  | "handyman"
+  | "interior-designer"
+  | "project-manager";
+
+export type FinishCategory =
+  | "tile"
+  | "flooring"
+  | "paint"
+  | "faucets"
+  | "plumbing-fixtures"
+  | "lighting-fixtures"
+  | "cabinet-hardware"
+  | "door-hardware"
+  | "countertops"
+  | "backsplash"
+  | "wall-treatment"
+  | "window-treatment"
+  | "appliances";
+
+export type RenovationScope =
+  | "cosmetic"
+  | "kitchen-remodel"
+  | "bathroom-remodel"
+  | "full-gut"
+  | "addition"
+  | "flooring-only"
+  | "paint-only";
+
 export type WallTreatment =
   | "paint"
   | "wallpaper"
@@ -156,16 +197,90 @@ export interface MoodBoard {
   imageUrls: string[];
 }
 
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: TradeType;
+  company: string;
+  notes: string;
+  hourlyRate?: number;
+  preferredContact: "email" | "phone" | "text";
+}
+
+export interface TaskAssignment {
+  id: string;
+  title: string;
+  description: string;
+  assignedTo: string; // TeamMember.id
+  roomId?: string;
+  trade: TradeType;
+  status: "not-started" | "in-progress" | "blocked" | "complete";
+  dueDate?: string;
+  dependencies: string[]; // other task ids
+  notes: string;
+}
+
+export interface FinishItem {
+  id: string;
+  name: string;
+  category: FinishCategory;
+  subcategory: string;
+  vendor: string;
+  vendorSku: string;
+  vendorUrl: string;
+  imageUrl: string;
+  price: number;
+  unit: "each" | "sqft" | "box" | "gallon" | "linear-ft";
+  color: string;
+  finish: string; // matte, polished, brushed, etc.
+  material: string;
+  dimensions?: string;
+  style: DesignStyle;
+  leadTimeDays?: number;
+  trade: TradeType; // who installs it
+  notes: string;
+}
+
+export interface SelectedFinish {
+  item: FinishItem;
+  quantity: number;
+  roomId: string;
+  assignedTo?: string; // TeamMember.id of installer
+  status: "spec'd" | "approved" | "ordered" | "delivered" | "installed";
+  installDate?: string;
+  notes: string;
+}
+
+export interface ScopeItem {
+  id: string;
+  description: string;
+  roomId: string;
+  trade: TradeType;
+  laborHours: number;
+  materialCost: number;
+  laborCost: number;
+  notes: string;
+}
+
 export interface Project {
   id: string;
   name: string;
+  projectType: ProjectType;
+  renovationScope?: RenovationScope[];
   client: Client;
   property: Property;
   rooms: Room[];
   moodBoards: MoodBoard[];
+  team: TeamMember[];
+  tasks: TaskAssignment[];
+  finishes: SelectedFinish[];
+  scope: ScopeItem[];
   targetGuests: number;
   style: DesignStyle;
   budget: number;
+  renovationBudget?: number;
   status: ProjectStatus;
   createdAt: string;
   updatedAt: string;
