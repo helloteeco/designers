@@ -32,43 +32,116 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
   const [mode, setMode] = useState<"upload" | "url">("upload");
   const [preview, setPreview] = useState<FloorPlan | null>(null);
   const [form, setForm] = useState({ name: "", url: "", notes: "" });
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only hide overlay if leaving the panel itself (not a child)
+    if (e.currentTarget === e.target) {
+      setIsDragOver(false);
+    }
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+  }
+
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    await processFiles(files);
+  }
 
   const floorPlans = project.property?.floorPlans ?? [];
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await processFiles(Array.from(files));
+    e.target.value = "";
+  }
 
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error(
-        `File is ${(file.size / 1024 / 1024).toFixed(1)}MB. Max ${MAX_UPLOAD_MB}MB for local upload. ` +
-        `Host big PDFs on Google Drive/Dropbox and paste the share URL instead.`
-      );
-      e.target.value = "";
-      return;
+  async function processFiles(files: File[]) {
+    // Filter and validate
+    const accepted: File[] = [];
+    const rejected: { name: string; reason: string }[] = [];
+
+    for (const file of files) {
+      const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
+      if (!isValidType) {
+        rejected.push({ name: file.name, reason: "not a PDF or image" });
+        continue;
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        rejected.push({ name: file.name, reason: `${(file.size / 1024 / 1024).toFixed(1)}MB > ${MAX_UPLOAD_MB}MB limit` });
+        continue;
+      }
+      accepted.push(file);
     }
 
+    if (rejected.length > 0) {
+      toast.warning(
+        `Skipped ${rejected.length} file${rejected.length === 1 ? "" : "s"}: ${rejected.slice(0, 2).map(r => `${r.name} (${r.reason})`).join(", ")}${rejected.length > 2 ? "..." : ""}`
+      );
+    }
+
+    if (accepted.length === 0) return;
+
+    setUploading(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
-      const type: FloorPlan["type"] = file.type === "application/pdf" ? "pdf" : "image";
-      const defaultName = file.name.replace(/\.[^.]+$/, "");
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) return;
+      if (!fresh.property.floorPlans) fresh.property.floorPlans = [];
 
-      const plan: FloorPlan = {
-        id: generateId(),
-        name: form.name.trim() || defaultName,
-        url: dataUrl,
-        type,
-        uploadedAt: new Date().toISOString(),
-        notes: form.notes,
-        sizeBytes: file.size,
-      };
+      const useCustomLabel = accepted.length === 1 && form.name.trim();
+      for (let i = 0; i < accepted.length; i++) {
+        const file = accepted[i];
+        setUploadProgress({ current: i + 1, total: accepted.length, name: file.name });
+        const dataUrl = await fileToDataUrl(file);
+        const type: FloorPlan["type"] = file.type === "application/pdf" ? "pdf" : "image";
+        const defaultName = file.name.replace(/\.[^.]+$/, "");
+        const plan: FloorPlan = {
+          id: generateId(),
+          name: useCustomLabel ? form.name.trim() : defaultName,
+          url: dataUrl,
+          type,
+          uploadedAt: new Date().toISOString(),
+          notes: form.notes,
+          sizeBytes: file.size,
+        };
+        fresh.property.floorPlans.push(plan);
+      }
 
-      addFloorPlan(plan);
+      saveProject(fresh);
+      logActivity(project.id, "floor_plans_added", `Added ${accepted.length} floor plan${accepted.length === 1 ? "" : "s"}`);
+      toast.success(
+        accepted.length === 1
+          ? `Floor plan added`
+          : `${accepted.length} floor plans added — rename any of them inline`
+      );
+      setShowForm(false);
+      setForm({ name: "", url: "", notes: "" });
+      onUpdate();
     } catch (err) {
       toast.error("Upload failed: " + (err instanceof Error ? err.message : "unknown"));
     } finally {
-      e.target.value = "";
+      setUploading(false);
+      setUploadProgress(null);
     }
   }
 
@@ -127,7 +200,24 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
   }
 
   return (
-    <div>
+    <div
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className="relative"
+    >
+      {/* Drag overlay — shows when user drags files over the whole panel */}
+      {isDragOver && !showForm && (
+        <div className="absolute inset-0 z-20 rounded-lg border-2 border-dashed border-amber bg-amber/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📥</div>
+            <div className="text-sm font-semibold text-amber-dark">Drop to add floor plans</div>
+            <div className="text-[11px] text-brand-600 mt-1">Multiple files OK</div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
           Floor Plans ({floorPlans.length})
@@ -141,8 +231,32 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
       </div>
 
       {floorPlans.length === 0 && !showForm && (
-        <div className="rounded-lg bg-brand-900/5 px-3 py-3 text-xs text-brand-600">
-          No floor plans yet. Upload an architect&apos;s PDF, marked-up sketch, or paste a Google Drive / Dropbox link.
+        <div className="rounded-lg border-2 border-dashed border-brand-900/10 px-4 py-6 text-center">
+          <div className="text-2xl mb-1">📐</div>
+          <p className="text-xs text-brand-600 mb-1">
+            Drag &amp; drop floor plan files here
+          </p>
+          <p className="text-[10px] text-brand-600/60">
+            PDF or image — multiple at once OK
+          </p>
+        </div>
+      )}
+
+      {/* Inline upload progress when dropping without opening modal */}
+      {uploading && uploadProgress && !showForm && (
+        <div className="mb-3 rounded-lg bg-amber/10 border border-amber/30 px-3 py-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-brand-900 font-medium">
+              Uploading {uploadProgress.current} of {uploadProgress.total}
+            </span>
+            <span className="text-brand-600 truncate ml-2">{uploadProgress.name}</span>
+          </div>
+          <div className="h-1 w-full mt-1 rounded-full bg-brand-900/10 overflow-hidden">
+            <div
+              className="h-full bg-amber transition-all"
+              style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+            />
+          </div>
         </div>
       )}
 
@@ -258,21 +372,65 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
 
               {mode === "upload" ? (
                 <div>
-                  <label className="label">Choose file (PDF or Image, max {MAX_UPLOAD_MB}MB)</label>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full rounded-lg border-2 border-dashed border-brand-900/20 hover:border-amber/40 px-4 py-8 text-center transition"
+                  <label className="label">
+                    Drop files here or click to browse
+                    <span className="text-brand-600 font-normal ml-1">(PDF/Image, max {MAX_UPLOAD_MB}MB each, multiple OK)</span>
+                  </label>
+                  <div
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onClick={() => !uploading && fileInputRef.current?.click()}
+                    className={`w-full rounded-lg border-2 border-dashed px-4 py-10 text-center transition cursor-pointer select-none ${
+                      isDragOver
+                        ? "border-amber bg-amber/10 scale-[1.01]"
+                        : uploading
+                          ? "border-amber/40 bg-amber/5"
+                          : "border-brand-900/20 hover:border-amber/40"
+                    }`}
                   >
-                    <div className="text-3xl mb-1">📐</div>
-                    <div className="text-sm font-medium text-brand-900">Click to browse</div>
-                    <div className="text-[10px] text-brand-600 mt-0.5">
-                      PDF · JPG · PNG · WebP — stored locally in this browser
-                    </div>
-                  </button>
+                    {uploading && uploadProgress ? (
+                      <>
+                        <div className="text-3xl mb-2">⏳</div>
+                        <div className="text-sm font-medium text-brand-900">
+                          Uploading {uploadProgress.current} of {uploadProgress.total}...
+                        </div>
+                        <div className="text-[11px] text-brand-600 mt-1 truncate max-w-xs mx-auto">
+                          {uploadProgress.name}
+                        </div>
+                        <div className="h-1 w-32 mx-auto mt-3 rounded-full bg-brand-900/10 overflow-hidden">
+                          <div
+                            className="h-full bg-amber transition-all"
+                            style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                          />
+                        </div>
+                      </>
+                    ) : isDragOver ? (
+                      <>
+                        <div className="text-4xl mb-2">📥</div>
+                        <div className="text-sm font-semibold text-amber-dark">Drop to upload</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-3xl mb-1">📐</div>
+                        <div className="text-sm font-medium text-brand-900">
+                          Drag &amp; drop your plans here
+                        </div>
+                        <div className="text-[11px] text-brand-600 mt-1">
+                          or click to browse — select multiple files at once
+                        </div>
+                        <div className="text-[10px] text-brand-600/60 mt-2">
+                          PDF · JPG · PNG · WebP — stored locally in this browser
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="application/pdf,image/*"
+                    multiple
                     onChange={handleFileUpload}
                     className="hidden"
                   />
