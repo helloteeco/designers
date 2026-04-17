@@ -231,6 +231,14 @@ function ProjectCard({
       sum + r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
     0
   );
+  const bedroomTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
+  const bedrooms = project.rooms.filter(r => bedroomTypes.includes(r.type)).length;
+  const bathrooms = project.rooms.filter(r => r.type === "bathroom").length;
+  const layoutLabel = bedrooms > 0 || bathrooms > 0
+    ? `${bedrooms}BR/${bathrooms}BA`
+    : project.rooms.length > 0
+      ? `${project.rooms.length} space${project.rooms.length === 1 ? "" : "s"}`
+      : "—";
 
   return (
     <div
@@ -257,7 +265,7 @@ function ProjectCard({
       </div>
 
       <div className="grid grid-cols-3 gap-3 border-t border-brand-900/5 pt-3">
-        <Stat label="Rooms" value={project.rooms.length} />
+        <StatText label="Layout" value={layoutLabel} />
         <Stat label="Sleeps" value={sleeping} />
         <Stat label="Items" value={totalFurniture} />
       </div>
@@ -301,6 +309,17 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="text-lg font-bold text-brand-900">{value}</div>
+      <div className="text-[10px] uppercase tracking-wider text-brand-600">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function StatText({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-sm font-bold text-brand-900 leading-7">{value}</div>
       <div className="text-[10px] uppercase tracking-wider text-brand-600">
         {label}
       </div>

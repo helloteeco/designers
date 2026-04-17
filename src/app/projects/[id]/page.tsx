@@ -226,7 +226,16 @@ export default function ProjectDetailPage() {
 
         {/* Quick Stats */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <QuickStat label="Rooms" value={project.rooms.length} />
+          <QuickStat
+            label="Layout"
+            value={(() => {
+              const bedroomTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
+              const bd = project.rooms.filter(r => bedroomTypes.includes(r.type)).length;
+              const ba = project.rooms.filter(r => r.type === "bathroom").length;
+              if (bd === 0 && ba === 0) return project.rooms.length === 0 ? "—" : `${project.rooms.length} space${project.rooms.length === 1 ? "" : "s"}`;
+              return `${bd}BR/${ba}BA`;
+            })()}
+          />
           <QuickStat label="Sleeps" value={sleeping} target={project.targetGuests} />
           <QuickStat label="Items" value={totalItems} />
           <QuickStat

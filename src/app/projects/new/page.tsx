@@ -465,6 +465,30 @@ function TemplateCard({
   onSelect: () => void;
 }) {
   const isReno = projectType === "renovation";
+
+  // Real-estate style counts — bedrooms + bathrooms, not raw "rooms"
+  const bedroomTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
+  const bedrooms = tpl.rooms.filter(r => bedroomTypes.includes(r.type)).length;
+  const bathrooms = tpl.rooms.filter(r => r.type === "bathroom").length;
+  const totalSqft = tpl.rooms.reduce((s, r) => s + r.widthFt * r.lengthFt, 0);
+
+  // For reno templates, describe what's included instead
+  const renoScopes = tpl.rooms.map(r => r.type);
+  const hasKitchen = renoScopes.includes("kitchen");
+  const renoSummary = (() => {
+    if (!isReno) return null;
+    if (bathrooms > 0 && !hasKitchen && bedrooms === 0) {
+      return `${bathrooms} bath${bathrooms === 1 ? "" : "s"}`;
+    }
+    if (hasKitchen && bathrooms === 0) {
+      return "Kitchen";
+    }
+    if (bedrooms > 0 && bathrooms > 0) {
+      return `${bedrooms}BR / ${bathrooms}BA`;
+    }
+    return `${tpl.rooms.length} space${tpl.rooms.length === 1 ? "" : "s"}`;
+  })();
+
   return (
     <button
       type="button"
@@ -483,11 +507,23 @@ function TemplateCard({
       </div>
       <p className="text-xs text-brand-600 mt-1">{tpl.description}</p>
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
-        {tpl.targetGuests > 0 && (
-          <span className="badge-neutral">{tpl.targetGuests} guests</span>
+        {isReno ? (
+          <>
+            {renoSummary && <span className="badge-neutral">{renoSummary}</span>}
+            <span className="badge-neutral capitalize">{tpl.style.replace(/-/g, " ")}</span>
+            {totalSqft > 0 && <span className="badge-neutral">~{totalSqft} sqft</span>}
+          </>
+        ) : (
+          <>
+            {tpl.targetGuests > 0 && (
+              <span className="badge-neutral">Sleeps {tpl.targetGuests}</span>
+            )}
+            {bedrooms > 0 && bathrooms > 0 && (
+              <span className="badge-neutral">{bedrooms}BR / {bathrooms}BA</span>
+            )}
+            <span className="badge-neutral capitalize">{tpl.style.replace(/-/g, " ")}</span>
+          </>
         )}
-        <span className="badge-neutral capitalize">{tpl.style.replace(/-/g, " ")}</span>
-        <span className="badge-neutral">{tpl.rooms.length} rooms</span>
       </div>
     </button>
   );
