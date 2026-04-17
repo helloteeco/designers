@@ -257,7 +257,16 @@ export interface Project {
   aiRenders?: AIRender[];
 }
 
-export type AITool = "midjourney" | "dalle" | "ideogram" | "leonardo" | "stable-diffusion" | "krea" | "runway" | "other";
+export type AITool =
+  | "nano-banana"
+  | "midjourney"
+  | "dalle"
+  | "ideogram"
+  | "leonardo"
+  | "stable-diffusion"
+  | "krea"
+  | "runway"
+  | "other";
 
 export interface AIRender {
   id: string;

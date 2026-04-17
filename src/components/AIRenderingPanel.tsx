@@ -21,8 +21,9 @@ interface AIToolInfo {
 }
 
 const AI_TOOLS: AIToolInfo[] = [
-  { slug: "midjourney",       label: "Midjourney",       url: "https://www.midjourney.com/imagine", icon: "🌀", notes: "Best photorealism. Paste in web app or /imagine in Discord." },
-  { slug: "dalle",            label: "DALL-E (ChatGPT)", url: "https://chatgpt.com/",               icon: "🎨", notes: "Great for iteration. Ask ChatGPT to render the prompt." },
+  { slug: "nano-banana",      label: "Nano Banana (Gemini)", url: "https://aistudio.google.com/prompts/new_chat", icon: "🍌", notes: "Google Gemini 2.5 Flash Image. Best-in-class for interior renders, fast, consistent." },
+  { slug: "midjourney",       label: "Midjourney",       url: "https://www.midjourney.com/imagine", icon: "🌀", notes: "Great photorealism. Paste in web app or /imagine in Discord." },
+  { slug: "dalle",            label: "DALL-E (ChatGPT)", url: "https://chatgpt.com/",               icon: "🎨", notes: "Easy iteration. Ask ChatGPT to render the prompt." },
   { slug: "ideogram",         label: "Ideogram",         url: "https://ideogram.ai/",               icon: "📐", notes: "Strongest for text + signage in renders." },
   { slug: "leonardo",         label: "Leonardo",         url: "https://leonardo.ai/",               icon: "🦁", notes: "Tunable models, good for consistent style." },
   { slug: "stable-diffusion", label: "Stable Diffusion", url: "https://huggingface.co/spaces/stabilityai/stable-diffusion", icon: "🌊", notes: "Free. Requires upload or Hugging Face space." },
@@ -154,8 +155,31 @@ function looksLikeImageUrl(url: string): boolean {
   if (!url) return false;
   const trimmed = url.trim();
   if (!/^https?:\/\//i.test(trimmed)) return false;
-  // Let any valid-looking URL through — Midjourney/DALL-E use varied domains
   return trimmed.length > 10 && trimmed.length < 2000;
+}
+
+// Real validation: preload the URL as an image. Resolves true if it loads
+// as an image, false if the browser can't decode it.
+function validateImageUrl(url: string, timeoutMs: number = 8000): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!looksLikeImageUrl(url)) {
+      resolve(false);
+      return;
+    }
+    const img = new Image();
+    let settled = false;
+    const done = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      img.onload = null;
+      img.onerror = null;
+      resolve(ok);
+    };
+    const t = setTimeout(() => done(false), timeoutMs);
+    img.onload = () => { clearTimeout(t); done(true); };
+    img.onerror = () => { clearTimeout(t); done(false); };
+    img.src = url.trim();
+  });
 }
 
 // ── Component ──
@@ -165,9 +189,9 @@ const TARGET_STORAGE_KEY = (pid: string) => `aiWorkflow_target_${pid}`;
 
 export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) {
   const [tool, setTool] = useState<AITool>(() => {
-    if (typeof window === "undefined") return "midjourney";
+    if (typeof window === "undefined") return "nano-banana";
     const saved = sessionStorage.getItem(TOOL_STORAGE_KEY(project.id));
-    return (saved as AITool) || "midjourney";
+    return (saved as AITool) || "nano-banana";
   });
   const [selectedRoom, setSelectedRoom] = useState<string>(() => {
     if (typeof window === "undefined") return project.rooms[0]?.id ?? "overview";
@@ -180,6 +204,13 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
   const [copied, setCopied] = useState<string | null>(null);
   const [pasteInput, setPasteInput] = useState("");
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const [urlValidation, setUrlValidation] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [urlError, setUrlError] = useState<string>("");
+  const [editingPrompt, setEditingPrompt] = useState(false);
+  const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>({});
+  const [editingNotesFor, setEditingNotesFor] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [viewMode, setViewMode] = useState<"target" | "all">("target");
 
   function pickTool(t: AITool) {
     setTool(t);
@@ -203,9 +234,13 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
   const currentRoom = selectedRoom === "overview"
     ? null
     : project.rooms.find((r) => r.id === selectedRoom) ?? null;
-  const currentPrompt = selectedRoom === "overview"
+  const autoPrompt = selectedRoom === "overview"
     ? overviewPrompt
     : roomPrompts.get(selectedRoom) ?? "";
+  // User-edited prompts override the auto-generated version per target+tool
+  const overrideKey = `${tool}__${selectedRoom}`;
+  const currentPrompt = promptOverrides[overrideKey] ?? autoPrompt;
+  const isPromptCustomized = promptOverrides[overrideKey] !== undefined && promptOverrides[overrideKey] !== autoPrompt;
 
   const rendersForTarget = (roomId: string) => renders.filter((r) => r.roomId === roomId);
 
@@ -219,15 +254,25 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
     }
   }
 
-  function addRender(url: string, roomId: string | "overview") {
+  async function addRender(url: string, roomId: string | "overview") {
     const clean = url.trim();
-    if (!looksLikeImageUrl(clean)) return;
+    if (!looksLikeImageUrl(clean)) {
+      setUrlValidation("invalid");
+      setUrlError("URL must start with http:// or https://");
+      return;
+    }
+    setUrlValidation("checking");
+    setUrlError("");
+    const ok = await validateImageUrl(clean);
+    if (!ok) {
+      setUrlValidation("invalid");
+      setUrlError("That URL didn't load as an image. Make sure you copied the image address (not the page URL).");
+      return;
+    }
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     if (!fresh.aiRenders) fresh.aiRenders = [];
-    const prompt = roomId === "overview"
-      ? overviewPrompt
-      : roomPrompts.get(roomId) ?? "";
+    const prompt = currentPrompt;
     const entry: AIRender = {
       id: generateId(),
       roomId,
@@ -242,6 +287,19 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
     saveProject(fresh);
     logActivity(project.id, "ai_render_added", `Added ${tool} render for ${roomId === "overview" ? "property overview" : fresh.rooms.find((r) => r.id === roomId)?.name}`);
     setPasteInput("");
+    setUrlValidation("idle");
+    onUpdate();
+  }
+
+  function saveRenderNotes(id: string, notes: string) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh?.aiRenders) return;
+    const r = fresh.aiRenders.find((x) => x.id === id);
+    if (!r) return;
+    r.notes = notes.trim();
+    saveProject(fresh);
+    setEditingNotesFor(null);
+    setNotesDraft("");
     onUpdate();
   }
 
@@ -468,9 +526,70 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
             </button>
           </div>
         </div>
-        <div className="rounded-lg bg-brand-900/5 p-4 font-mono text-xs text-brand-700 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
-          {currentPrompt}
-        </div>
+        {editingPrompt ? (
+          <>
+            <textarea
+              className="input font-mono text-xs leading-relaxed min-h-[180px] resize-y"
+              value={currentPrompt}
+              onChange={(e) =>
+                setPromptOverrides((prev) => ({ ...prev, [overrideKey]: e.target.value }))
+              }
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-[10px] text-brand-600">
+                {isPromptCustomized
+                  ? "Customized — saved to this tool + target."
+                  : "Match auto-generated."}
+              </span>
+              <div className="flex gap-2">
+                {isPromptCustomized && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPromptOverrides((prev) => {
+                        const next = { ...prev };
+                        delete next[overrideKey];
+                        return next;
+                      })
+                    }
+                    className="text-xs text-brand-600 hover:text-brand-900"
+                  >
+                    Reset to auto
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingPrompt(false)}
+                  className="text-xs font-semibold text-amber-dark hover:underline"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="rounded-lg bg-brand-900/5 p-4 font-mono text-xs text-brand-700 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+              {currentPrompt}
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-[10px] text-brand-600">
+                {isPromptCustomized ? (
+                  <span className="text-amber-dark font-semibold">● Customized</span>
+                ) : (
+                  `Auto-generated from ${currentRoom ? "room" : "property"} details.`
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingPrompt(true)}
+                className="text-xs font-semibold text-amber-dark hover:underline"
+              >
+                Edit prompt
+              </button>
+            </div>
+          </>
+        )}
         {currentRoom && currentRoom.furniture.length === 0 && (
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber/10 border border-amber/30 px-3 py-2 text-xs text-brand-700">
             <span aria-hidden>💡</span>
@@ -503,31 +622,70 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
             className="input flex-1"
             placeholder="https://cdn.midjourney.com/... or https://..."
             value={pasteInput}
-            onChange={(e) => setPasteInput(e.target.value)}
+            onChange={(e) => {
+              setPasteInput(e.target.value);
+              setUrlValidation("idle");
+              setUrlError("");
+            }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && looksLikeImageUrl(pasteInput)) {
+              if (e.key === "Enter" && looksLikeImageUrl(pasteInput) && urlValidation !== "checking") {
                 addRender(pasteInput, selectedRoom as string | "overview");
               }
             }}
+            disabled={urlValidation === "checking"}
           />
           <button
             type="button"
             onClick={() => addRender(pasteInput, selectedRoom as string | "overview")}
-            disabled={!looksLikeImageUrl(pasteInput)}
+            disabled={!looksLikeImageUrl(pasteInput) || urlValidation === "checking"}
             className="btn-accent btn-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Save render
+            {urlValidation === "checking" ? "Checking..." : "Save render"}
           </button>
         </div>
-        {pasteInput.trim().length > 0 && !looksLikeImageUrl(pasteInput) && (
-          <p className="mt-2 text-xs text-red-500">
-            URL must start with http:// or https://
+        {urlError && (
+          <p className="mt-2 text-xs text-red-500">{urlError}</p>
+        )}
+        {urlValidation === "checking" && (
+          <p className="mt-2 text-xs text-brand-600">
+            Testing whether the URL loads as an image…
           </p>
         )}
+        <p className="mt-2 text-[11px] text-brand-600/70">
+          💡 <strong>Tip:</strong> Right-click the rendered image in your AI tool → &quot;Copy Image Address&quot;. Pasting a page URL won&apos;t work.
+        </p>
       </div>
 
-      {/* Saved renders for selected target */}
-      {rendersForTarget(selectedRoom).length > 0 && (
+      {/* View mode toggle */}
+      {renders.length > 0 && (
+        <div className="mb-3 flex items-center gap-1 rounded-lg border border-brand-900/10 bg-white p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => setViewMode("target")}
+            className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+              viewMode === "target"
+                ? "bg-brand-900 text-white"
+                : "text-brand-600 hover:text-brand-900"
+            }`}
+          >
+            Current target
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("all")}
+            className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+              viewMode === "all"
+                ? "bg-brand-900 text-white"
+                : "text-brand-600 hover:text-brand-900"
+            }`}
+          >
+            All renders ({renders.length})
+          </button>
+        </div>
+      )}
+
+      {/* Saved renders — for current target */}
+      {viewMode === "target" && rendersForTarget(selectedRoom).length > 0 && (
         <div className="card mb-6">
           <h3 className="text-sm font-semibold text-brand-900 mb-3">
             Saved renders ({rendersForTarget(selectedRoom).length})
@@ -581,6 +739,48 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
                       {new Date(r.createdAt).toLocaleDateString()}
                     </span>
                   </div>
+                  {/* Notes */}
+                  {editingNotesFor === r.id ? (
+                    <div className="mb-2">
+                      <textarea
+                        className="input text-xs min-h-[60px] resize-y"
+                        value={notesDraft}
+                        onChange={(e) => setNotesDraft(e.target.value)}
+                        placeholder="e.g., Client loved the fireplace angle"
+                        autoFocus
+                        maxLength={500}
+                      />
+                      <div className="mt-1 flex justify-end gap-2">
+                        <button
+                          onClick={() => { setEditingNotesFor(null); setNotesDraft(""); }}
+                          className="text-[10px] text-brand-600 hover:text-brand-900"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => saveRenderNotes(r.id, notesDraft)}
+                          className="text-[10px] font-semibold text-amber-dark hover:underline"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : r.notes ? (
+                    <button
+                      onClick={() => { setEditingNotesFor(r.id); setNotesDraft(r.notes); }}
+                      className="mb-2 w-full text-left rounded-lg bg-cream/70 px-2 py-1.5 text-[11px] text-brand-700 hover:bg-cream transition"
+                      title="Edit note"
+                    >
+                      {r.notes}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingNotesFor(r.id); setNotesDraft(""); }}
+                      className="mb-2 w-full rounded-lg border border-dashed border-brand-900/15 px-2 py-1.5 text-[10px] text-brand-600 hover:border-amber/40 hover:bg-amber/5 transition"
+                    >
+                      + Add note
+                    </button>
+                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={() => toggleApproval(r.id)}
@@ -613,6 +813,80 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
               </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* All renders gallery (cross-project view) */}
+      {viewMode === "all" && renders.length > 0 && (
+        <div className="card mb-6">
+          <h3 className="text-sm font-semibold text-brand-900 mb-3">
+            All renders across the project ({renders.length})
+          </h3>
+          <div className="space-y-4">
+            {(["overview", ...project.rooms.map((r) => r.id)] as string[])
+              .filter((rid) => rendersForTarget(rid).length > 0)
+              .map((rid) => {
+                const label =
+                  rid === "overview"
+                    ? "🏡 Property Overview"
+                    : project.rooms.find((r) => r.id === rid)?.name ?? "Unknown";
+                const list = rendersForTarget(rid);
+                return (
+                  <div key={rid}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+                        {label} — {list.length} render{list.length === 1 ? "" : "s"}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { pickTarget(rid); setViewMode("target"); }}
+                        className="text-[10px] font-semibold text-amber-dark hover:underline"
+                      >
+                        Focus →
+                      </button>
+                    </div>
+                    <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                      {list.map((r) => {
+                        const isBroken = brokenImages.has(r.id);
+                        return (
+                          <a
+                            key={r.id}
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`group relative block aspect-square overflow-hidden rounded-lg border transition ${
+                              r.approved ? "border-emerald-300" : "border-brand-900/10"
+                            }`}
+                            title={r.notes || `${TOOL_LABELS[r.tool]} render`}
+                          >
+                            {isBroken ? (
+                              <div className="flex h-full flex-col items-center justify-center bg-brand-900/5 text-[10px] text-brand-600">
+                                🖼️
+                              </div>
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={r.url}
+                                alt={r.notes || "render"}
+                                className="w-full h-full object-cover"
+                                onError={() =>
+                                  setBrokenImages((prev) => new Set(prev).add(r.id))
+                                }
+                              />
+                            )}
+                            {r.approved && (
+                              <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
+                                ✓
+                              </span>
+                            )}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
@@ -699,7 +973,7 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
           );
         }
 
-        // Renders exist and at least one approved — head to mood board
+        // Renders exist and at least one approved — head to delivery
         return (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-5 py-4 shadow-sm">
             <div>
@@ -707,16 +981,25 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
                 Ready for delivery
               </div>
               <div className="text-sm font-medium text-brand-900">
-                {approvedCount} approved render{approvedCount === 1 ? "" : "s"}. Compile them into a client-facing mood board.
+                {approvedCount} approved render{approvedCount === 1 ? "" : "s"}. Compile them in a mood board or export the full package.
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => onJumpTo("mood")}
-              className="btn-primary btn-sm shrink-0"
-            >
-              Go to Mood Board →
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => onJumpTo("mood")}
+                className="btn-secondary btn-sm"
+              >
+                Mood Board
+              </button>
+              <button
+                type="button"
+                onClick={() => onJumpTo("export")}
+                className="btn-primary btn-sm"
+              >
+                Export →
+              </button>
+            </div>
           </div>
         );
       })()}
