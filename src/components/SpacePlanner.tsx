@@ -30,11 +30,26 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
   const [showCatalog, setShowCatalog] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const room = project.rooms.find(r => r.id === selectedRoom);
+  // If no rooms defined yet OR selected room is stale
+  const rooms = project.rooms ?? [];
+  let room = rooms.find(r => r.id === selectedRoom);
+  // Auto-heal: if selectedRoom is stale but rooms exist, use first
+  if (!room && rooms.length > 0) {
+    room = rooms[0];
+  }
   if (!room) {
     return (
       <div className="card text-center py-12">
-        <p className="text-brand-600">Add rooms in the Rooms tab first.</p>
+        <div className="text-4xl mb-3">📐</div>
+        <h3 className="font-semibold text-brand-900 mb-2">No Rooms Yet</h3>
+        <p className="text-sm text-brand-600 max-w-sm mx-auto mb-4">
+          The Space Planner needs rooms with dimensions to lay out furniture.
+          Add at least one room to get started.
+        </p>
+        <p className="text-xs text-brand-600/60">
+          Use the <strong>Rooms</strong> tab above to define room dimensions, or start
+          with a <strong>Template</strong> from the New Project page.
+        </p>
       </div>
     );
   }
@@ -254,11 +269,13 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                 <button onClick={() => setZoom(z => Math.max(0.5, z - 0.25))} className="text-xs text-brand-600 hover:text-brand-900">-</button>
                 <span className="text-[10px] text-brand-600 w-10 text-center">{(zoom * 100).toFixed(0)}%</span>
                 <button onClick={() => setZoom(z => Math.min(2, z + 0.25))} className="text-xs text-brand-600 hover:text-brand-900">+</button>
-                {room.furniture.length === 0 && (
-                  <button onClick={autoFillRoom} className="text-xs text-amber-dark hover:underline font-medium ml-3">
-                    Auto-Furnish
-                  </button>
-                )}
+                <button
+                  onClick={autoFillRoom}
+                  className="text-xs text-amber-dark hover:underline font-medium ml-3"
+                  title={room.furniture.length > 0 ? "Adds more suggested items without replacing existing ones" : "One-click fill with style-matched pieces"}
+                >
+                  {room.furniture.length === 0 ? "Auto-Furnish" : "+ Add Suggestions"}
+                </button>
               </div>
             </div>
 

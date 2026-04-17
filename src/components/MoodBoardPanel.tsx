@@ -95,12 +95,25 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
   function addImage(boardId: string) {
     const url = prompt("Paste image URL (Pinterest pin image, Unsplash, direct image link):");
     if (!url || !url.trim()) return;
+    const trimmed = url.trim();
+
+    // Validate URL — must be http(s) or data URI
+    const isValid = /^(https?:\/\/|data:image\/)/.test(trimmed);
+    if (!isValid) {
+      alert("That doesn't look like a valid image URL. Use a link starting with https:// (e.g. from Pinterest right-click → Copy image address).");
+      return;
+    }
+
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const board = (fresh.moodBoards ?? []).find(b => b.id === boardId);
     if (!board) return;
     if (!board.imageUrls) board.imageUrls = [];
-    board.imageUrls.push(url.trim());
+    if (board.imageUrls.includes(trimmed)) {
+      alert("That image is already on this board.");
+      return;
+    }
+    board.imageUrls.push(trimmed);
     saveProject(fresh);
     onUpdate();
   }

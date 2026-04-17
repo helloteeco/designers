@@ -25,6 +25,7 @@ import FinishesPicker from "@/components/FinishesPicker";
 import TeamAssignments from "@/components/TeamAssignments";
 import RenovationScopeBuilder from "@/components/RenovationScopeBuilder";
 import ShareLinkButton from "@/components/ShareLinkButton";
+import InvoiceGenerator from "@/components/InvoiceGenerator";
 import { SaveIndicator, useToast } from "@/components/Toast";
 import {
   getProject,
@@ -55,6 +56,7 @@ type Tab =
   | "summary"
   | "delivery"
   | "export"
+  | "invoicing"
   | "team"
   | "scope"
   | "chat";
@@ -76,6 +78,7 @@ const TABS: { id: Tab; label: string; group: string }[] = [
   { id: "mood", label: "Mood Board", group: "Design" },
   { id: "render", label: "AI Renders", group: "Output" },
   { id: "shopping", label: "Shopping List", group: "Output" },
+  { id: "invoicing", label: "Proposals & Invoices", group: "Output" },
   { id: "summary", label: "Summary", group: "Output" },
   { id: "delivery", label: "Client View", group: "Output" },
   { id: "export", label: "Export", group: "Output" },
@@ -295,6 +298,7 @@ export default function ProjectDetailPage() {
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "render" && <AIRenderingPanel project={project} />}
           {tab === "shopping" && <ShoppingList project={project} />}
+          {tab === "invoicing" && <InvoiceGenerator project={project} />}
           {tab === "summary" && <ProjectSummary project={project} />}
           {tab === "delivery" && <ClientDelivery project={project} />}
           {tab === "export" && <ExportPanel project={project} />}

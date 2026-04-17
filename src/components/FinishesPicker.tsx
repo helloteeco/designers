@@ -30,8 +30,9 @@ export default function FinishesPicker({ project, onUpdate }: Props) {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"catalog" | "selected" | "by-trade">("catalog");
 
-  const finishes = project.finishes ?? [];
+  const finishes = (project.finishes ?? []).filter(f => f?.item?.trade); // drop corrupted entries
   const team = project.team ?? [];
+  const rooms = project.rooms ?? [];
 
   const filteredCatalog = search.trim()
     ? searchFinishes(search)
@@ -237,13 +238,13 @@ export default function FinishesPicker({ project, onUpdate }: Props) {
                       <span className="font-medium">{TRADE_LABELS[item.trade]}</span>
                       {item.leadTimeDays && <span> · {item.leadTimeDays}d lead</span>}
                     </div>
-                    {project.rooms.length > 0 ? (
+                    {rooms.length > 0 ? (
                       <div className="relative group">
                         <button className="btn-secondary btn-sm text-xs">
                           {selectedCount > 0 ? `Add (${selectedCount})` : "+ Add"}
                         </button>
                         <div className="hidden group-hover:block absolute right-0 bottom-full mb-1 z-20 w-48 rounded-lg border border-brand-900/10 bg-white shadow-lg py-1">
-                          {project.rooms.map(r => (
+                          {rooms.map(r => (
                             <button
                               key={r.id}
                               onClick={() => addFinish(item, r.id)}
@@ -282,7 +283,7 @@ export default function FinishesPicker({ project, onUpdate }: Props) {
                 onChange={e => setSelectedRoomId(e.target.value)}
               >
                 <option value="all">All Rooms</option>
-                {project.rooms.map(r => (
+                {rooms.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
@@ -302,7 +303,7 @@ export default function FinishesPicker({ project, onUpdate }: Props) {
                   </thead>
                   <tbody>
                     {filteredSelections.map(f => {
-                      const room = project.rooms.find(r => r.id === f.roomId);
+                      const room = rooms.find(r => r.id === f.roomId);
                       return (
                         <tr key={`${f.roomId}-${f.item.id}`} className="border-b border-brand-900/5 last:border-0">
                           <td className="py-2 pr-3 text-brand-600">{room?.name ?? "—"}</td>
@@ -406,7 +407,7 @@ export default function FinishesPicker({ project, onUpdate }: Props) {
 
                     <div className="divide-y divide-brand-900/5">
                       {items.map(f => {
-                        const room = project.rooms.find(r => r.id === f.roomId);
+                        const room = rooms.find(r => r.id === f.roomId);
                         return (
                           <div key={`${f.roomId}-${f.item.id}`} className="flex items-center gap-3 py-2">
                             <span className={`text-[10px] rounded-full px-2 py-0.5 ${STATUS_COLORS[f.status]}`}>

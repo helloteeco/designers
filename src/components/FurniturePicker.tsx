@@ -135,8 +135,14 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
   if (project.rooms.length === 0) {
     return (
       <div className="card text-center py-12">
-        <p className="text-brand-600">
-          Add rooms first in the Rooms tab before selecting furniture.
+        <div className="text-4xl mb-3">🪑</div>
+        <h3 className="font-semibold text-brand-900 mb-2">No Rooms Yet</h3>
+        <p className="text-sm text-brand-600 max-w-sm mx-auto mb-4">
+          Furniture gets assigned to specific rooms. Add at least one room with
+          dimensions so furniture can be placed correctly.
+        </p>
+        <p className="text-xs text-brand-600/60">
+          Open the <strong>Rooms</strong> tab above to define rooms.
         </p>
       </div>
     );
