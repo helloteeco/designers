@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
+import StyleQuiz from "./StyleQuiz";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -51,6 +52,7 @@ export default function InspirationBoard({ project, onUpdate }: Props) {
     } catch { return []; }
   });
   const [showForm, setShowForm] = useState(false);
+  const [showStyleQuiz, setShowStyleQuiz] = useState(false);
   const [filterTag, setFilterTag] = useState("");
   const [filterSource, setFilterSource] = useState("");
   const [form, setForm] = useState({
@@ -114,10 +116,42 @@ export default function InspirationBoard({ project, onUpdate }: Props) {
             Tag and organize by room or design element.
           </p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary btn-sm">
-          + Add Inspiration
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowStyleQuiz(true)} className="btn-secondary btn-sm">
+            🎨 Take Style Quiz
+          </button>
+          <button onClick={() => setShowForm(true)} className="btn-primary btn-sm">
+            + Add Inspiration
+          </button>
+        </div>
       </div>
+
+      {/* Style Quiz modal */}
+      {showStyleQuiz && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-900/10">
+              <div>
+                <h2 className="text-lg font-semibold text-brand-900">Style Quiz</h2>
+                <p className="text-xs text-brand-600">6 quick questions to find the right style</p>
+              </div>
+              <button
+                onClick={() => setShowStyleQuiz(false)}
+                className="text-brand-600 hover:text-brand-900 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <StyleQuiz
+                project={project}
+                onUpdate={onUpdate}
+                onComplete={() => setShowStyleQuiz(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       {items.length > 0 && (

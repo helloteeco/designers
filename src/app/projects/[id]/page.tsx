@@ -5,28 +5,20 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import RoomPlanner from "@/components/RoomPlanner";
 import SleepOptimizer from "@/components/SleepOptimizer";
-import FurniturePicker from "@/components/FurniturePicker";
-import DesignBoard from "@/components/DesignBoard";
 import SpacePlanner from "@/components/SpacePlanner";
 import MoodBoardPanel from "@/components/MoodBoardPanel";
-import ExportPanel from "@/components/ExportPanel";
 import TeamChat from "@/components/TeamChat";
 import ScanViewer from "@/components/ScanViewer";
 import ActivityFeed from "@/components/ActivityFeed";
 import AIRenderingPanel from "@/components/AIRenderingPanel";
 import ProjectChecklist from "@/components/ProjectChecklist";
-import ProjectSummary from "@/components/ProjectSummary";
 import WorkflowEngine from "@/components/WorkflowEngine";
 import InspirationBoard from "@/components/InspirationBoard";
-import ClientDelivery from "@/components/ClientDelivery";
-import StyleQuiz from "@/components/StyleQuiz";
-import ShoppingList from "@/components/ShoppingList";
-import FinishesPicker from "@/components/FinishesPicker";
-import TeamAssignments from "@/components/TeamAssignments";
-import RenovationScopeBuilder from "@/components/RenovationScopeBuilder";
 import ShareLinkButton from "@/components/ShareLinkButton";
-import InvoiceGenerator from "@/components/InvoiceGenerator";
 import FloorPlansPanel from "@/components/FloorPlansPanel";
+import ItemsHub from "@/components/ItemsHub";
+import RenovationHub from "@/components/RenovationHub";
+import DeliverHub from "@/components/DeliverHub";
 import { SaveIndicator, useToast } from "@/components/Toast";
 import {
   getProject,
@@ -43,47 +35,49 @@ type Tab =
   | "overview"
   | "workflow"
   | "scans"
+  | "inspiration"
   | "rooms"
   | "sleep"
-  | "space-plan"
   | "design"
-  | "furniture"
-  | "finishes"
+  | "items"
   | "mood"
-  | "inspiration"
-  | "style-quiz"
+  | "renovation"
   | "render"
-  | "shopping"
-  | "summary"
-  | "delivery"
-  | "export"
-  | "invoicing"
-  | "team"
-  | "scope"
+  | "deliver"
   | "chat";
 
-const TABS: { id: Tab; label: string; group: string }[] = [
+interface TabDef {
+  id: Tab;
+  label: string;
+  group: string;
+  /** If returns false, the tab is hidden. */
+  visible?: (project: Project) => boolean;
+}
+
+const ALL_TABS: TabDef[] = [
   { id: "overview", label: "Overview", group: "Project" },
   { id: "workflow", label: "AI Workflow", group: "Project" },
   { id: "scans", label: "3D Scans", group: "Inputs" },
   { id: "inspiration", label: "Inspiration", group: "Inputs" },
-  { id: "style-quiz", label: "Style Quiz", group: "Design" },
   { id: "rooms", label: "Rooms", group: "Design" },
   { id: "sleep", label: "Sleep Plan", group: "Design" },
-  { id: "space-plan", label: "Space Plan", group: "Design" },
-  { id: "design", label: "Design Board", group: "Design" },
-  { id: "furniture", label: "Catalog", group: "Design" },
-  { id: "finishes", label: "Finishes", group: "Renovation" },
-  { id: "scope", label: "Scope of Work", group: "Renovation" },
-  { id: "team", label: "Team & Tasks", group: "Renovation" },
+  { id: "design", label: "Design", group: "Design" },
+  { id: "items", label: "Items", group: "Design" },
   { id: "mood", label: "Mood Board", group: "Design" },
+  {
+    id: "renovation",
+    label: "Renovation",
+    group: "Build",
+    visible: (p) => p.projectType === "renovation" || p.projectType === "full-redesign" || p.projectType === "new-construction",
+  },
   { id: "render", label: "AI Renders", group: "Output" },
-  { id: "shopping", label: "Shopping List", group: "Output" },
-  { id: "invoicing", label: "Proposals & Invoices", group: "Output" },
-  { id: "summary", label: "Summary", group: "Output" },
-  { id: "delivery", label: "Client View", group: "Output" },
-  { id: "export", label: "Export", group: "Output" },
-  { id: "chat", label: "Team Chat", group: "Collab" },
+  { id: "deliver", label: "Deliver", group: "Output" },
+  {
+    id: "chat",
+    label: "Team Chat",
+    group: "Collab",
+    visible: () => isConfigured(),
+  },
 ];
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -175,9 +169,12 @@ export default function ProjectDetailPage() {
     reload();
   }
 
+  // Filter tabs based on project type + cloud sync status
+  const visibleTabs = ALL_TABS.filter(t => !t.visible || t.visible(project));
+
   // Group tabs for display
-  const tabGroups = new Map<string, typeof TABS>();
-  for (const t of TABS) {
+  const tabGroups = new Map<string, TabDef[]>();
+  for (const t of visibleTabs) {
     const list = tabGroups.get(t.group) ?? [];
     list.push(t);
     tabGroups.set(t.group, list);
@@ -308,22 +305,14 @@ export default function ProjectDetailPage() {
           {tab === "workflow" && <WorkflowEngine project={project} onUpdate={reload} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
           {tab === "inspiration" && <InspirationBoard project={project} onUpdate={reload} />}
-          {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} onComplete={() => setTab("mood")} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
-          {tab === "space-plan" && <SpacePlanner project={project} onUpdate={reload} />}
-          {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
-          {tab === "furniture" && <FurniturePicker project={project} onUpdate={reload} />}
-          {tab === "finishes" && <FinishesPicker project={project} onUpdate={reload} />}
-          {tab === "scope" && <RenovationScopeBuilder project={project} onUpdate={reload} />}
-          {tab === "team" && <TeamAssignments project={project} onUpdate={reload} />}
+          {tab === "design" && <SpacePlanner project={project} onUpdate={reload} />}
+          {tab === "items" && <ItemsHub project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
+          {tab === "renovation" && <RenovationHub project={project} onUpdate={reload} />}
           {tab === "render" && <AIRenderingPanel project={project} />}
-          {tab === "shopping" && <ShoppingList project={project} />}
-          {tab === "invoicing" && <InvoiceGenerator project={project} />}
-          {tab === "summary" && <ProjectSummary project={project} />}
-          {tab === "delivery" && <ClientDelivery project={project} />}
-          {tab === "export" && <ExportPanel project={project} />}
+          {tab === "deliver" && <DeliverHub project={project} />}
           {tab === "chat" && (
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
