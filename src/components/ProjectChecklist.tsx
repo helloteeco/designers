@@ -105,11 +105,13 @@ function getChecks(project: Project): CheckItem[] {
     },
     {
       label: "Sleep plan configured",
-      done: roomsWithBeds >= 1 && sleeping >= project.targetGuests,
+      done: roomsWithBeds >= 1 && (project.targetGuests === 0 || sleeping >= project.targetGuests),
       detail:
-        sleeping >= project.targetGuests
-          ? `${sleeping} guests (target: ${project.targetGuests})`
-          : `${sleeping}/${project.targetGuests} guests — need ${project.targetGuests - sleeping} more`,
+        project.targetGuests === 0
+          ? `${sleeping} guests${roomsWithBeds === 0 ? " — set bed configs" : ""}`
+          : sleeping >= project.targetGuests
+            ? `${sleeping} guests (target: ${project.targetGuests})`
+            : `${sleeping}/${project.targetGuests} guests — need ${project.targetGuests - sleeping} more`,
     },
     {
       label: "Furniture selected",

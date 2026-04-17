@@ -138,14 +138,20 @@ export default function SleepOptimizer({ project, onUpdate }: Props) {
             </div>
             <div
               className={`text-sm font-semibold ${
-                currentSleeping >= project.targetGuests
-                  ? "text-emerald-600"
-                  : "text-red-500"
+                project.targetGuests === 0
+                  ? "text-brand-600"
+                  : currentSleeping >= project.targetGuests
+                    ? "text-emerald-600"
+                    : "text-red-500"
               }`}
             >
-              {currentSleeping >= project.targetGuests
-                ? "Target Met"
-                : `Need ${project.targetGuests - currentSleeping} more`}
+              {project.targetGuests === 0
+                ? "No target set"
+                : currentSleeping > project.targetGuests
+                  ? `+${currentSleeping - project.targetGuests} over target`
+                  : currentSleeping === project.targetGuests
+                    ? "Target met exactly"
+                    : `Need ${project.targetGuests - currentSleeping} more`}
             </div>
           </div>
         </div>

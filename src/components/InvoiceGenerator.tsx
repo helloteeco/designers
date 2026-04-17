@@ -76,11 +76,13 @@ export default function InvoiceGenerator({ project }: Props) {
     for (const s of project.scope ?? []) {
       const room = project.rooms.find(r => r.id === s.roomId);
       if (s.laborCost > 0) {
+        // Show as flat charge if hours are 0, otherwise hourly rate
+        const hasHours = s.laborHours > 0;
         items.push({
           description: `Labor: ${s.description}${room ? ` (${room.name})` : ""}`,
-          qty: s.laborHours,
-          unit: "hrs",
-          unitPrice: s.laborHours > 0 ? s.laborCost / s.laborHours : 0,
+          qty: hasHours ? s.laborHours : 1,
+          unit: hasHours ? "hrs" : "lot",
+          unitPrice: hasHours ? s.laborCost / s.laborHours : s.laborCost,
           category: "Labor",
         });
         scopeLab += s.laborCost;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
+import { saveProject, getProject as getProjectFromStore, generateId, logActivity, deleteTeamMember } from "@/lib/store";
 import { TRADE_LABELS } from "@/lib/finishes-catalog";
 import type { Project, TeamMember, TaskAssignment, TradeType } from "@/lib/types";
 
@@ -82,19 +82,8 @@ export default function TeamAssignments({ project, onUpdate }: Props) {
   }
 
   function removeMember(id: string) {
-    if (!confirm("Remove this team member? Their task assignments will be unassigned.")) return;
-    const fresh = getProjectFromStore(project.id);
-    if (!fresh) return;
-    fresh.team = (fresh.team ?? []).filter(m => m.id !== id);
-    // Unassign tasks
-    (fresh.tasks ?? []).forEach(t => {
-      if (t.assignedTo === id) t.assignedTo = "";
-    });
-    // Unassign finishes
-    (fresh.finishes ?? []).forEach(f => {
-      if (f.assignedTo === id) f.assignedTo = undefined;
-    });
-    saveProject(fresh);
+    if (!confirm("Remove this team member? Their task and finish assignments will be unassigned.")) return;
+    deleteTeamMember(project.id, id);
     onUpdate();
   }
 

@@ -130,10 +130,20 @@ export async function loadProjectFromDatabase(id: string): Promise<Project | nul
 
 export function getProjects(): Project[] {
   if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem(PROJECTS_KEY);
-  if (!raw) return [];
-  const parsed: Project[] = JSON.parse(raw);
-  return parsed.map(migrateProject);
+  try {
+    const raw = localStorage.getItem(PROJECTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      console.error("Projects in localStorage is not an array, resetting");
+      return [];
+    }
+    return parsed.map(migrateProject);
+  } catch (e) {
+    console.error("Failed to parse projects from localStorage:", e);
+    // Don't wipe user data — return empty list so app still loads
+    return [];
+  }
 }
 
 export function getProject(id: string): Project | null {
@@ -150,7 +160,19 @@ export function saveProject(project: Project): void {
   } else {
     projects.push(project);
   }
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  try {
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  } catch (e) {
+    // QuotaExceededError — browser localStorage is full (usually 5-10 MB)
+    console.error("Failed to save project to localStorage:", e);
+    if (typeof window !== "undefined") {
+      alert(
+        "Storage full. Your browser's local storage is out of space. " +
+        "Download a backup from Settings → Backup & Data, then delete old projects to free space."
+      );
+    }
+    // Still sync to DB if configured — cloud isn't affected
+  }
   debouncedSync(project);
 }
 
@@ -185,6 +207,37 @@ export function deleteRoom(projectId: string, roomId: string): void {
   const project = getProject(projectId);
   if (!project) return;
   project.rooms = project.rooms.filter((r) => r.id !== roomId);
+  // Cascade-clean orphaned references to this room
+  if (project.finishes) {
+    project.finishes = project.finishes.filter((f) => f.roomId !== roomId);
+  }
+  if (project.scope) {
+    project.scope = project.scope.filter((s) => s.roomId !== roomId);
+  }
+  if (project.tasks) {
+    // Clear roomId on tasks (don't delete — task might still be valid, just no room)
+    project.tasks.forEach((t) => {
+      if (t.roomId === roomId) t.roomId = undefined;
+    });
+  }
+  saveProject(project);
+}
+
+export function deleteTeamMember(projectId: string, memberId: string): void {
+  const project = getProject(projectId);
+  if (!project) return;
+  project.team = (project.team ?? []).filter((m) => m.id !== memberId);
+  // Cascade-clean assignments
+  if (project.tasks) {
+    project.tasks.forEach((t) => {
+      if (t.assignedTo === memberId) t.assignedTo = "";
+    });
+  }
+  if (project.finishes) {
+    project.finishes.forEach((f) => {
+      if (f.assignedTo === memberId) f.assignedTo = undefined;
+    });
+  }
   saveProject(project);
 }
 
