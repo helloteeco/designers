@@ -287,10 +287,12 @@ export function optimizeSleeping(
     }
   }
 
-  // Third pass: if we're well over the target, downgrade some bedrooms
-  // to single queens for a more comfortable feel
-  if (totalSleeps > targetGuests + 4) {
-    // Sort bedrooms smallest-first for downgrading
+  // Third pass: only downgrade if we're WAY over. For Teeco's Airbnb
+  // playbook, overshooting by 1-3 guests = higher revenue ceiling, so
+  // we keep the bunks. Only downgrade if overshoot is unreasonable
+  // (more than 4 guests OR more than 50% over target).
+  const maxAcceptableOvershoot = Math.max(4, Math.ceil(targetGuests * 0.5));
+  if (totalSleeps > targetGuests + maxAcceptableOvershoot) {
     const downgradeable = sorted.filter(
       (r) =>
         !LIVING_FLEX_TYPES.has(r.type) &&
@@ -303,7 +305,7 @@ export function optimizeSleeping(
     );
 
     for (const room of downgradeable) {
-      if (totalSleeps <= targetGuests + 2) break;
+      if (totalSleeps <= targetGuests + maxAcceptableOvershoot) break;
       const configs = getConfigsForRoom(room);
       const queen = configs.find((c) => c.id === "queen-bed");
       if (queen) {
@@ -334,9 +336,17 @@ export function optimizeSleeping(
   }
 
   const targetMet = totalSleeps >= targetGuests;
-  const summary = targetMet
-    ? `Sleeping ${totalSleeps} guests across ${roomConfigs.size} rooms (target: ${targetGuests}). Queen-over-queen bunks used where possible.`
-    : `Could only fit ${totalSleeps} of ${targetGuests} target guests. Consider adding rooms or using more bunk configurations.`;
+  const overshoot = totalSleeps - targetGuests;
+  let summary: string;
+  if (!targetMet) {
+    summary = `Only sleeps ${totalSleeps} of ${targetGuests} target guests. Add rooms, enlarge existing rooms, or use bunk configurations to hit target.`;
+  } else if (overshoot === 0) {
+    summary = `Hits target exactly: ${totalSleeps} guests across ${roomConfigs.size} rooms.`;
+  } else if (overshoot <= 4) {
+    summary = `Sleeps ${totalSleeps} guests (target: ${targetGuests}, +${overshoot} bonus capacity). Queen-over-queen bunks maximize revenue without cramping rooms.`;
+  } else {
+    summary = `Sleeps ${totalSleeps} guests — ${overshoot} over target. Consider swapping some bunks for queens if comfort matters more than capacity.`;
+  }
 
   return { roomResults: results, totalSleeps, targetGuests, targetMet, summary };
 }

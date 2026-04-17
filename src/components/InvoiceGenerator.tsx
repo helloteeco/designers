@@ -357,7 +357,7 @@ export default function InvoiceGenerator({ project }: Props) {
                 <TotalRow label="Furnishings" value={furnitureSubtotal} />
               )}
               {finishesSubtotal > 0 && (
-                <TotalRow label="Finishes &amp; Materials" value={finishesSubtotal} />
+                <TotalRow label="Finishes & Materials" value={finishesSubtotal} />
               )}
               {scopeLabor > 0 && <TotalRow label="Labor" value={scopeLabor} />}
               {scopeMaterial > 0 && <TotalRow label="Contractor Materials" value={scopeMaterial} />}
@@ -443,7 +443,7 @@ export default function InvoiceGenerator({ project }: Props) {
                   <tr className="border-b-2 border-brand-900/20">
                     <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-brand-600">Description</th>
                     <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-brand-600">Qty</th>
-                    <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-brand-600">Unit</th>
+                    <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-brand-600">Unit Price</th>
                     <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-brand-600">Total</th>
                   </tr>
                 </thead>
@@ -548,7 +548,7 @@ export default function InvoiceGenerator({ project }: Props) {
 function TotalRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex justify-between">
-      <span className="text-white/70" dangerouslySetInnerHTML={{ __html: label }} />
+      <span className="text-white/70">{label}</span>
       <span>${value.toLocaleString()}</span>
     </div>
   );

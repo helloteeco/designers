@@ -396,7 +396,7 @@ export default function ExportPanel({ project }: Props) {
                     <td className="py-2 pr-4 text-brand-600">{row.vendor}</td>
                     <td className="py-2 pr-4 text-right">{row.quantity}</td>
                     <td className="py-2 pr-4 text-right">
-                      ${row.unitPrice.toLocaleString()}
+                      ${row.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-2 text-right font-medium">
                       ${row.totalPrice.toLocaleString()}

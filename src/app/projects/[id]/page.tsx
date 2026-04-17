@@ -236,7 +236,7 @@ export default function ProjectDetailPage() {
               return `${bd}BR/${ba}BA`;
             })()}
           />
-          <QuickStat label="Sleeps" value={sleeping} target={project.targetGuests} />
+          <QuickStat label="Sleeps" value={sleeping} target={project.targetGuests} goodWhenOver />
           <QuickStat label="Items" value={totalItems} />
           <QuickStat
             label="Cost"
@@ -245,7 +245,17 @@ export default function ProjectDetailPage() {
           />
           <QuickStat
             label="$/sqft"
-            value={project.property.squareFootage > 0 ? `$${(totalCost / project.property.squareFootage).toFixed(0)}` : "—"}
+            value={(() => {
+              // Use property.squareFootage if set, otherwise calculate from rooms
+              // (interior rooms only — exclude outdoor spaces)
+              const interiorSqft = project.rooms
+                .filter(r => r.type !== "outdoor")
+                .reduce((s, r) => s + r.widthFt * r.lengthFt, 0);
+              const sqft = project.property.squareFootage > 0
+                ? project.property.squareFootage
+                : interiorSqft;
+              return sqft > 0 ? `$${(totalCost / sqft).toFixed(0)}` : "—";
+            })()}
             target="$10-20"
           />
         </div>
@@ -331,22 +341,46 @@ function QuickStat({
   label,
   value,
   target,
+  goodWhenOver,
 }: {
   label: string;
   value: number | string;
   target?: number | string;
+  /** If true (like Sleeps), exceeding target is positive (green).
+   *  If false/undefined (like Cost), exceeding target is negative (red). */
+  goodWhenOver?: boolean;
 }) {
+  // Color logic: compare value vs target if both are numbers or numeric strings
+  let valueColor = "text-brand-900";
+  let indicator: string | null = null;
+  if (target !== undefined && target !== 0 && target !== "") {
+    const numValue = typeof value === "number" ? value : parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+    const numTarget = typeof target === "number" ? target : parseFloat(String(target).replace(/[^0-9.-]/g, ""));
+    if (!isNaN(numValue) && !isNaN(numTarget) && numTarget > 0) {
+      if (numValue > numTarget) {
+        valueColor = goodWhenOver ? "text-emerald-600" : "text-red-500";
+        indicator = goodWhenOver ? `+${numValue - numTarget}` : `over by ${Math.round(((numValue - numTarget) / numTarget) * 100)}%`;
+      } else if (numValue === numTarget && goodWhenOver) {
+        valueColor = "text-emerald-600";
+      }
+    }
+  }
   return (
     <div className="card py-3 px-4">
       <div className="text-[10px] uppercase tracking-wider text-brand-600 mb-0.5">
         {label}
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold text-brand-900">{value}</span>
-        {target !== undefined && target !== 0 && (
+        <span className={`text-xl font-bold ${valueColor}`}>{value}</span>
+        {target !== undefined && target !== 0 && target !== "" && (
           <span className="text-xs text-brand-600/60">/ {target}</span>
         )}
       </div>
+      {indicator && (
+        <div className={`text-[10px] font-medium mt-0.5 ${goodWhenOver ? "text-emerald-600" : "text-red-500"}`}>
+          {indicator}
+        </div>
+      )}
     </div>
   );
 }
