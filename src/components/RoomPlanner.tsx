@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
+import FloorPlanReference from "./FloorPlanReference";
 import type { Project, Room, RoomType } from "@/lib/types";
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
@@ -275,6 +276,9 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 
   return (
     <div>
+      {/* Floor plan reference strip */}
+      <FloorPlanReference project={project} defaultExpanded={project.rooms.length === 0} />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

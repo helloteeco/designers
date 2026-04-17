@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveCustomItem, deleteCustomItem, getCustomItems } from "@/lib/studio-settings";
 import { generateId } from "@/lib/store";
+import VendorSearch from "./VendorSearch";
 import type { FurnitureItem, FurnitureCategory, DesignStyle } from "@/lib/types";
 
 interface Props {
@@ -197,6 +198,13 @@ export default function CustomItemCreator({ onItemAdded, trigger }: Props) {
                   </button>
                 </div>
               </div>
+
+              {/* Vendor search helper — only shows when there's a name */}
+              {form.name && form.name.trim().length > 2 && (
+                <div className="mb-4">
+                  <VendorSearch query={form.name} />
+                </div>
+              )}
 
               {/* Form */}
               <div className="card mb-4">

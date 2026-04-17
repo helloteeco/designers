@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { saveProject, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import { CATALOG, searchCatalog } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
+import FloorPlanReference from "./FloorPlanReference";
 import type { Project, Room, FurnitureItem, SelectedFurniture } from "@/lib/types";
 
 interface Props {
@@ -168,6 +169,9 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
 
   return (
     <div>
+      {/* Floor plan reference */}
+      <FloorPlanReference project={project} />
+
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>

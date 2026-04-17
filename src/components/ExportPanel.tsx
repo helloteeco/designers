@@ -3,15 +3,20 @@
 import type { Project, ExportRow } from "@/lib/types";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import { logActivity } from "@/lib/store";
+import { getStudioSettings } from "@/lib/studio-settings";
 
 interface Props {
   project: Project;
 }
 
+// Tax + shipping default rate (Teeco standard ~8% combined)
+const DEFAULT_TAX_SHIPPING_RATE = 0.08;
+
 export default function ExportPanel({ project }: Props) {
   const rows = buildExportRows(project);
   const totalCost = rows.reduce((s, r) => s + r.totalPrice, 0);
   const sleeping = getTotalSleeping(project.rooms);
+  const settings = getStudioSettings();
 
   function downloadCSV() {
     const headers = [
@@ -77,6 +82,128 @@ export default function ExportPanel({ project }: Props) {
     a.click();
     URL.revokeObjectURL(url);
     logActivity(project.id, "exported", `Exported furniture list CSV (${rows.length} items)`);
+  }
+
+  /**
+   * Teeco Masterlist format — matches Jeff's production spreadsheet column-for-column.
+   * Columns: Room | Item | Detail | Source | Alternative | Quantity | Status | Cost | Total | T&S | Final | Link
+   */
+  function downloadTeecoMasterlist() {
+    const headers = [
+      "Room", "Item", "Detail", "Source", "Alternative",
+      "Quantity", "Status", "Cost", "Total", "T&S (Tax/Shipping)", "Final", "Link",
+    ];
+    const csvRows = [headers.join(",")];
+
+    // Furniture from rooms
+    for (const room of project.rooms) {
+      for (const f of room.furniture) {
+        const cost = f.item.price;
+        const total = cost * f.quantity;
+        const tax = total * DEFAULT_TAX_SHIPPING_RATE;
+        const final = total + tax;
+        csvRows.push([
+          quote(room.name),
+          quote(f.item.subcategory || f.item.category.replace(/-/g, " ")),
+          quote(`${f.item.name}${f.item.color ? ` (${f.item.color})` : ""}`),
+          quote(f.item.vendor),
+          "", // Alternative — blank, filled in manually
+          f.quantity,
+          "Need to order",
+          cost.toFixed(2),
+          total.toFixed(2),
+          tax.toFixed(2),
+          final.toFixed(2),
+          quote(f.item.vendorUrl),
+        ].join(","));
+      }
+    }
+
+    // Finishes
+    for (const f of project.finishes ?? []) {
+      const room = project.rooms.find(r => r.id === f.roomId);
+      const cost = f.item.price;
+      const total = cost * f.quantity;
+      const tax = total * DEFAULT_TAX_SHIPPING_RATE;
+      const final = total + tax;
+      const statusMap: Record<string, string> = {
+        "spec'd": "Need to order",
+        "approved": "Need to order",
+        "ordered": "Ordered",
+        "delivered": "Received",
+        "installed": "Installed",
+      };
+      csvRows.push([
+        quote(room?.name ?? "General"),
+        quote(f.item.subcategory || f.item.category.replace(/-/g, " ")),
+        quote(`${f.item.name}${f.item.color ? ` (${f.item.color})` : ""}${f.item.finish ? ` ${f.item.finish}` : ""}`),
+        quote(f.item.vendor),
+        "",
+        f.quantity,
+        quote(statusMap[f.status] || f.status),
+        cost.toFixed(2),
+        total.toFixed(2),
+        tax.toFixed(2),
+        final.toFixed(2),
+        quote(f.item.vendorUrl),
+      ].join(","));
+    }
+
+    // Scope of work labor + materials
+    for (const s of project.scope ?? []) {
+      const room = project.rooms.find(r => r.id === s.roomId);
+      if (s.laborCost > 0) {
+        csvRows.push([
+          quote(room?.name ?? "General"),
+          "Labor",
+          quote(s.description),
+          "", "", // Source, Alternative
+          s.laborHours || 1,
+          "Pending",
+          s.laborHours > 0 ? (s.laborCost / s.laborHours).toFixed(2) : s.laborCost.toFixed(2),
+          s.laborCost.toFixed(2),
+          "0.00",
+          s.laborCost.toFixed(2),
+          "",
+        ].join(","));
+      }
+      if (s.materialCost > 0) {
+        const tax = s.materialCost * DEFAULT_TAX_SHIPPING_RATE;
+        csvRows.push([
+          quote(room?.name ?? "General"),
+          "Materials",
+          quote(s.description),
+          "", "",
+          1,
+          "Pending",
+          s.materialCost.toFixed(2),
+          s.materialCost.toFixed(2),
+          tax.toFixed(2),
+          (s.materialCost + tax).toFixed(2),
+          "",
+        ].join(","));
+      }
+    }
+
+    // Totals row
+    const grandTotal = rows.reduce((s, r) => s + r.totalPrice, 0)
+      + (project.finishes ?? []).reduce((s, f) => s + f.item.price * f.quantity, 0)
+      + (project.scope ?? []).reduce((s, sc) => s + sc.laborCost + sc.materialCost, 0);
+    const grandTax = grandTotal * DEFAULT_TAX_SHIPPING_RATE;
+
+    csvRows.push("");
+    csvRows.push([
+      "TOTAL", "", "", "", "", "", "", "", grandTotal.toFixed(2), grandTax.toFixed(2), (grandTotal + grandTax).toFixed(2), "",
+    ].join(","));
+
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slugify(project.name)}-masterlist.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    logActivity(project.id, "exported", "Exported Teeco masterlist CSV");
   }
 
   function downloadSleepPlan() {
@@ -230,7 +357,22 @@ export default function ExportPanel({ project }: Props) {
       </div>
 
       {/* Export Cards */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-8">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="card text-center border-amber/40 bg-amber/5">
+          <div className="mb-3 text-3xl">⭐</div>
+          <h3 className="font-semibold text-brand-900">Teeco Masterlist</h3>
+          <p className="text-xs text-brand-600 mt-1 mb-4">
+            Matches your Google Sheet exactly. Room · Item · Detail · Source · Quantity · Status · Cost · T&amp;S · Final · Link.
+          </p>
+          <button
+            onClick={downloadTeecoMasterlist}
+            className="btn-primary btn-sm w-full"
+            disabled={rows.length === 0 && (project.finishes?.length ?? 0) === 0 && (project.scope?.length ?? 0) === 0}
+          >
+            Download Masterlist
+          </button>
+        </div>
+
         <div className="card text-center">
           <div className="mb-3 text-3xl">📊</div>
           <h3 className="font-semibold text-brand-900">Furniture List</h3>
