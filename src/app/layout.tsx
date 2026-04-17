@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
+import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
   title: "Design Studio — Vacation Rental Design Automation",
@@ -16,8 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen">
-        {children}
-        <KeyboardShortcuts />
+        <ToastProvider>
+          {children}
+          <KeyboardShortcuts />
+        </ToastProvider>
       </body>
     </html>
   );

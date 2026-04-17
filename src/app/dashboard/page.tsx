@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import WelcomeModal from "@/components/WelcomeModal";
+import { useToast } from "@/components/Toast";
 import {
   getProjects,
   deleteProject,
@@ -32,6 +34,7 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const toast = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ProjectStatus | "all">("all");
@@ -58,6 +61,7 @@ export default function DashboardPage() {
     if (!confirm("Delete this project? This cannot be undone.")) return;
     deleteProject(id);
     setProjects(getProjects());
+    toast.success("Project deleted");
   }
 
   function handleDuplicate(project: Project) {
@@ -72,6 +76,7 @@ export default function DashboardPage() {
     };
     saveProject(copy);
     setProjects(getProjects());
+    toast.success(`Duplicated as "${copy.name}"`);
   }
 
   const filtered = projects.filter((p) => {
@@ -93,6 +98,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-cream">
+      <WelcomeModal />
       <Navbar />
 
       <main className="mx-auto max-w-7xl px-6 py-8 animate-in">

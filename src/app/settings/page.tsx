@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { useToast } from "@/components/Toast";
 import { getUser, getProfile, syncProfile } from "@/lib/store";
 import { isConfigured, dbGetTeamMembers } from "@/lib/supabase";
 import {
@@ -27,6 +28,7 @@ type Tab = "studio" | "pricing" | "team" | "data" | "cloud";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [profile, setProfileState] = useState(getProfile());
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,7 @@ export default function SettingsPage() {
 
   function saveSettings() {
     saveStudioSettings(studioSettings);
+    toast.success("Settings saved");
     setSaveNote("Settings saved.");
     setTimeout(() => setSaveNote(""), 2000);
   }
@@ -80,8 +83,9 @@ export default function SettingsPage() {
   function handleBackupDownload() {
     try {
       downloadBackup(studioSettings.studioName || "designstudio");
+      toast.success("Backup downloaded");
     } catch (e) {
-      alert("Backup failed: " + (e instanceof Error ? e.message : "unknown"));
+      toast.error("Backup failed: " + (e instanceof Error ? e.message : "unknown"));
     }
   }
 
@@ -623,43 +627,87 @@ export default function SettingsPage() {
                     collaboration, and automatic project backup.
                   </p>
 
-                  <div className="rounded-lg bg-brand-900/5 p-4 mb-4">
-                    <h3 className="font-semibold text-brand-900 text-sm mb-3">Setup in 5 minutes:</h3>
-                    <ol className="space-y-3 text-sm text-brand-700 list-decimal list-inside">
+                  {/* EASY path — Vercel native integration */}
+                  <div className="rounded-xl bg-emerald-50 border-2 border-emerald-300 p-5 mb-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="text-2xl">⚡</div>
+                      <div>
+                        <h3 className="font-bold text-emerald-900 text-base">Easy: 1-Click Setup (Recommended)</h3>
+                        <p className="text-sm text-emerald-800 mt-1">
+                          Vercel has a native Supabase integration. Clicks through signup, provisions the database,
+                          and sets all env vars automatically. ~3 minutes, no terminal required.
+                        </p>
+                      </div>
+                    </div>
+                    <ol className="space-y-2 text-sm text-emerald-900 ml-9 list-decimal">
                       <li>
-                        Go to{" "}
+                        Click{" "}
                         <a
-                          href="https://supabase.com"
+                          href="https://vercel.com/marketplace/supabase"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-amber-dark underline font-medium"
+                          className="font-semibold underline"
                         >
-                          supabase.com
-                        </a>{" "}
-                        and create a free account.
+                          Vercel → Marketplace → Supabase →
+                        </a>
                       </li>
-                      <li>Create a new project. Wait ~2 min for it to provision.</li>
+                      <li>Click &quot;Install&quot;, pick the <code className="text-xs bg-white px-1 rounded">design-studio</code> project</li>
+                      <li>Create a new Supabase project (free tier is fine)</li>
+                      <li>Vercel adds the env vars automatically and triggers a redeploy</li>
                       <li>
-                        In your Supabase project, go to <strong>SQL Editor</strong>, copy the schema from{" "}
-                        <code className="text-xs bg-white px-1 rounded">supabase/migrations/001_initial_schema.sql</code>{" "}
-                        in the repo, and run it.
-                      </li>
-                      <li>
-                        Go to <strong>Settings → API</strong> in Supabase. Copy the Project URL and anon key.
-                      </li>
-                      <li>
-                        In Vercel, go to your <strong>design-studio</strong> project → Settings → Environment Variables.
-                        Add:
-                        <div className="mt-2 rounded bg-white p-3 text-xs font-mono space-y-1 border border-brand-900/10">
-                          <div>NEXT_PUBLIC_SUPABASE_URL = &lt;your-project-url&gt;</div>
-                          <div>NEXT_PUBLIC_SUPABASE_ANON_KEY = &lt;your-anon-key&gt;</div>
-                        </div>
-                      </li>
-                      <li>
-                        Trigger a redeploy. Done — this page will show &quot;Connected&quot;.
+                        Come back to this page — it will say <strong>&quot;Connected&quot;</strong>. Then run the SQL migration below.
                       </li>
                     </ol>
+                    <a
+                      href="https://vercel.com/marketplace/supabase"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold transition"
+                    >
+                      Open Vercel Marketplace
+                      <span>→</span>
+                    </a>
                   </div>
+
+                  {/* After the easy path — run the migration */}
+                  <div className="rounded-lg bg-brand-900/5 p-4 mb-4">
+                    <h3 className="font-semibold text-brand-900 text-sm mb-2">After install — run one SQL migration:</h3>
+                    <ol className="space-y-2 text-sm text-brand-700 list-decimal list-inside">
+                      <li>In the Supabase dashboard, open <strong>SQL Editor → New query</strong></li>
+                      <li>
+                        Copy-paste the schema from{" "}
+                        <a
+                          href="https://github.com/helloteeco/designers/blob/main/supabase/migrations/001_initial_schema.sql"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-dark underline"
+                        >
+                          001_initial_schema.sql
+                        </a>
+                        {" "}and click &quot;Run&quot;
+                      </li>
+                      <li>Sign up a user here, then refresh — team + chat will light up.</li>
+                    </ol>
+                  </div>
+
+                  <details className="rounded-lg bg-brand-900/5 p-3 text-xs">
+                    <summary className="cursor-pointer font-semibold text-brand-700">
+                      Or: manual setup (advanced)
+                    </summary>
+                    <ol className="mt-3 space-y-2 text-sm text-brand-700 list-decimal list-inside">
+                      <li>Sign up at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline">supabase.com</a> and create a project</li>
+                      <li>Run the SQL migration in the Supabase SQL Editor</li>
+                      <li>Copy the Project URL and anon key from Settings → API</li>
+                      <li>
+                        In Vercel → Project Settings → Environment Variables, add:
+                        <div className="mt-2 rounded bg-white p-2 font-mono space-y-1 border border-brand-900/10 text-[11px]">
+                          <div>NEXT_PUBLIC_SUPABASE_URL = &lt;project-url&gt;</div>
+                          <div>NEXT_PUBLIC_SUPABASE_ANON_KEY = &lt;anon-key&gt;</div>
+                        </div>
+                      </li>
+                      <li>Redeploy</li>
+                    </ol>
+                  </details>
 
                   <div className="rounded-lg bg-amber/10 border border-amber/30 p-4">
                     <h3 className="font-semibold text-brand-900 text-sm mb-2">Why bother?</h3>

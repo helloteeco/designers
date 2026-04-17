@@ -25,6 +25,7 @@ import FinishesPicker from "@/components/FinishesPicker";
 import TeamAssignments from "@/components/TeamAssignments";
 import RenovationScopeBuilder from "@/components/RenovationScopeBuilder";
 import ShareLinkButton from "@/components/ShareLinkButton";
+import { SaveIndicator, useToast } from "@/components/Toast";
 import {
   getProject,
   saveProject,
@@ -91,6 +92,7 @@ const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const toast = useToast();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
@@ -165,6 +167,7 @@ export default function ProjectDetailPage() {
     p.status = status;
     saveProject(p);
     logActivity(projectId, "status_changed", `Status → ${status}`);
+    toast.success(`Status: ${status.replace("-", " ")}`);
     reload();
   }
 
@@ -180,7 +183,7 @@ export default function ProjectDetailPage() {
     <div className="min-h-screen bg-cream">
       <Navbar />
 
-      <main className="mx-auto max-w-7xl px-6 py-6 animate-in">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 animate-in">
         {/* Back + Title */}
         <div className="mb-6">
           <button
@@ -189,18 +192,19 @@ export default function ProjectDetailPage() {
           >
             &larr; All Projects
           </button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-brand-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-brand-900 truncate">
                 {project.name || "Untitled"}
               </h1>
-              <p className="text-sm text-brand-600 mt-0.5">
+              <p className="text-xs sm:text-sm text-brand-600 mt-0.5 truncate">
                 {project.property.address || "No address"} &middot;{" "}
                 {project.client.name || "No client"} &middot;{" "}
                 <span className="capitalize">{project.style.replace(/-/g, " ")}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <SaveIndicator updatedAt={project.updatedAt} />
               <ShareLinkButton project={project} />
               <select
                 className="select w-auto text-xs"
@@ -234,8 +238,24 @@ export default function ProjectDetailPage() {
           />
         </div>
 
-        {/* Tabs — grouped */}
-        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto">
+        {/* Tabs — mobile: select. Desktop: grouped tabs */}
+        <div className="mb-6 sm:hidden">
+          <select
+            className="select w-full"
+            value={tab}
+            onChange={e => setTab(e.target.value as Tab)}
+          >
+            {Array.from(tabGroups.entries()).map(([group, groupTabs]) => (
+              <optgroup key={group} label={group}>
+                {groupTabs.map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto hidden sm:block">
           <div className="flex gap-4">
             {Array.from(tabGroups.entries()).map(([group, groupTabs]) => (
               <div key={group} className="flex items-center gap-1">
