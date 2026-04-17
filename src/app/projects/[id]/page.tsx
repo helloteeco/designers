@@ -261,8 +261,8 @@ export default function ProjectDetailPage() {
           />
         </div>
 
-        {/* Tabs — mobile/tablet: select. Desktop (xl+): grouped tabs */}
-        <div className="mb-6 xl:hidden">
+        {/* Tabs — phone (<md): select dropdown. Anything larger: scrollable tabs. */}
+        <div className="mb-6 md:hidden">
           <select
             className="select w-full"
             value={tab}
@@ -278,22 +278,24 @@ export default function ProjectDetailPage() {
           </select>
         </div>
 
-        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto hidden xl:block">
-          <div className="flex gap-3 min-w-max">
+        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto hidden md:block scroll-fade">
+          <div className="flex gap-2 min-w-max items-center">
             {Array.from(tabGroups.entries()).map(([group, groupTabs], groupIdx) => (
               <div key={group} className="flex items-center gap-1 shrink-0">
-                <span className="text-[9px] uppercase tracking-wider text-brand-600/40 font-semibold mr-1 shrink-0">
+                {/* Group label: visible only on xl+ where there's space */}
+                <span className="hidden xl:inline text-[9px] uppercase tracking-wider text-brand-600/40 font-semibold mr-1 shrink-0">
                   {group}
                 </span>
                 {groupTabs.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setTab(t.id)}
-                    className={`shrink-0 ${tab === t.id ? "tab-active" : "tab"}`}
+                    className={tab === t.id ? "tab-active" : "tab"}
                   >
                     {t.label}
                   </button>
                 ))}
+                {/* Separator between groups: always visible so tabs group visually */}
                 {groupIdx < tabGroups.size - 1 && <div className="w-px h-5 bg-brand-900/10 mx-1 shrink-0" />}
               </div>
             ))}
