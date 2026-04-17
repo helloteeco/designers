@@ -26,6 +26,7 @@ import TeamAssignments from "@/components/TeamAssignments";
 import RenovationScopeBuilder from "@/components/RenovationScopeBuilder";
 import ShareLinkButton from "@/components/ShareLinkButton";
 import InvoiceGenerator from "@/components/InvoiceGenerator";
+import FloorPlansPanel from "@/components/FloorPlansPanel";
 import { SaveIndicator, useToast } from "@/components/Toast";
 import {
   getProject,
@@ -301,7 +302,7 @@ export default function ProjectDetailPage() {
 
         {/* Tab Content */}
         <div className="animate-in">
-          {tab === "overview" && <OverviewTab project={project} />}
+          {tab === "overview" && <OverviewTab project={project} onUpdate={reload} />}
           {tab === "workflow" && <WorkflowEngine project={project} onUpdate={reload} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
           {tab === "inspiration" && <InspirationBoard project={project} onUpdate={reload} />}
@@ -385,7 +386,7 @@ function QuickStat({
   );
 }
 
-function OverviewTab({ project }: { project: Project }) {
+function OverviewTab({ project, onUpdate }: { project: Project; onUpdate: () => void }) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(project.notes);
   const [editingProperty, setEditingProperty] = useState(false);
@@ -617,6 +618,11 @@ function OverviewTab({ project }: { project: Project }) {
               color="purple"
             />
           </div>
+        </div>
+
+        {/* Floor Plans */}
+        <div className="mt-4 pt-4 border-t border-brand-900/5">
+          <FloorPlansPanel project={project} onUpdate={onUpdate} />
         </div>
       </div>
 

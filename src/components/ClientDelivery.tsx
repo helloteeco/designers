@@ -216,6 +216,49 @@ export default function ClientDelivery({ project }: Props) {
           </div>
         )}
 
+        {/* Floor Plans */}
+        {show("rooms") && (project.property.floorPlans ?? []).length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Floor Plans</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(project.property.floorPlans ?? []).map(plan => (
+                <div key={plan.id} className="card p-0 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      if (plan.type === "image") {
+                        const w = window.open("", "_blank");
+                        if (w) {
+                          w.document.write(
+                            `<html><head><title>${plan.name}</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${plan.url}" style="max-width:100%;max-height:100vh;object-fit:contain;" alt="${plan.name}"/></body></html>`
+                          );
+                        }
+                      } else {
+                        window.open(plan.url, "_blank");
+                      }
+                    }}
+                    className="block w-full aspect-video bg-brand-900/5"
+                  >
+                    {plan.type === "image" ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={plan.url} alt={plan.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-4xl">
+                        {plan.type === "pdf" ? "📄" : "🔗"}
+                      </div>
+                    )}
+                  </button>
+                  <div className="p-3">
+                    <div className="text-sm font-medium text-brand-900">{plan.name}</div>
+                    {plan.notes && (
+                      <div className="text-xs text-brand-600 mt-1">{plan.notes}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Design Direction / Mood Boards */}
         {show("mood") && project.moodBoards.length > 0 && (
           <div>

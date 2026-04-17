@@ -433,5 +433,9 @@ export function migrateProject(project: Project): Project {
     tasks: project.tasks ?? [],
     finishes: project.finishes ?? [],
     scope: project.scope ?? [],
+    property: {
+      ...project.property,
+      floorPlans: project.property?.floorPlans ?? [],
+    },
   };
 }

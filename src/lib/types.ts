@@ -112,6 +112,16 @@ export interface Client {
   preferences: string;
 }
 
+export interface FloorPlan {
+  id: string;
+  name: string;           // e.g. "Existing Plan", "Demo Plan", "New Plan", "Kitchen Detail"
+  url: string;            // either a pasted URL or a data: URI from file upload
+  type: "image" | "pdf" | "link"; // image = inline preview, pdf = new-tab, link = external
+  uploadedAt: string;
+  notes: string;
+  sizeBytes?: number;     // informational; warns on backup if huge
+}
+
 export interface Property {
   address: string;
   city: string;
@@ -123,6 +133,7 @@ export interface Property {
   matterportLink: string;
   polycamLink: string;
   spoakLink: string;
+  floorPlans?: FloorPlan[];
 }
 
 export interface BedItem {
