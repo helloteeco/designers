@@ -1390,6 +1390,357 @@ export const CATALOG: FurnitureItem[] = [
     material: "Aluminum",
     style: "modern",
   }),
+
+  // ══════════════════════════════════════
+  //  EXPANDED RETAILER COVERAGE — TARGET
+  // ══════════════════════════════════════
+  item({
+    name: "Modern Barrel Accent Chair",
+    category: "seating", subcategory: "Accent Chairs",
+    widthIn: 30, depthIn: 32, heightIn: 31, price: 229,
+    vendor: "Target", vendorUrl: "https://www.target.com/c/accent-chairs-living-room-furniture/-/N-5xtfd", imageUrl: "",
+    color: "Cream Boucle", material: "Boucle", style: "modern",
+  }),
+  item({
+    name: "Wood + Metal 4-Drawer Nightstand",
+    category: "tables", subcategory: "Nightstands",
+    widthIn: 22, depthIn: 16, heightIn: 26, price: 159,
+    vendor: "Target", vendorUrl: "https://www.target.com/c/nightstands-bedroom-furniture/-/N-5xtha", imageUrl: "",
+    color: "Natural / Black", material: "Wood + Metal", style: "industrial",
+  }),
+  item({
+    name: "Rattan Drum Side Table",
+    category: "tables", subcategory: "Side Tables",
+    widthIn: 18, depthIn: 18, heightIn: 22, price: 119,
+    vendor: "Target", vendorUrl: "https://www.target.com/c/accent-table-side-table-living-room-furniture/-/N-5xtfe", imageUrl: "",
+    color: "Natural", material: "Rattan", style: "coastal",
+  }),
+  item({
+    name: "Tufted Velvet Ottoman Bench",
+    category: "seating", subcategory: "Benches",
+    widthIn: 48, depthIn: 18, heightIn: 17, price: 189,
+    vendor: "Target", vendorUrl: "https://www.target.com/c/ottomans-poufs-living-room-furniture/-/N-5xtff", imageUrl: "",
+    color: "Emerald", material: "Velvet", style: "mid-century",
+  }),
+
+  // ══════════════════════════════════════
+  //  WALMART — VALUE TIER
+  // ══════════════════════════════════════
+  item({
+    name: "Full Metal Bed Frame",
+    category: "beds-mattresses", subcategory: "Bed Frames",
+    widthIn: 56, depthIn: 78, heightIn: 38, price: 149,
+    vendor: "Walmart", vendorUrl: "https://www.walmart.com/browse/home/bed-frames/4044_103150_116587_138160", imageUrl: "",
+    color: "Black", material: "Steel", style: "modern",
+  }),
+  item({
+    name: "Queen Memory Foam Mattress — 8in",
+    category: "beds-mattresses", subcategory: "Mattresses",
+    widthIn: 60, depthIn: 80, heightIn: 8, price: 229,
+    vendor: "Walmart", vendorUrl: "https://www.walmart.com/browse/home/mattresses/4044_539103_4411", imageUrl: "",
+    color: "White", material: "Memory Foam", style: "modern",
+  }),
+  item({
+    name: "6-Shelf Bookcase",
+    category: "storage", subcategory: "Shelving",
+    widthIn: 30, depthIn: 12, heightIn: 72, price: 79,
+    vendor: "Walmart", vendorUrl: "https://www.walmart.com/browse/home/bookcases/4044_103150_162072", imageUrl: "",
+    color: "Espresso", material: "Engineered Wood", style: "traditional",
+  }),
+  item({
+    name: "Futon Sofa Bed",
+    category: "beds-mattresses", subcategory: "Sofa Beds",
+    widthIn: 73, depthIn: 32, heightIn: 30, price: 229,
+    vendor: "Walmart", vendorUrl: "https://www.walmart.com/browse/home/futons/4044_103150_539103_1010326", imageUrl: "",
+    color: "Gray", material: "Linen Blend", style: "contemporary",
+  }),
+  item({
+    name: "Round Shag Area Rug 5x7",
+    category: "rugs-textiles", subcategory: "Area Rugs",
+    widthIn: 60, depthIn: 84, heightIn: 0, price: 89,
+    vendor: "Walmart", vendorUrl: "https://www.walmart.com/browse/home/area-rugs/4044_539103_2077857", imageUrl: "",
+    color: "Ivory", material: "Polyester", style: "contemporary",
+  }),
+
+  // ══════════════════════════════════════
+  //  LIVING SPACES — MID-TIER
+  // ══════════════════════════════════════
+  item({
+    name: "Gia Upholstered Queen Bed",
+    category: "beds-mattresses", subcategory: "Bed Frames",
+    widthIn: 66, depthIn: 88, heightIn: 55, price: 795,
+    vendor: "Living Spaces", vendorUrl: "https://www.livingspaces.com/inspiration/rooms/bedroom", imageUrl: "",
+    color: "Dove Gray", material: "Performance Fabric", style: "transitional",
+  }),
+  item({
+    name: "Mesa Sectional Sofa — 3pc",
+    category: "seating", subcategory: "Sofas",
+    widthIn: 128, depthIn: 96, heightIn: 34, price: 2495,
+    vendor: "Living Spaces", vendorUrl: "https://www.livingspaces.com/inspiration/rooms/living-room", imageUrl: "",
+    color: "Warm Oatmeal", material: "Performance Linen", style: "transitional",
+  }),
+  item({
+    name: "Parker Rectangular Dining Table — 84in",
+    category: "tables", subcategory: "Dining Tables",
+    widthIn: 84, depthIn: 40, heightIn: 30, price: 995,
+    vendor: "Living Spaces", vendorUrl: "https://www.livingspaces.com/inspiration/rooms/dining-room", imageUrl: "",
+    color: "Walnut", material: "Solid Mango Wood", style: "mid-century",
+  }),
+  item({
+    name: "Kingston 6-Drawer Dresser",
+    category: "storage", subcategory: "Dressers",
+    widthIn: 62, depthIn: 20, heightIn: 36, price: 895,
+    vendor: "Living Spaces", vendorUrl: "https://www.livingspaces.com/inspiration/rooms/bedroom", imageUrl: "",
+    color: "Warm Oak", material: "Solid Oak", style: "transitional",
+  }),
+  item({
+    name: "Astor Power Recliner",
+    category: "seating", subcategory: "Accent Chairs",
+    widthIn: 36, depthIn: 40, heightIn: 42, price: 695,
+    vendor: "Living Spaces", vendorUrl: "https://www.livingspaces.com/inspiration/rooms/living-room", imageUrl: "",
+    color: "Cognac", material: "Top-Grain Leather", style: "traditional",
+  }),
+
+  // ══════════════════════════════════════
+  //  ARTICLE — DESIGN-FORWARD
+  // ══════════════════════════════════════
+  item({
+    name: "Sven Armchair",
+    category: "seating", subcategory: "Accent Chairs",
+    widthIn: 35, depthIn: 37, heightIn: 34, price: 999,
+    vendor: "Article", vendorUrl: "https://www.article.com/category/chairs", imageUrl: "",
+    color: "Charme Tan", material: "Full-Grain Leather", style: "mid-century",
+  }),
+  item({
+    name: "Timber Charme Chocolat Sofa",
+    category: "seating", subcategory: "Sofas",
+    widthIn: 90, depthIn: 35, heightIn: 32, price: 2199,
+    vendor: "Article", vendorUrl: "https://www.article.com/category/sofas", imageUrl: "",
+    color: "Chocolate", material: "Full-Grain Leather", style: "mid-century",
+  }),
+  item({
+    name: "Madera King Bed",
+    category: "beds-mattresses", subcategory: "Bed Frames",
+    widthIn: 82, depthIn: 87, heightIn: 39, price: 1499,
+    vendor: "Article", vendorUrl: "https://www.article.com/category/beds", imageUrl: "",
+    color: "Smoke Oak", material: "Solid Oak", style: "scandinavian",
+  }),
+  item({
+    name: "Lenia 6-Drawer Dresser",
+    category: "storage", subcategory: "Dressers",
+    widthIn: 63, depthIn: 19, heightIn: 32, price: 1399,
+    vendor: "Article", vendorUrl: "https://www.article.com/category/dressers", imageUrl: "",
+    color: "White Oak", material: "Solid White Oak", style: "scandinavian",
+  }),
+  item({
+    name: "Geome Graphite Rug 8x10",
+    category: "rugs-textiles", subcategory: "Area Rugs",
+    widthIn: 96, depthIn: 120, heightIn: 0, price: 699,
+    vendor: "Article", vendorUrl: "https://www.article.com/category/rugs", imageUrl: "",
+    color: "Graphite / Ivory", material: "Hand-Tufted Wool", style: "modern",
+  }),
+
+  // ══════════════════════════════════════
+  //  WAYFAIR — BUDGET-MID
+  // ══════════════════════════════════════
+  item({
+    name: "Greyleigh Bunk Bed — Twin/Full",
+    category: "beds-mattresses", subcategory: "Bunk Beds",
+    widthIn: 58, depthIn: 80, heightIn: 68, price: 629,
+    vendor: "Wayfair", vendorUrl: "https://www.wayfair.com/furniture/sb0/bunk-trundle-loft-beds-c413033.html", imageUrl: "",
+    color: "White", material: "Solid Pine", style: "coastal",
+  }),
+  item({
+    name: "Bailey Chesterfield Loveseat",
+    category: "seating", subcategory: "Loveseats",
+    widthIn: 64, depthIn: 34, heightIn: 29, price: 729,
+    vendor: "Wayfair", vendorUrl: "https://www.wayfair.com/furniture/sb0/loveseats-c413912.html", imageUrl: "",
+    color: "Emerald", material: "Velvet", style: "traditional",
+  }),
+  item({
+    name: "Farmhouse Kitchen Island",
+    category: "tables", subcategory: "Kitchen Islands",
+    widthIn: 50, depthIn: 30, heightIn: 36, price: 489,
+    vendor: "Wayfair", vendorUrl: "https://www.wayfair.com/kitchen-and-tabletop/sb0/kitchen-islands-carts-c413780.html", imageUrl: "",
+    color: "Antique White / Butcher Block", material: "Wood + Maple", style: "farmhouse",
+  }),
+  item({
+    name: "Outdoor Daybed with Canopy",
+    category: "outdoor", subcategory: "Loungers",
+    widthIn: 80, depthIn: 80, heightIn: 78, price: 1299,
+    vendor: "Wayfair", vendorUrl: "https://www.wayfair.com/outdoor/sb0/outdoor-daybeds-c468169.html", imageUrl: "",
+    color: "Natural", material: "Wicker + Sunbrella", style: "coastal",
+  }),
+  item({
+    name: "Geometric Wool Area Rug 9x12",
+    category: "rugs-textiles", subcategory: "Area Rugs",
+    widthIn: 108, depthIn: 144, heightIn: 0, price: 549,
+    vendor: "Wayfair", vendorUrl: "https://www.wayfair.com/rugs-cb2/pdp/langley-street-mira-southwestern-area-rug.html", imageUrl: "",
+    color: "Cream / Navy", material: "Wool Blend", style: "bohemian",
+  }),
+
+  // ══════════════════════════════════════
+  //  AMAZON — ESSENTIALS & TECH
+  // ══════════════════════════════════════
+  item({
+    name: "Smart TV 55in 4K",
+    category: "decor", subcategory: "Smart Home",
+    widthIn: 49, depthIn: 3, heightIn: 28, price: 379,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=55+inch+4k+smart+tv", imageUrl: "",
+    color: "Black", material: "Electronics", style: "modern",
+  }),
+  item({
+    name: "Universal TV Wall Mount — Tilting",
+    category: "decor", subcategory: "Smart Home",
+    widthIn: 16, depthIn: 3, heightIn: 12, price: 29,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=tv+wall+mount", imageUrl: "",
+    color: "Black", material: "Steel", style: "contemporary",
+  }),
+  item({
+    name: "Electric Fireplace Insert — 36in",
+    category: "decor", subcategory: "Smart Home",
+    widthIn: 36, depthIn: 6, heightIn: 22, price: 349,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=electric+fireplace+insert", imageUrl: "",
+    color: "Black", material: "Glass + Steel", style: "contemporary",
+  }),
+  item({
+    name: "Hot Tub Cover — Insulated",
+    category: "outdoor", subcategory: "Accessories",
+    widthIn: 84, depthIn: 84, heightIn: 4, price: 299,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=hot+tub+cover", imageUrl: "",
+    color: "Brown", material: "Marine Vinyl", style: "contemporary",
+  }),
+  item({
+    name: "Iron + Board Combo",
+    category: "kitchen-dining", subcategory: "Kitchen Essentials",
+    widthIn: 14, depthIn: 8, heightIn: 36, price: 59,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=ironing+board+set", imageUrl: "",
+    color: "Blue", material: "Metal + Cotton", style: "modern",
+  }),
+  item({
+    name: "Vacuum — Cordless Stick",
+    category: "kitchen-dining", subcategory: "Kitchen Essentials",
+    widthIn: 10, depthIn: 10, heightIn: 45, price: 199,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=cordless+stick+vacuum", imageUrl: "",
+    color: "Silver", material: "Plastic / Metal", style: "modern",
+  }),
+
+  // ══════════════════════════════════════
+  //  BATHROOM — EXPANDED
+  // ══════════════════════════════════════
+  item({
+    name: "36in Double Vanity — White",
+    category: "bathroom", subcategory: "Vanities",
+    widthIn: 36, depthIn: 22, heightIn: 34, price: 899,
+    vendor: "Home Depot", vendorUrl: "https://www.homedepot.com/b/Bath-Bathroom-Vanities/N-5yc1vZbzb3", imageUrl: "",
+    color: "White / Carrara", material: "Wood + Quartz", style: "transitional",
+  }),
+  item({
+    name: "60in Double Vanity — Walnut",
+    category: "bathroom", subcategory: "Vanities",
+    widthIn: 60, depthIn: 22, heightIn: 34, price: 1499,
+    vendor: "Home Depot", vendorUrl: "https://www.homedepot.com/b/Bath-Bathroom-Vanities/N-5yc1vZbzb3", imageUrl: "",
+    color: "Walnut / White Quartz", material: "Wood + Quartz", style: "modern",
+  }),
+  item({
+    name: "Round Bathroom Mirror — 30in",
+    category: "bathroom", subcategory: "Mirrors",
+    widthIn: 30, depthIn: 2, heightIn: 30, price: 149,
+    vendor: "West Elm", vendorUrl: "https://www.westelm.com/shop/furniture/mirrors/", imageUrl: "",
+    color: "Brushed Brass", material: "Metal Frame", style: "modern",
+  }),
+  item({
+    name: "Arched Mirror — 24x36in",
+    category: "bathroom", subcategory: "Mirrors",
+    widthIn: 24, depthIn: 2, heightIn: 36, price: 189,
+    vendor: "Wayfair", vendorUrl: "https://www.wayfair.com/decor-pillows/sb0/mirrors-c1774081.html", imageUrl: "",
+    color: "Matte Black", material: "Metal Frame", style: "contemporary",
+  }),
+  item({
+    name: "LED Bathroom Vanity Light Bar — 36in",
+    category: "lighting", subcategory: "Vanity Lighting",
+    widthIn: 36, depthIn: 4, heightIn: 4, price: 129,
+    vendor: "Home Depot", vendorUrl: "https://www.homedepot.com/b/Lighting-Vanity-Lighting/N-5yc1vZbv75", imageUrl: "",
+    color: "Brushed Nickel", material: "Metal + LED", style: "contemporary",
+  }),
+  item({
+    name: "Widespread Bathroom Faucet",
+    category: "bathroom", subcategory: "Faucets",
+    widthIn: 12, depthIn: 6, heightIn: 8, price: 189,
+    vendor: "Home Depot", vendorUrl: "https://www.homedepot.com/b/Bath-Bathroom-Faucets/N-5yc1vZbzb2", imageUrl: "",
+    color: "Matte Black", material: "Brass", style: "modern",
+  }),
+  item({
+    name: "Rainfall Shower Head System",
+    category: "bathroom", subcategory: "Shower Fixtures",
+    widthIn: 10, depthIn: 10, heightIn: 28, price: 259,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=rainfall+shower+head+system", imageUrl: "",
+    color: "Chrome", material: "Stainless Steel", style: "modern",
+  }),
+  item({
+    name: "Subway Tile Backsplash — Box of 10 sqft",
+    category: "bathroom", subcategory: "Tile",
+    widthIn: 3, depthIn: 6, heightIn: 0, price: 49,
+    vendor: "Home Depot", vendorUrl: "https://www.homedepot.com/b/Flooring-Tile/N-5yc1vZaq7q", imageUrl: "",
+    color: "White Gloss", material: "Ceramic", style: "transitional",
+  }),
+
+  // ══════════════════════════════════════
+  //  LIGHTING — EXPANDED
+  // ══════════════════════════════════════
+  item({
+    name: "Chandelier — 6-Light Drum",
+    category: "lighting", subcategory: "Chandeliers",
+    widthIn: 24, depthIn: 24, heightIn: 20, price: 379,
+    vendor: "West Elm", vendorUrl: "https://www.westelm.com/shop/lighting/chandeliers/", imageUrl: "",
+    color: "Antique Brass", material: "Metal + Fabric", style: "mid-century",
+  }),
+  item({
+    name: "Linear Kitchen Island Pendant",
+    category: "lighting", subcategory: "Pendants",
+    widthIn: 36, depthIn: 6, heightIn: 8, price: 289,
+    vendor: "Pottery Barn", vendorUrl: "https://www.potterybarn.com/shop/lighting/pendant-lights/", imageUrl: "",
+    color: "Aged Brass", material: "Metal + Glass", style: "farmhouse",
+  }),
+  item({
+    name: "Wall Sconce — Matte Black",
+    category: "lighting", subcategory: "Wall Sconces",
+    widthIn: 5, depthIn: 7, heightIn: 11, price: 89,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=matte+black+wall+sconce", imageUrl: "",
+    color: "Matte Black", material: "Metal", style: "modern",
+  }),
+  item({
+    name: "Smart Dimmer Light Switch",
+    category: "lighting", subcategory: "Switches",
+    widthIn: 3, depthIn: 2, heightIn: 4, price: 49,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=smart+dimmer+switch", imageUrl: "",
+    color: "White", material: "Plastic", style: "modern",
+  }),
+
+  // ══════════════════════════════════════
+  //  KIDS / BUNK ROOM ESSENTIALS
+  // ══════════════════════════════════════
+  item({
+    name: "Bunk Bed Safety Rail — Full Length",
+    category: "beds-mattresses", subcategory: "Bunk Accessories",
+    widthIn: 78, depthIn: 2, heightIn: 14, price: 59,
+    vendor: "Amazon", vendorUrl: "https://www.amazon.com/s?k=bunk+bed+safety+rail", imageUrl: "",
+    color: "White", material: "Wood", style: "contemporary",
+  }),
+  item({
+    name: "Under-Bed Storage Drawer (Pair)",
+    category: "storage", subcategory: "Bedroom Accessories",
+    widthIn: 36, depthIn: 17, heightIn: 7, price: 79,
+    vendor: "IKEA", vendorUrl: "https://www.ikea.com/us/en/cat/bedroom-storage-10451/", imageUrl: "",
+    color: "White", material: "Fiberboard", style: "scandinavian",
+  }),
+  item({
+    name: "Kids Reading Nook Chair",
+    category: "seating", subcategory: "Accent Chairs",
+    widthIn: 26, depthIn: 28, heightIn: 30, price: 189,
+    vendor: "Target", vendorUrl: "https://www.target.com/c/kids-furniture/-/N-5xthz", imageUrl: "",
+    color: "Soft Pink Velvet", material: "Velvet", style: "contemporary",
+  }),
 ];
 
 // ── Query helpers ──

@@ -33,11 +33,9 @@ type Tab =
   | "overview"
   | "ai-workflow"
   | "scans"
-  | "inspiration"
   | "style-quiz"
   | "rooms"
   | "sleep"
-  | "space-plan"
   | "design"
   | "catalog"
   | "mood"
@@ -62,7 +60,6 @@ const TAB_GROUPS: TabGroup[] = [
     label: "Inputs",
     tabs: [
       { id: "scans", label: "3D Scans" },
-      { id: "inspiration", label: "Inspiration" },
     ],
   },
   {
@@ -71,7 +68,6 @@ const TAB_GROUPS: TabGroup[] = [
       { id: "style-quiz", label: "Style Quiz" },
       { id: "rooms", label: "Rooms" },
       { id: "sleep", label: "Sleep Plan" },
-      { id: "space-plan", label: "Space Plan" },
       { id: "design", label: "Design Board" },
     ],
   },
@@ -215,28 +211,31 @@ export default function ProjectDetailPage() {
     reload();
   }
 
-  function generateClientLink() {
-    const link = `${window.location.origin}/projects/print?id=${project!.id}`;
-    try {
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(link).then(() => {
-          setClientLinkCopied(true);
-          setTimeout(() => setClientLinkCopied(false), 2000);
-        });
-      } else {
-        const ta = document.createElement("textarea");
-        ta.value = link;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
+  function openClientView() {
+    if (!project) return;
+    const url = `/projects/print?id=${project.id}`;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Pop-up blocked — fallback to copying the URL
+      const full = `${window.location.origin}${url}`;
+      try {
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(full);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = full;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
         setClientLinkCopied(true);
         setTimeout(() => setClientLinkCopied(false), 2000);
+      } catch {
+        window.prompt("Copy this link:", full);
       }
-    } catch {
-      window.prompt("Copy this link:", link);
     }
   }
 
@@ -270,10 +269,11 @@ export default function ProjectDetailPage() {
 
             <div className="flex shrink-0 items-center gap-2">
               <button
-                onClick={generateClientLink}
+                onClick={openClientView}
                 className="btn-accent btn-sm"
+                title="Opens a print-ready client view you can send as PDF"
               >
-                {clientLinkCopied ? "Copied!" : "Generate Client Link"}
+                {clientLinkCopied ? "Link copied!" : "Client View"}
               </button>
 
               {/* Status dropdown styled as pill */}
@@ -365,14 +365,12 @@ export default function ProjectDetailPage() {
 
         {/* Tab Content */}
         <div className="animate-in">
-          {tab === "overview" && <OverviewTab project={project} />}
+          {tab === "overview" && <OverviewTab project={project} onJumpTo={switchTab} />}
           {tab === "ai-workflow" && <AIRenderingPanel project={project} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
-          {tab === "inspiration" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
-          {tab === "space-plan" && <DesignBoard project={project} onUpdate={reload} />}
           {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
           {tab === "catalog" && <FurniturePicker project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
@@ -439,20 +437,28 @@ function StatCard({
 
 // ── Overview Tab ──
 
-function OverviewTab({ project }: { project: Project }) {
+function OverviewTab({
+  project,
+  onJumpTo,
+}: {
+  project: Project;
+  onJumpTo: (tab: Tab) => void;
+}) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(project.notes);
 
   function saveNotes() {
-    project.notes = notes;
-    saveProject(project);
+    const fresh = getProject(project.id);
+    if (!fresh) return;
+    fresh.notes = notes;
+    saveProject(fresh);
     setEditingNotes(false);
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="lg:col-span-2">
-        <ProjectChecklist project={project} />
+        <ProjectChecklist project={project} onJumpTo={(t) => onJumpTo(t as Tab)} />
       </div>
 
       {/* Property */}
