@@ -672,7 +672,7 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
             <div className="rounded-lg bg-brand-900/5 p-4 font-mono text-xs text-brand-700 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
               {currentPrompt}
             </div>
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex items-center justify-between gap-2">
               <span className="text-[10px] text-brand-600">
                 {isPromptCustomized ? (
                   <span className="text-amber-dark font-semibold">● Customized</span>
@@ -680,13 +680,29 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
                   `Auto-generated from ${currentRoom ? "room" : "property"} details.`
                 )}
               </span>
-              <button
-                type="button"
-                onClick={() => setEditingPrompt(true)}
-                className="text-xs font-semibold text-amber-dark hover:underline"
-              >
-                Edit prompt
-              </button>
+              <div className="flex items-center gap-3">
+                {isPromptCustomized && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Regenerate prompt from your current design? Your custom edits for this tool + target will be lost.")) {
+                        regeneratePromptFromDesign();
+                      }
+                    }}
+                    className="text-xs text-brand-600 hover:text-brand-900"
+                    title="Rebuild from current design (style, furniture, mood board)"
+                  >
+                    Regenerate from design
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingPrompt(true)}
+                  className="text-xs font-semibold text-amber-dark hover:underline"
+                >
+                  Edit prompt
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -706,16 +722,74 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
         )}
       </div>
 
-      {/* Paste rendered URL */}
+      {/* Paste rendered URL or Upload file */}
       <div className="card mb-6">
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-brand-900">
-            Step 4 — Paste the rendered image URL
+            Step 4 — Save the rendered image
           </h3>
           <p className="text-xs text-brand-600">
-            After rendering in {activeTool?.label ?? "your AI tool"}, copy the image URL (or right-click → Copy Image Address) and paste it here.
+            After rendering in {activeTool?.label ?? "your AI tool"}, either paste its image URL or upload the saved file.
           </p>
         </div>
+
+        {/* Drag-drop zone */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFileUpload(file);
+          }}
+          className={`mb-3 flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 text-center transition ${
+            dragActive
+              ? "border-amber bg-amber/10"
+              : "border-brand-900/15 hover:border-amber/50 hover:bg-amber/5"
+          }`}
+        >
+          <span className="text-2xl mb-1" aria-hidden>⬆️</span>
+          <span className="text-sm font-medium text-brand-900 mb-1">
+            {uploading ? "Uploading…" : "Drop an image here"}
+          </span>
+          <span className="text-[11px] text-brand-600 mb-2">
+            or
+          </span>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="btn-secondary btn-sm disabled:opacity-40"
+          >
+            {uploading ? "Please wait…" : "Choose file"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileUpload(e.target.files?.[0])}
+          />
+          <span className="mt-2 text-[10px] text-brand-600/70">
+            JPG, PNG, WebP — max 20 MB. Compressed to ~200 KB on save.
+          </span>
+        </div>
+        {uploadError && (
+          <p className="mb-3 text-xs text-red-500">{uploadError}</p>
+        )}
+
+        <div className="relative my-3">
+          <div className="absolute inset-0 flex items-center" aria-hidden>
+            <div className="w-full border-t border-brand-900/10" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-white px-2 text-[10px] uppercase tracking-widest text-brand-600">
+              or paste a URL
+            </span>
+          </div>
+        </div>
+
         <div className="flex gap-2">
           <input
             type="url"
