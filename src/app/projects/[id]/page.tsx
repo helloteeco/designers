@@ -16,6 +16,8 @@ import AIRenderingPanel from "@/components/AIRenderingPanel";
 import ProjectChecklist from "@/components/ProjectChecklist";
 import ProjectSummary from "@/components/ProjectSummary";
 import StyleQuiz from "@/components/StyleQuiz";
+import RoomProportions from "@/components/RoomProportions";
+import BudgetDashboard from "@/components/BudgetDashboard";
 import {
   getProject,
   saveProject,
@@ -36,8 +38,10 @@ type Tab =
   | "style-quiz"
   | "rooms"
   | "sleep"
+  | "proportions"
   | "design"
   | "catalog"
+  | "budget"
   | "mood"
   | "export"
   | "summary"
@@ -68,12 +72,16 @@ const TAB_GROUPS: TabGroup[] = [
       { id: "style-quiz", label: "Style Quiz" },
       { id: "rooms", label: "Rooms" },
       { id: "sleep", label: "Sleep Plan" },
+      { id: "proportions", label: "Proportions" },
       { id: "design", label: "Design Board" },
     ],
   },
   {
     label: "Catalog",
-    tabs: [{ id: "catalog", label: "Products & Pricing" }],
+    tabs: [
+      { id: "catalog", label: "Products & Pricing" },
+      { id: "budget", label: "Budget" },
+    ],
   },
   {
     label: "Delivery",
@@ -371,8 +379,10 @@ export default function ProjectDetailPage() {
           {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
+          {tab === "proportions" && <RoomProportions project={project} onUpdate={reload} />}
           {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
           {tab === "catalog" && <FurniturePicker project={project} onUpdate={reload} />}
+          {tab === "budget" && <BudgetDashboard project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "export" && <ExportPanel project={project} />}
           {tab === "summary" && <ProjectSummary project={project} />}

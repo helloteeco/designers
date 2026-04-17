@@ -391,7 +391,19 @@ export default function ExportPanel({ project }: Props) {
                       {row.room}
                     </td>
                     <td className="py-2 pr-4 font-medium text-brand-900">
-                      {row.itemName}
+                      {row.vendorUrl ? (
+                        <a
+                          href={row.vendorUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-dark hover:underline"
+                          title={`Shop on ${row.vendor}`}
+                        >
+                          {row.itemName} ↗
+                        </a>
+                      ) : (
+                        row.itemName
+                      )}
                     </td>
                     <td className="py-2 pr-4 text-brand-600">{row.vendor}</td>
                     <td className="py-2 pr-4 text-right">{row.quantity}</td>
