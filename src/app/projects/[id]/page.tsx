@@ -241,8 +241,8 @@ export default function ProjectDetailPage() {
           />
         </div>
 
-        {/* Tabs — mobile: select. Desktop: grouped tabs */}
-        <div className="mb-6 sm:hidden">
+        {/* Tabs — mobile/tablet: select. Desktop (xl+): grouped tabs */}
+        <div className="mb-6 xl:hidden">
           <select
             className="select w-full"
             value={tab}
@@ -258,11 +258,11 @@ export default function ProjectDetailPage() {
           </select>
         </div>
 
-        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto hidden sm:block">
-          <div className="flex gap-4">
-            {Array.from(tabGroups.entries()).map(([group, groupTabs]) => (
-              <div key={group} className="flex items-center gap-1">
-                <span className="text-[9px] uppercase tracking-wider text-brand-600/40 font-semibold mr-1 hidden sm:block">
+        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto hidden xl:block">
+          <div className="flex gap-3 min-w-max">
+            {Array.from(tabGroups.entries()).map(([group, groupTabs], groupIdx) => (
+              <div key={group} className="flex items-center gap-1 shrink-0">
+                <span className="text-[9px] uppercase tracking-wider text-brand-600/40 font-semibold mr-1 shrink-0">
                   {group}
                 </span>
                 {groupTabs.map((t) => (
@@ -274,7 +274,7 @@ export default function ProjectDetailPage() {
                     {t.label}
                   </button>
                 ))}
-                {group !== "Collab" && <div className="w-px h-4 bg-brand-900/10 mx-1 hidden sm:block" />}
+                {groupIdx < tabGroups.size - 1 && <div className="w-px h-5 bg-brand-900/10 mx-1 shrink-0" />}
               </div>
             ))}
           </div>
