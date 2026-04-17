@@ -120,6 +120,123 @@ function getBudgetHealth(totalCost: number, budget: number): "ok" | "warn" | "ov
   return "ok";
 }
 
+// ── Next-step recommendation ──
+
+interface NextStep {
+  tab: Tab;
+  title: string;
+  description: string;
+  cta: string;
+  icon: string;
+}
+
+function computeNextStep(project: Project, stats: { sleeping: number; totalItems: number }): NextStep {
+  // Property not filled
+  if (!project.property.address || !project.property.city) {
+    return {
+      tab: "overview",
+      title: "Finish the property details",
+      description: "Add address and location so the team knows what's being designed.",
+      cta: "Edit property",
+      icon: "🏠",
+    };
+  }
+  // Client not filled
+  if (!project.client.name) {
+    return {
+      tab: "overview",
+      title: "Add client information",
+      description: "Capture who this design is for and their preferences.",
+      cta: "Edit client",
+      icon: "👤",
+    };
+  }
+  // No rooms
+  if (project.rooms.length < 2) {
+    return {
+      tab: "rooms",
+      title: "Plan the rooms",
+      description: "Define bedrooms, bathrooms, living spaces so the rest of the tools can work.",
+      cta: "Go to Rooms",
+      icon: "📐",
+    };
+  }
+  // Style not confirmed (default is "modern") — recommend quiz if rooms are in but no furniture yet
+  if (stats.totalItems === 0) {
+    return {
+      tab: "style-quiz",
+      title: "Lock in the design style",
+      description: "Take the 6-question quiz to find the style that fits this property.",
+      cta: "Take Style Quiz",
+      icon: "🎨",
+    };
+  }
+  // Sleep plan
+  if (stats.sleeping < project.targetGuests) {
+    const gap = project.targetGuests - stats.sleeping;
+    return {
+      tab: "sleep",
+      title: `Add ${gap} more sleep${gap === 1 ? "" : "s"} to hit the target`,
+      description: `Currently sleeps ${stats.sleeping}/${project.targetGuests}. Configure beds to close the gap.`,
+      cta: "Plan beds",
+      icon: "🛏️",
+    };
+  }
+  // Furniture low
+  const roomsWithFurniture = project.rooms.filter((r) => r.furniture.length > 0).length;
+  if (stats.totalItems < 5 || roomsWithFurniture < 2) {
+    return {
+      tab: "catalog",
+      title: "Shop the catalog",
+      description: "Add furniture to at least a couple of rooms to see real budget numbers.",
+      cta: "Open catalog",
+      icon: "🛒",
+    };
+  }
+  // Budget not set
+  if (!project.budget || project.budget <= 0) {
+    return {
+      tab: "budget",
+      title: "Set a budget",
+      description: "Track how every purchase lines up against the client's number.",
+      cta: "Open Budget",
+      icon: "💰",
+    };
+  }
+  // Mood board
+  if (project.moodBoards.length === 0) {
+    return {
+      tab: "mood",
+      title: "Create a mood board",
+      description: "Pin the look and colors for the client before you deliver.",
+      cta: "Create board",
+      icon: "🖼️",
+    };
+  }
+  // Scans
+  if (
+    !project.property.matterportLink &&
+    !project.property.polycamLink &&
+    !project.property.spoakLink
+  ) {
+    return {
+      tab: "scans",
+      title: "Link a 3D scan",
+      description: "Give the team (and the client) a walkthrough of the space.",
+      cta: "Add scan link",
+      icon: "🎥",
+    };
+  }
+  // Everything done — go to export
+  return {
+    tab: "export",
+    title: "Ready to deliver",
+    description: "All the boxes are checked. Export the package and send it to the client.",
+    cta: "Open Export",
+    icon: "✅",
+  };
+}
+
 // ── Page ──
 
 export default function ProjectDetailPage() {
@@ -341,7 +458,14 @@ export default function ProjectDetailPage() {
 
         {/* Tab Content */}
         <div className="animate-in">
-          {tab === "overview" && <OverviewTab project={project} onJumpTo={switchTab} onUpdate={reload} />}
+          {tab === "overview" && (
+            <OverviewTab
+              project={project}
+              onJumpTo={switchTab}
+              onUpdate={reload}
+              nextStep={computeNextStep(project, { sleeping: stats.sleeping, totalItems: stats.totalItems })}
+            />
+          )}
           {tab === "ai-workflow" && <AIRenderingPanel project={project} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
           {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
@@ -419,10 +543,12 @@ function OverviewTab({
   project,
   onJumpTo,
   onUpdate,
+  nextStep,
 }: {
   project: Project;
   onJumpTo: (tab: Tab) => void;
   onUpdate: () => void;
+  nextStep: NextStep;
 }) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [editingProperty, setEditingProperty] = useState(false);
@@ -476,8 +602,56 @@ function OverviewTab({
     project.property.polycamLink ||
     project.property.spoakLink;
 
+  const handleEditProperty = () => {
+    setPropertyDraft(project.property);
+    setEditingProperty(true);
+  };
+  const handleEditClient = () => {
+    setClientDraft(project.client);
+    setEditingClient(true);
+  };
+
+  function handleNextStepClick() {
+    if (nextStep.tab === "overview") {
+      // Inline action — open the relevant editor right here
+      if (nextStep.cta.toLowerCase().includes("property")) handleEditProperty();
+      else if (nextStep.cta.toLowerCase().includes("client")) handleEditClient();
+      return;
+    }
+    onJumpTo(nextStep.tab);
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      {/* Next Step hero */}
+      <div className="lg:col-span-2">
+        <button
+          type="button"
+          onClick={handleNextStepClick}
+          className="group flex w-full items-center gap-4 rounded-xl border border-amber/30 bg-gradient-to-r from-amber/10 via-amber/5 to-transparent px-5 py-4 text-left shadow-sm transition hover:border-amber/50 hover:shadow"
+        >
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber/20 text-2xl"
+            aria-hidden
+          >
+            {nextStep.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-dark">
+              Next step
+            </div>
+            <div className="text-base font-semibold text-brand-900 truncate">
+              {nextStep.title}
+            </div>
+            <div className="text-xs text-brand-600">{nextStep.description}</div>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-brand-900 px-3 py-2 text-xs font-semibold text-white transition group-hover:bg-brand-800">
+            {nextStep.cta}
+            <span aria-hidden>→</span>
+          </span>
+        </button>
+      </div>
+
       <div className="lg:col-span-2">
         <ProjectChecklist project={project} onJumpTo={(t) => onJumpTo(t as Tab)} />
       </div>
@@ -505,10 +679,7 @@ function OverviewTab({
             </div>
           ) : (
             <button
-              onClick={() => {
-                setPropertyDraft(project.property);
-                setEditingProperty(true);
-              }}
+              onClick={handleEditProperty}
               className="text-xs text-amber-dark hover:underline"
             >
               Edit
@@ -676,10 +847,7 @@ function OverviewTab({
             </div>
           ) : (
             <button
-              onClick={() => {
-                setClientDraft(project.client);
-                setEditingClient(true);
-              }}
+              onClick={handleEditClient}
               className="text-xs text-amber-dark hover:underline"
             >
               Edit
@@ -824,6 +992,27 @@ function OverviewTab({
           )}
         </div>
       </div>
+
+      {/* Continue footer — flow to next step */}
+      <div className="lg:col-span-2">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Ready for the next step?
+            </div>
+            <div className="text-sm font-medium text-brand-900 truncate">
+              {nextStep.title}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleNextStepClick}
+            className="btn-primary btn-sm shrink-0"
+          >
+            {nextStep.cta} <span className="ml-1" aria-hidden>→</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -862,7 +1051,7 @@ function ClickableField({
       <div className={`font-medium text-brand-900 ${capitalize ? "capitalize" : ""}`}>
         {value || "—"}
       </div>
-      <div className="mt-0.5 text-[10px] font-semibold text-amber-dark opacity-0 transition group-hover:opacity-100">
+      <div className="mt-0.5 text-[10px] font-semibold text-amber-dark">
         {cta}
       </div>
     </button>
