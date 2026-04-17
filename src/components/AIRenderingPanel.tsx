@@ -160,14 +160,36 @@ function looksLikeImageUrl(url: string): boolean {
 
 // ── Component ──
 
+const TOOL_STORAGE_KEY = (pid: string) => `aiWorkflow_tool_${pid}`;
+const TARGET_STORAGE_KEY = (pid: string) => `aiWorkflow_target_${pid}`;
+
 export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) {
-  const [tool, setTool] = useState<AITool>("midjourney");
-  const [selectedRoom, setSelectedRoom] = useState<string>(
-    project.rooms[0]?.id ?? "overview"
-  );
+  const [tool, setTool] = useState<AITool>(() => {
+    if (typeof window === "undefined") return "midjourney";
+    const saved = sessionStorage.getItem(TOOL_STORAGE_KEY(project.id));
+    return (saved as AITool) || "midjourney";
+  });
+  const [selectedRoom, setSelectedRoom] = useState<string>(() => {
+    if (typeof window === "undefined") return project.rooms[0]?.id ?? "overview";
+    const saved = sessionStorage.getItem(TARGET_STORAGE_KEY(project.id));
+    if (saved === "overview" || project.rooms.some((r) => r.id === saved)) {
+      return saved as string;
+    }
+    return project.rooms[0]?.id ?? "overview";
+  });
   const [copied, setCopied] = useState<string | null>(null);
   const [pasteInput, setPasteInput] = useState("");
-  const [pasteTarget, setPasteTarget] = useState<string | null>(null); // roomId or "overview"
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+
+  function pickTool(t: AITool) {
+    setTool(t);
+    try { sessionStorage.setItem(TOOL_STORAGE_KEY(project.id), t); } catch { /* ignore */ }
+  }
+  function pickTarget(t: string) {
+    setSelectedRoom(t);
+    setPasteInput(""); // clean slate when switching targets
+    try { sessionStorage.setItem(TARGET_STORAGE_KEY(project.id), t); } catch { /* ignore */ }
+  }
 
   const renders = project.aiRenders ?? [];
 
@@ -220,7 +242,6 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
     saveProject(fresh);
     logActivity(project.id, "ai_render_added", `Added ${tool} render for ${roomId === "overview" ? "property overview" : fresh.rooms.find((r) => r.id === roomId)?.name}`);
     setPasteInput("");
-    setPasteTarget(null);
     onUpdate();
   }
 
@@ -282,32 +303,64 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
         </div>
       </div>
 
-      {/* Workflow steps indicator */}
-      <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">
-        {[
-          { n: 1, label: "Pick tool & room" },
-          { n: 2, label: "Copy prompt" },
-          { n: 3, label: "Render in AI tool" },
+      {/* Workflow steps indicator — active step highlighted based on state */}
+      {(() => {
+        const hasRender = rendersForTarget(selectedRoom).length > 0;
+        const hasApproved = rendersForTarget(selectedRoom).some((r) => r.approved);
+        // Determine current step
+        let activeStep = 1;
+        if (hasApproved) activeStep = 5;
+        else if (hasRender) activeStep = 5; // approve next
+        else if (pasteInput.trim().length > 0) activeStep = 4;
+        else activeStep = 2; // default to "copy prompt"
+
+        const steps = [
+          { n: 1, label: "Pick tool" },
+          { n: 2, label: "Pick target" },
+          { n: 3, label: "Copy prompt" },
           { n: 4, label: "Paste image URL" },
           { n: 5, label: "Approve & continue" },
-        ].map((s, i, arr) => (
-          <div key={s.n} className="flex items-center gap-2 shrink-0">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-900/5 text-[10px] font-bold text-brand-600">
-              {s.n}
-            </div>
-            <span className="text-[11px] text-brand-600 whitespace-nowrap">{s.label}</span>
-            {i < arr.length - 1 && (
-              <span className="text-brand-600/30 text-xs">→</span>
-            )}
+        ];
+        return (
+          <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">
+            {steps.map((s, i, arr) => {
+              const isActive = s.n === activeStep;
+              const isDone = s.n < activeStep;
+              return (
+                <div key={s.n} className="flex items-center gap-2 shrink-0">
+                  <div
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition ${
+                      isActive
+                        ? "bg-amber text-brand-900 ring-2 ring-amber/30"
+                        : isDone
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-brand-900/5 text-brand-600"
+                    }`}
+                  >
+                    {isDone ? "✓" : s.n}
+                  </div>
+                  <span
+                    className={`text-[11px] whitespace-nowrap ${
+                      isActive ? "text-brand-900 font-semibold" : "text-brand-600"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                  {i < arr.length - 1 && (
+                    <span className="text-brand-600/30 text-xs">→</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* Tool selector */}
       <div className="mb-6 card">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-sm font-semibold text-brand-900">1. Pick your AI tool</h3>
+            <h3 className="text-sm font-semibold text-brand-900">Step 1 — Pick your AI tool</h3>
             <p className="text-xs text-brand-600">
               Prompts are tailored to the tool you pick (Midjourney gets parameter flags).
             </p>
@@ -330,7 +383,7 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
               <button
                 key={t.slug}
                 type="button"
-                onClick={() => setTool(t.slug)}
+                onClick={() => pickTool(t.slug)}
                 aria-pressed={isActive}
                 className={`flex items-start gap-2 rounded-lg border p-3 text-left transition ${
                   isActive
@@ -350,11 +403,11 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
       </div>
 
       {/* Room / Overview selector */}
-      <div className="mb-3 text-sm font-semibold text-brand-900">2. Pick what to render</div>
+      <div className="mb-3 text-sm font-semibold text-brand-900">Step 2 — Pick what to render</div>
       <div className="mb-4 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => setSelectedRoom("overview")}
+          onClick={() => pickTarget("overview")}
           className={selectedRoom === "overview" ? "tab-active" : "tab"}
         >
           🏡 Property Overview
@@ -370,7 +423,7 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
             <button
               key={r.id}
               type="button"
-              onClick={() => setSelectedRoom(r.id)}
+              onClick={() => pickTarget(r.id)}
               className={selectedRoom === r.id ? "tab-active" : "tab"}
             >
               {r.name}
@@ -389,7 +442,7 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
         <div className="flex items-start justify-between mb-3">
           <div>
             <h3 className="text-sm font-semibold text-brand-900">
-              3. Copy the prompt {currentRoom ? `for ${currentRoom.name}` : "for the whole property"}
+              Step 3 — Copy the prompt {currentRoom ? `for ${currentRoom.name}` : "for the whole property"}
             </h3>
             <p className="text-xs text-brand-600">
               Auto-generated from your current design selections — style, furniture, colors, materials.
@@ -438,7 +491,7 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
       <div className="card mb-6">
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-brand-900">
-            4. Paste the rendered image URL
+            Step 4 — Paste the rendered image URL
           </h3>
           <p className="text-xs text-brand-600">
             After rendering in {activeTool?.label ?? "your AI tool"}, copy the image URL (or right-click → Copy Image Address) and paste it here.
@@ -449,8 +502,8 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
             type="url"
             className="input flex-1"
             placeholder="https://cdn.midjourney.com/... or https://..."
-            value={pasteTarget === selectedRoom ? pasteInput : ""}
-            onChange={(e) => { setPasteInput(e.target.value); setPasteTarget(selectedRoom); }}
+            value={pasteInput}
+            onChange={(e) => setPasteInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && looksLikeImageUrl(pasteInput)) {
                 addRender(pasteInput, selectedRoom as string | "overview");
@@ -460,12 +513,17 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
           <button
             type="button"
             onClick={() => addRender(pasteInput, selectedRoom as string | "overview")}
-            disabled={!looksLikeImageUrl(pasteInput) || pasteTarget !== selectedRoom}
+            disabled={!looksLikeImageUrl(pasteInput)}
             className="btn-accent btn-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Save render
           </button>
         </div>
+        {pasteInput.trim().length > 0 && !looksLikeImageUrl(pasteInput) && (
+          <p className="mt-2 text-xs text-red-500">
+            URL must start with http:// or https://
+          </p>
+        )}
       </div>
 
       {/* Saved renders for selected target */}
@@ -475,22 +533,45 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
             Saved renders ({rendersForTarget(selectedRoom).length})
           </h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {rendersForTarget(selectedRoom).map((r) => (
+            {rendersForTarget(selectedRoom).map((r) => {
+              const isBroken = brokenImages.has(r.id);
+              return (
               <div
                 key={r.id}
                 className={`rounded-lg overflow-hidden border transition ${
                   r.approved ? "border-emerald-300" : "border-brand-900/10"
                 }`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={r.url}
-                  alt={`${TOOL_LABELS[r.tool]} render`}
-                  className="w-full h-40 object-cover bg-brand-900/5"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
+                {isBroken ? (
+                  <div className="flex h-40 flex-col items-center justify-center gap-1 bg-brand-900/5 text-center px-4">
+                    <span className="text-2xl opacity-50" aria-hidden>🖼️</span>
+                    <span className="text-[11px] text-brand-600">
+                      Image couldn&apos;t load
+                    </span>
+                    <a
+                      href={r.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-amber-dark underline truncate max-w-full"
+                    >
+                      Open URL ↗
+                    </a>
+                  </div>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={r.url}
+                    alt={`${TOOL_LABELS[r.tool]} render`}
+                    className="w-full h-40 object-cover bg-brand-900/5"
+                    onError={() => {
+                      setBrokenImages((prev) => {
+                        const next = new Set(prev);
+                        next.add(r.id);
+                        return next;
+                      });
+                    }}
+                  />
+                )}
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] uppercase tracking-wider font-semibold text-brand-600">
@@ -530,35 +611,115 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Flow: Continue to next step */}
-      {onJumpTo && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
-              Next step
+      {/* Flow: Continue to next step — smart CTA based on render state */}
+      {onJumpTo && (() => {
+        const totalRenders = renders.length;
+        const approvedCount = renders.filter((r) => r.approved).length;
+        const roomsWithRenders = new Set(
+          renders.map((r) => r.roomId).filter((id) => id !== "overview")
+        );
+        const roomsWithoutRenders = project.rooms.filter((r) => !roomsWithRenders.has(r.id));
+
+        // No renders yet — encourage first render
+        if (totalRenders === 0) {
+          return (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+                  Next step
+                </div>
+                <div className="text-sm font-medium text-brand-900">
+                  Copy the prompt above, render it in {activeTool?.label ?? "your AI tool"}, then paste the URL here.
+                </div>
+              </div>
+              {activeTool && (
+                <a
+                  href={activeTool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary btn-sm shrink-0"
+                >
+                  Open {activeTool.label} ↗
+                </a>
+              )}
             </div>
-            <div className="text-sm font-medium text-brand-900">
-              {renders.some((r) => r.approved)
-                ? "Add your approved renders to a mood board"
-                : project.moodBoards.length > 0
-                ? "Review mood boards"
-                : "Create a mood board to compile the look"}
+          );
+        }
+
+        // Some rooms still unrendered — suggest next room
+        if (roomsWithoutRenders.length > 0 && roomsWithoutRenders.length < project.rooms.length) {
+          const next = roomsWithoutRenders[0];
+          return (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+                  Keep going
+                </div>
+                <div className="text-sm font-medium text-brand-900">
+                  {roomsWithoutRenders.length} room{roomsWithoutRenders.length === 1 ? "" : "s"} still need{roomsWithoutRenders.length === 1 ? "s" : ""} a render. Try {next.name} next.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => pickTarget(next.id)}
+                className="btn-primary btn-sm shrink-0"
+              >
+                Render {next.name} →
+              </button>
             </div>
+          );
+        }
+
+        // Have renders but none approved — encourage approval
+        if (totalRenders > 0 && approvedCount === 0) {
+          return (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-amber/30 bg-amber/5 px-5 py-4 shadow-sm">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-amber-dark">
+                  Almost done
+                </div>
+                <div className="text-sm font-medium text-brand-900">
+                  Mark your favorite renders as approved, then compile them in a mood board.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onJumpTo("mood")}
+                className="btn-secondary btn-sm shrink-0"
+              >
+                Skip to Mood Board →
+              </button>
+            </div>
+          );
+        }
+
+        // Renders exist and at least one approved — head to mood board
+        return (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-5 py-4 shadow-sm">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                Ready for delivery
+              </div>
+              <div className="text-sm font-medium text-brand-900">
+                {approvedCount} approved render{approvedCount === 1 ? "" : "s"}. Compile them into a client-facing mood board.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onJumpTo("mood")}
+              className="btn-primary btn-sm shrink-0"
+            >
+              Go to Mood Board →
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onJumpTo("mood")}
-            className="btn-primary btn-sm shrink-0"
-          >
-            Go to Mood Board →
-          </button>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
