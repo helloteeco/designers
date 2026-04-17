@@ -254,6 +254,20 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   notes: string;
+  aiRenders?: AIRender[];
+}
+
+export type AITool = "midjourney" | "dalle" | "ideogram" | "leonardo" | "stable-diffusion" | "krea" | "runway" | "other";
+
+export interface AIRender {
+  id: string;
+  roomId: string | "overview";
+  url: string;
+  prompt: string;
+  tool: AITool;
+  approved: boolean;
+  notes: string;
+  createdAt: string;
 }
 
 // ── Sleep optimizer types ──

@@ -22,13 +22,13 @@ async function syncToDb(project: Project) {
   try {
     const profile = getProfile();
     if (!profile?.companyId || !profile?.id) return;
-    const { client, property, rooms, moodBoards, targetGuests, style, budget, notes } = project;
+    const { client, property, rooms, moodBoards, targetGuests, style, budget, notes, aiRenders } = project;
     await dbSaveProject(
       {
         id: project.id,
         name: project.name,
         status: project.status,
-        data: { client, property, rooms, moodBoards, targetGuests, style, budget, notes },
+        data: { client, property, rooms, moodBoards, targetGuests, style, budget, notes, aiRenders },
         updatedAt: project.updatedAt,
       },
       profile.companyId,
@@ -69,6 +69,7 @@ export async function loadFromDatabase(): Promise<void> {
         style: data.style ?? "modern",
         budget: data.budget ?? 0,
         notes: data.notes ?? "",
+        aiRenders: (data.aiRenders ?? []) as Project["aiRenders"],
       } as Project;
     });
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
@@ -98,6 +99,7 @@ export async function loadProjectFromDatabase(id: string): Promise<Project | nul
       style: (data.style ?? "modern") as Project["style"],
       budget: (data.budget ?? 0) as number,
       notes: (data.notes ?? "") as string,
+      aiRenders: (data.aiRenders ?? []) as Project["aiRenders"],
     };
     // Update localStorage cache
     const projects = getProjects();

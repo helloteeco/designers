@@ -466,7 +466,9 @@ export default function ProjectDetailPage() {
               nextStep={computeNextStep(project, { sleeping: stats.sleeping, totalItems: stats.totalItems })}
             />
           )}
-          {tab === "ai-workflow" && <AIRenderingPanel project={project} />}
+          {tab === "ai-workflow" && (
+            <AIRenderingPanel project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />
+          )}
           {tab === "scans" && <ScanViewer property={project.property} />}
           {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
