@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import type { Project, Room, RoomType } from "@/lib/types";
 
@@ -37,12 +37,23 @@ const FEATURES = [
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
-export default function RoomPlanner({ project, onUpdate }: Props) {
+export default function RoomPlanner({ project, onUpdate, onJumpTo }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form, setForm] = useState(emptyForm());
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!showForm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowForm(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showForm]);
 
   function emptyForm() {
     return {
@@ -124,6 +135,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           ...fresh.rooms[idx],
           ...roomData,
         };
+        logActivity(project.id, "room_updated", `Updated room: ${roomData.name}`);
       }
     } else {
       const room: Room = {
@@ -286,11 +298,9 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          {project.rooms.length === 0 && (
-            <button onClick={quickAddRooms} className="btn-secondary btn-sm">
-              Quick Setup from Property
-            </button>
-          )}
+          <button onClick={quickAddRooms} className="btn-secondary btn-sm" title="Add a typical set of rooms based on the property's bedroom/bath count">
+            Quick Setup
+          </button>
           <button onClick={openNew} className="btn-primary btn-sm">
             + Add Room
           </button>
@@ -300,12 +310,20 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       {/* Room List */}
       {project.rooms.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-brand-600 mb-4">
-            No rooms added yet. Add rooms manually or use Quick Setup.
+          <div className="mx-auto mb-3 text-4xl" aria-hidden>📐</div>
+          <h3 className="font-semibold text-brand-900 mb-1">No rooms yet</h3>
+          <p className="text-sm text-brand-600 mb-4 max-w-md mx-auto">
+            Add rooms one-by-one, or use Quick Setup to scaffold the typical
+            layout based on the property&apos;s bedroom &amp; bathroom count.
           </p>
-          <button onClick={quickAddRooms} className="btn-secondary">
-            Quick Setup
-          </button>
+          <div className="flex justify-center gap-2">
+            <button onClick={quickAddRooms} className="btn-primary btn-sm">
+              Quick Setup
+            </button>
+            <button onClick={openNew} className="btn-secondary btn-sm">
+              + Add Room manually
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
@@ -392,10 +410,37 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
         </div>
       )}
 
+      {/* Continue CTA — flow to next step */}
+      {project.rooms.length > 0 && onJumpTo && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              Configure beds for each bedroom to hit your sleep target.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("sleep")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            Plan beds →
+          </button>
+        </div>
+      )}
+
       {/* Add/Edit Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}
+        >
+          <form
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+            onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+          >
             <h2 className="text-lg font-semibold mb-4">
               {editingRoom ? "Edit Room" : "Add Room"}
             </h2>
@@ -619,16 +664,17 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setShowForm(false)}
                 className="btn-secondary btn-sm"
               >
                 Cancel
               </button>
-              <button onClick={handleSave} className="btn-primary btn-sm">
+              <button type="submit" className="btn-primary btn-sm">
                 {editingRoom ? "Save Changes" : "Add Room"}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
     </div>

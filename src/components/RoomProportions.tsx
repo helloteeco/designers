@@ -8,6 +8,7 @@ import { CATALOG } from "@/lib/furniture-catalog";
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
 // ── Proportion standards (inches) ──
@@ -287,7 +288,7 @@ function suggestForRule(key: string, room: Room): FurnitureItem[] {
 
 // ── Component ──
 
-export default function RoomProportions({ project, onUpdate }: Props) {
+export default function RoomProportions({ project, onUpdate, onJumpTo }: Props) {
   const [selectedRoomId, setSelectedRoomId] = useState<string>(
     project.rooms.find((r) => getRoomCategory(r.type) !== null)?.id ?? project.rooms[0]?.id ?? ""
   );
@@ -505,6 +506,27 @@ export default function RoomProportions({ project, onUpdate }: Props) {
             })}
           </div>
         </>
+      )}
+
+      {/* Continue CTA */}
+      {onJumpTo && supportedRooms.length > 0 && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              Pick the right-sized fixtures for each room.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("catalog")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            Open catalog →
+          </button>
+        </div>
       )}
     </div>
   );

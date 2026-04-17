@@ -14,6 +14,7 @@ import type { Project, FurnitureItem, SelectedFurniture } from "@/lib/types";
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -29,7 +30,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   bathroom: "Bathroom",
 };
 
-export default function FurniturePicker({ project, onUpdate }: Props) {
+export default function FurniturePicker({ project, onUpdate, onJumpTo }: Props) {
   const [selectedRoom, setSelectedRoom] = useState<string>(
     project.rooms[0]?.id ?? ""
   );
@@ -432,6 +433,27 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
           </div>
         )}
       </div>
+
+      {/* Continue CTA */}
+      {onJumpTo && totalCost > 0 && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              Track spending and find swaps to hit your client&apos;s budget.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("budget")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            Open Budget →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

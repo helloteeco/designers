@@ -9,6 +9,7 @@ import type { Project, Room, FurnitureItem, SelectedFurniture } from "@/lib/type
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
 // Furniture items with position on the room canvas
@@ -60,7 +61,7 @@ const ITEM_COLORS: Record<string, string> = {
   bathroom: "#6B9BAB",
 };
 
-export default function DesignBoard({ project, onUpdate }: Props) {
+export default function DesignBoard({ project, onUpdate, onJumpTo }: Props) {
   const [selectedRoom, setSelectedRoom] = useState<string>(
     project.rooms[0]?.id ?? ""
   );
@@ -699,6 +700,27 @@ export default function DesignBoard({ project, onUpdate }: Props) {
           </div>
         )}
       </div>
+
+      {/* Continue CTA */}
+      {onJumpTo && project.rooms.length > 0 && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              Render the layout in AI to see how the space will actually feel.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("ai-workflow")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            AI Workflow →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

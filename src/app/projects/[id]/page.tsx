@@ -472,14 +472,14 @@ export default function ProjectDetailPage() {
           {tab === "scans" && (
             <ScanViewer property={project.property} projectId={project.id} onUpdate={reload} />
           )}
-          {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
-          {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
-          {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
-          {tab === "proportions" && <RoomProportions project={project} onUpdate={reload} />}
-          {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
-          {tab === "catalog" && <FurniturePicker project={project} onUpdate={reload} />}
-          {tab === "budget" && <BudgetDashboard project={project} onUpdate={reload} />}
-          {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
+          {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "proportions" && <RoomProportions project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "design" && <DesignBoard project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "catalog" && <FurniturePicker project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "budget" && <BudgetDashboard project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
+          {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />}
           {tab === "export" && <ExportPanel project={project} />}
           {tab === "summary" && <ProjectSummary project={project} />}
           {tab === "chat" && (

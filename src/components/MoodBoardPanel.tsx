@@ -7,6 +7,7 @@ import type { Project, MoodBoard, DesignStyle } from "@/lib/types";
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
 const STYLE_OPTIONS: { value: DesignStyle; label: string }[] = [
@@ -57,7 +58,7 @@ const PRESET_PALETTES: { name: string; colors: string[] }[] = [
   },
 ];
 
-export default function MoodBoardPanel({ project, onUpdate }: Props) {
+export default function MoodBoardPanel({ project, onUpdate, onJumpTo }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -298,6 +299,27 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Continue CTA */}
+      {onJumpTo && project.moodBoards.length > 0 && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              Package everything up for the client.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("export")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            Export →
+          </button>
         </div>
       )}
     </div>

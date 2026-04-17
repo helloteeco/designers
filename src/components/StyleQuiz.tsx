@@ -7,6 +7,7 @@ import type { Project, DesignStyle } from "@/lib/types";
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
 interface QuizQuestion {
@@ -113,7 +114,7 @@ function persistAnswers(projectId: string, answers: Record<number, string>) {
   } catch { /* quota exceeded — ignore */ }
 }
 
-export default function StyleQuiz({ project, onUpdate }: Props) {
+export default function StyleQuiz({ project, onUpdate, onJumpTo }: Props) {
   const [answers, setAnswers] = useState<Record<number, string>>(() =>
     loadSavedAnswers(project.id)
   );
@@ -263,6 +264,36 @@ export default function StyleQuiz({ project, onUpdate }: Props) {
             );
           })}
         </div>
+
+        {/* Continue CTA */}
+        {onJumpTo && (
+          <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+                Next step
+              </div>
+              <div className="text-sm font-medium text-brand-900">
+                Style locked in. Now plan rooms or shop the catalog with this style as a guide.
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => onJumpTo("rooms")}
+                className="btn-secondary btn-sm"
+              >
+                Rooms
+              </button>
+              <button
+                type="button"
+                onClick={() => onJumpTo("catalog")}
+                className="btn-primary btn-sm"
+              >
+                Shop catalog →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

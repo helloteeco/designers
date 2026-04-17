@@ -9,6 +9,7 @@ import type { Project, FurnitureCategory, BudgetSuggestion } from "@/lib/types";
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -24,7 +25,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   bathroom: "Bathroom",
 };
 
-export default function BudgetDashboard({ project, onUpdate }: Props) {
+export default function BudgetDashboard({ project, onUpdate, onJumpTo }: Props) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState(project.budget.toString());
@@ -348,6 +349,29 @@ export default function BudgetDashboard({ project, onUpdate }: Props) {
           )}
         </div>
       </div>
+
+      {/* Continue CTA */}
+      {onJumpTo && analysis.totalSpent > 0 && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              {isOverBudget
+                ? "Apply swap suggestions above to get back on budget."
+                : "Build the visual story for the client."}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("mood")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            Mood Board →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,9 +12,10 @@ import type { Project, BedConfiguration, SleepOptimizationResult } from "@/lib/t
 interface Props {
   project: Project;
   onUpdate: () => void;
+  onJumpTo?: (tab: string) => void;
 }
 
-export default function SleepOptimizer({ project, onUpdate }: Props) {
+export default function SleepOptimizer({ project, onUpdate, onJumpTo }: Props) {
   const [result, setResult] = useState<SleepOptimizationResult | null>(null);
   const currentSleeping = getTotalSleeping(project.rooms);
   const sleepableRooms = project.rooms.filter((r) =>
@@ -59,6 +60,7 @@ export default function SleepOptimizer({ project, onUpdate }: Props) {
     if (room) {
       room.selectedBedConfig = config;
       saveProject(fresh);
+      logActivity(project.id, "bed_config_set", `${room.name}: ${config.name}`);
       onUpdate();
     }
   }
@@ -70,6 +72,7 @@ export default function SleepOptimizer({ project, onUpdate }: Props) {
     if (room) {
       room.selectedBedConfig = null;
       saveProject(fresh);
+      logActivity(project.id, "bed_config_cleared", `${room.name}: cleared`);
       onUpdate();
     }
   }
@@ -77,10 +80,33 @@ export default function SleepOptimizer({ project, onUpdate }: Props) {
   if (project.rooms.length === 0) {
     return (
       <div className="card text-center py-12">
-        <p className="text-brand-600">
-          Add rooms first in the Rooms tab before optimizing sleeping
-          arrangements.
+        <div className="mx-auto mb-3 text-4xl" aria-hidden>🛏️</div>
+        <h3 className="font-semibold text-brand-900 mb-1">No rooms to plan beds for</h3>
+        <p className="text-sm text-brand-600 mb-4">
+          Add rooms first so we know where the beds go.
         </p>
+        {onJumpTo && (
+          <button onClick={() => onJumpTo("rooms")} className="btn-primary btn-sm">
+            Go to Rooms →
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (sleepableRooms.length === 0) {
+    return (
+      <div className="card text-center py-12">
+        <div className="mx-auto mb-3 text-4xl" aria-hidden>🛏️</div>
+        <h3 className="font-semibold text-brand-900 mb-1">No sleepable rooms</h3>
+        <p className="text-sm text-brand-600 mb-4">
+          Add a bedroom, loft, den, or media room — those are the spaces that can host beds.
+        </p>
+        {onJumpTo && (
+          <button onClick={() => onJumpTo("rooms")} className="btn-primary btn-sm">
+            Add a sleepable room →
+          </button>
+        )}
       </div>
     );
   }
@@ -255,6 +281,29 @@ export default function SleepOptimizer({ project, onUpdate }: Props) {
           );
         })}
       </div>
+
+      {/* Continue CTA */}
+      {onJumpTo && (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-900/10 bg-white px-5 py-4 shadow-sm">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600">
+              Next step
+            </div>
+            <div className="text-sm font-medium text-brand-900">
+              {currentSleeping >= project.targetGuests
+                ? "Sleep target met. Time to fill the rooms with furniture."
+                : "Pick the bed configs above, then move on to furniture."}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onJumpTo("catalog")}
+            className="btn-primary btn-sm shrink-0"
+          >
+            Shop catalog →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
