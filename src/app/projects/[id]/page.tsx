@@ -341,7 +341,7 @@ export default function ProjectDetailPage() {
 
         {/* Tab Content */}
         <div className="animate-in">
-          {tab === "overview" && <OverviewTab project={project} onJumpTo={switchTab} />}
+          {tab === "overview" && <OverviewTab project={project} onJumpTo={switchTab} onUpdate={reload} />}
           {tab === "ai-workflow" && <AIRenderingPanel project={project} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
           {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
@@ -418,20 +418,63 @@ function StatCard({
 function OverviewTab({
   project,
   onJumpTo,
+  onUpdate,
 }: {
   project: Project;
   onJumpTo: (tab: Tab) => void;
+  onUpdate: () => void;
 }) {
   const [editingNotes, setEditingNotes] = useState(false);
+  const [editingProperty, setEditingProperty] = useState(false);
+  const [editingClient, setEditingClient] = useState(false);
   const [notes, setNotes] = useState(project.notes);
+  const [propertyDraft, setPropertyDraft] = useState(project.property);
+  const [clientDraft, setClientDraft] = useState(project.client);
 
   function saveNotes() {
     const fresh = getProject(project.id);
     if (!fresh) return;
     fresh.notes = notes;
     saveProject(fresh);
+    logActivity(project.id, "notes_updated", "Updated project notes");
     setEditingNotes(false);
+    onUpdate();
   }
+
+  function saveProperty() {
+    const fresh = getProject(project.id);
+    if (!fresh) return;
+    fresh.property = { ...propertyDraft };
+    saveProject(fresh);
+    logActivity(project.id, "property_updated", "Updated property details");
+    setEditingProperty(false);
+    onUpdate();
+  }
+
+  function saveClient() {
+    const fresh = getProject(project.id);
+    if (!fresh) return;
+    fresh.client = { ...clientDraft };
+    saveProject(fresh);
+    logActivity(project.id, "client_updated", "Updated client information");
+    setEditingClient(false);
+    onUpdate();
+  }
+
+  function cancelPropertyEdit() {
+    setPropertyDraft(project.property);
+    setEditingProperty(false);
+  }
+
+  function cancelClientEdit() {
+    setClientDraft(project.client);
+    setEditingClient(false);
+  }
+
+  const hasScanLinks =
+    project.property.matterportLink ||
+    project.property.polycamLink ||
+    project.property.spoakLink;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -441,76 +484,299 @@ function OverviewTab({
 
       {/* Property */}
       <div className="card">
-        <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
-          <span className="text-base" aria-hidden>🏠</span> Property
-        </h2>
-        <dl className="grid grid-cols-2 gap-3 text-sm">
-          <Field label="Address" value={project.property.address} />
-          <Field
-            label="Location"
-            value={`${project.property.city}, ${project.property.state}`}
-          />
-          <Field
-            label="Size"
-            value={
-              project.property.squareFootage
-                ? `${project.property.squareFootage.toLocaleString()} sqft`
-                : "—"
-            }
-          />
-          <Field
-            label="Layout"
-            value={`${project.property.bedrooms} bd / ${project.property.bathrooms} ba`}
-          />
-          <Field label="Floors" value={project.property.floors || "—"} />
-        </dl>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <span className="text-base" aria-hidden>🏠</span> Property
+          </h2>
+          {editingProperty ? (
+            <div className="flex gap-2">
+              <button
+                onClick={cancelPropertyEdit}
+                className="text-xs text-brand-600 hover:text-brand-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveProperty}
+                className="text-xs font-semibold text-amber-dark hover:underline"
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setPropertyDraft(project.property);
+                setEditingProperty(true);
+              }}
+              className="text-xs text-amber-dark hover:underline"
+            >
+              Edit
+            </button>
+          )}
+        </div>
 
-        <div className="mt-4 pt-4 border-t border-brand-900/5 space-y-2">
-          <ScanLink label="Matterport" url={project.property.matterportLink} />
-          <ScanLink label="Polycam" url={project.property.polycamLink} />
-          <ScanLink label="Spoak" url={project.property.spoakLink} />
+        {editingProperty ? (
+          <div className="space-y-3">
+            <div>
+              <label className="label">Address</label>
+              <input
+                className="input"
+                value={propertyDraft.address}
+                onChange={(e) => setPropertyDraft({ ...propertyDraft, address: e.target.value })}
+                placeholder="123 Mountain View Dr"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">City</label>
+                <input
+                  className="input"
+                  value={propertyDraft.city}
+                  onChange={(e) => setPropertyDraft({ ...propertyDraft, city: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">State</label>
+                <input
+                  className="input"
+                  value={propertyDraft.state}
+                  onChange={(e) => setPropertyDraft({ ...propertyDraft, state: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Sq Footage</label>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  value={propertyDraft.squareFootage || ""}
+                  onChange={(e) =>
+                    setPropertyDraft({ ...propertyDraft, squareFootage: parseInt(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div>
+                <label className="label">Floors</label>
+                <input
+                  type="number"
+                  className="input"
+                  min={1}
+                  value={propertyDraft.floors || ""}
+                  onChange={(e) =>
+                    setPropertyDraft({ ...propertyDraft, floors: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Bedrooms</label>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  value={propertyDraft.bedrooms || ""}
+                  onChange={(e) =>
+                    setPropertyDraft({ ...propertyDraft, bedrooms: parseInt(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div>
+                <label className="label">Bathrooms</label>
+                <input
+                  type="number"
+                  step={0.5}
+                  className="input"
+                  min={0}
+                  value={propertyDraft.bathrooms || ""}
+                  onChange={(e) =>
+                    setPropertyDraft({ ...propertyDraft, bathrooms: parseFloat(e.target.value) || 0 })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="Address" value={project.property.address} />
+            <Field
+              label="Location"
+              value={
+                project.property.city || project.property.state
+                  ? `${project.property.city}${project.property.state ? ", " + project.property.state : ""}`
+                  : ""
+              }
+            />
+            <Field
+              label="Size"
+              value={
+                project.property.squareFootage
+                  ? `${project.property.squareFootage.toLocaleString()} sqft`
+                  : ""
+              }
+            />
+            <Field
+              label="Layout"
+              value={`${project.property.bedrooms} bd / ${project.property.bathrooms} ba`}
+            />
+            <Field label="Floors" value={project.property.floors || ""} />
+          </dl>
+        )}
+
+        {/* Scan Links — always visible with CTA when missing */}
+        <div className="mt-4 pt-4 border-t border-brand-900/5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+              3D Scans
+            </span>
+            <button
+              onClick={() => onJumpTo("scans")}
+              className="text-xs text-amber-dark hover:underline"
+            >
+              {hasScanLinks ? "Manage →" : "Add scan →"}
+            </button>
+          </div>
+          {hasScanLinks ? (
+            <div className="space-y-1.5">
+              <ScanLink label="Matterport" url={project.property.matterportLink} />
+              <ScanLink label="Polycam" url={project.property.polycamLink} />
+              <ScanLink label="Spoak" url={project.property.spoakLink} />
+            </div>
+          ) : (
+            <p className="text-xs text-brand-600/70 italic">
+              No 3D scans linked yet.
+            </p>
+          )}
         </div>
       </div>
 
       {/* Client */}
       <div className="card">
-        <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
-          <span className="text-base" aria-hidden>👤</span> Client
-        </h2>
-        <dl className="grid grid-cols-2 gap-3 text-sm">
-          <Field label="Name" value={project.client.name} />
-          <Field label="Email" value={project.client.email} />
-          <Field label="Phone" value={project.client.phone} />
-        </dl>
-        {project.client.preferences && (
-          <div className="mt-4 pt-4 border-t border-brand-900/5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-1">
-              Preferences
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <span className="text-base" aria-hidden>👤</span> Client
+          </h2>
+          {editingClient ? (
+            <div className="flex gap-2">
+              <button
+                onClick={cancelClientEdit}
+                className="text-xs text-brand-600 hover:text-brand-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveClient}
+                className="text-xs font-semibold text-amber-dark hover:underline"
+              >
+                Save
+              </button>
             </div>
-            <p className="text-sm text-brand-700 whitespace-pre-wrap">
-              {project.client.preferences}
-            </p>
+          ) : (
+            <button
+              onClick={() => {
+                setClientDraft(project.client);
+                setEditingClient(true);
+              }}
+              className="text-xs text-amber-dark hover:underline"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {editingClient ? (
+          <div className="space-y-3">
+            <div>
+              <label className="label">Name</label>
+              <input
+                className="input"
+                value={clientDraft.name}
+                onChange={(e) => setClientDraft({ ...clientDraft, name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Email</label>
+                <input
+                  type="email"
+                  className="input"
+                  value={clientDraft.email}
+                  onChange={(e) => setClientDraft({ ...clientDraft, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Phone</label>
+                <input
+                  type="tel"
+                  className="input"
+                  value={clientDraft.phone}
+                  onChange={(e) => setClientDraft({ ...clientDraft, phone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="label">Preferences / Notes</label>
+              <textarea
+                className="input min-h-[80px] resize-y"
+                value={clientDraft.preferences}
+                onChange={(e) => setClientDraft({ ...clientDraft, preferences: e.target.value })}
+                placeholder="Style preferences, color likes/dislikes, special requests..."
+              />
+            </div>
           </div>
+        ) : (
+          <>
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <Field label="Name" value={project.client.name} />
+              <Field label="Email" value={project.client.email} />
+              <Field label="Phone" value={project.client.phone} />
+            </dl>
+            {project.client.preferences && (
+              <div className="mt-4 pt-4 border-t border-brand-900/5">
+                <div className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-1">
+                  Preferences
+                </div>
+                <p className="text-sm text-brand-700 whitespace-pre-wrap">
+                  {project.client.preferences}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Design */}
+      {/* Design Settings */}
       <div className="card lg:col-span-2">
         <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
           <span className="text-base" aria-hidden>🎨</span> Design Settings
         </h2>
         <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div>
-            <dt className="text-[10px] uppercase tracking-wider text-brand-600">Style</dt>
-            <dd className="font-medium text-brand-900 capitalize">{project.style.replace(/-/g, " ")}</dd>
-          </div>
-          <Field label="Target Guests" value={project.targetGuests} />
-          <Field
+          <ClickableField
+            label="Style"
+            value={project.style.replace(/-/g, " ")}
+            capitalize
+            onClick={() => onJumpTo("style-quiz")}
+            cta="Retake quiz →"
+          />
+          <ClickableField
+            label="Target Guests"
+            value={project.targetGuests}
+            onClick={() => onJumpTo("sleep")}
+            cta="Plan beds →"
+          />
+          <ClickableField
             label="Budget"
             value={project.budget ? `$${project.budget.toLocaleString()}` : "Not set"}
+            onClick={() => onJumpTo("budget")}
+            cta={project.budget ? "Track →" : "Set →"}
           />
           <Field label="Status" value={project.status} />
         </dl>
+
+        {/* Project Notes */}
         <div className="mt-4 pt-4 border-t border-brand-900/5">
           <div className="flex items-center justify-between mb-1">
             <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
@@ -518,18 +784,29 @@ function OverviewTab({
             </div>
             {!editingNotes ? (
               <button
-                onClick={() => setEditingNotes(true)}
+                onClick={() => {
+                  setNotes(project.notes);
+                  setEditingNotes(true);
+                }}
                 className="text-xs text-amber-dark hover:underline"
               >
                 Edit
               </button>
             ) : (
-              <button
-                onClick={saveNotes}
-                className="text-xs text-amber-dark hover:underline font-medium"
-              >
-                Save
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingNotes(false)}
+                  className="text-xs text-brand-600 hover:text-brand-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveNotes}
+                  className="text-xs font-semibold text-amber-dark hover:underline"
+                >
+                  Save
+                </button>
+              </div>
             )}
           </div>
           {editingNotes ? (
@@ -559,6 +836,36 @@ function Field({ label, value }: { label: string; value: string | number }) {
       <dt className="text-[10px] uppercase tracking-wider text-brand-600">{label}</dt>
       <dd className="font-medium text-brand-900">{value || "—"}</dd>
     </div>
+  );
+}
+
+function ClickableField({
+  label,
+  value,
+  onClick,
+  cta,
+  capitalize,
+}: {
+  label: string;
+  value: string | number;
+  onClick: () => void;
+  cta: string;
+  capitalize?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group text-left rounded-lg -mx-2 px-2 py-1 transition hover:bg-amber/5"
+    >
+      <div className="text-[10px] uppercase tracking-wider text-brand-600">{label}</div>
+      <div className={`font-medium text-brand-900 ${capitalize ? "capitalize" : ""}`}>
+        {value || "—"}
+      </div>
+      <div className="mt-0.5 text-[10px] font-semibold text-amber-dark opacity-0 transition group-hover:opacity-100">
+        {cta}
+      </div>
+    </button>
   );
 }
 
