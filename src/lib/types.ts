@@ -154,6 +154,90 @@ export interface MoodBoard {
   colorPalette: string[];
   inspirationNotes: string;
   imageUrls: string[];
+  products: MoodBoardProduct[];
+  roomAssignment: string; // room id or "whole-property"
+}
+
+// ── Product sourcing types ──
+
+export type RetailerSlug =
+  | "wayfair"
+  | "amazon"
+  | "target"
+  | "walmart"
+  | "article"
+  | "living-spaces"
+  | "ikea"
+  | "west-elm"
+  | "pottery-barn"
+  | "crate-barrel"
+  | "cb2"
+  | "world-market"
+  | "overstock"
+  | "home-depot"
+  | "rugs-usa"
+  | "etsy";
+
+export interface RetailerInfo {
+  slug: RetailerSlug;
+  name: string;
+  baseUrl: string;
+  searchUrl: string;
+  logoColor: string;
+  tier: "budget" | "mid-range" | "premium";
+}
+
+export interface MoodBoardProduct {
+  id: string;
+  name: string;
+  category: FurnitureCategory;
+  subcategory: string;
+  price: number;
+  retailer: RetailerSlug;
+  purchaseUrl: string;
+  imageUrl: string;
+  color: string;
+  material: string;
+  style: DesignStyle;
+  dimensions: string;
+  notes: string;
+  alternatives: ProductAlternative[];
+  addedAt: string;
+}
+
+export interface ProductAlternative {
+  id: string;
+  name: string;
+  price: number;
+  retailer: RetailerSlug;
+  purchaseUrl: string;
+  savings: number;
+  savingsPercent: number;
+}
+
+export type BudgetTier = "economy" | "mid-range" | "premium" | "luxury";
+
+export interface BudgetBreakdown {
+  totalBudget: number;
+  totalSpent: number;
+  remaining: number;
+  percentUsed: number;
+  isOverBudget: boolean;
+  byRoom: { roomId: string; roomName: string; spent: number; allocated: number }[];
+  byCategory: { category: FurnitureCategory; spent: number; percent: number }[];
+  suggestions: BudgetSuggestion[];
+}
+
+export interface BudgetSuggestion {
+  type: "swap" | "remove" | "downgrade";
+  currentProduct: string;
+  currentPrice: number;
+  suggestedProduct: string;
+  suggestedPrice: number;
+  suggestedRetailer: RetailerSlug;
+  suggestedUrl: string;
+  savings: number;
+  room: string;
 }
 
 export interface Project {
