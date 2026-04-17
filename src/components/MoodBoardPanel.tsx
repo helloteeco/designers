@@ -77,6 +77,8 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
       colorPalette: [...form.colorPalette],
       inspirationNotes: form.inspirationNotes,
       imageUrls: [],
+      products: [],
+      roomAssignment: "whole-property",
     };
     if (!fresh.moodBoards) fresh.moodBoards = [];
     fresh.moodBoards.push(board);
