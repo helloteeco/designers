@@ -49,7 +49,11 @@ export default function WorkflowEngine({ project, onUpdate }: Props) {
       try {
         const result = executeStep(step.id, project.id);
         setStepResults(prev => ({ ...prev, [step.id]: result }));
-        setCompletedSteps(prev => new Set([...prev, step.id]));
+        setCompletedSteps(prev => {
+          const next = new Set(prev);
+          next.add(step.id);
+          return next;
+        });
       } catch (err) {
         setStepResults(prev => ({
           ...prev,
@@ -185,7 +189,11 @@ export default function WorkflowEngine({ project, onUpdate }: Props) {
   function runSingleStep(stepId: string) {
     const result = executeStep(stepId, project.id);
     setStepResults(prev => ({ ...prev, [stepId]: result }));
-    setCompletedSteps(prev => new Set([...prev, stepId]));
+    setCompletedSteps(prev => {
+      const next = new Set(prev);
+      next.add(stepId);
+      return next;
+    });
     onUpdate();
   }
 

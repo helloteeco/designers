@@ -6,7 +6,7 @@
  */
 
 import type { Project, Room, DesignStyle, MoodBoard, RoomType } from "./types";
-import { suggestFullPackage } from "./auto-suggest";
+import { suggestFurniture } from "./auto-suggest";
 import { generateId } from "./store";
 
 // ── Workflow Steps ──
@@ -303,7 +303,7 @@ export function autoGenerateMoodBoards(project: Project): MoodBoard[] {
 export function autoFurnishAllRooms(project: Project): void {
   for (const room of project.rooms) {
     if (room.furniture.length > 0) continue; // skip already furnished rooms
-    const items = suggestFullPackage(room, project.style);
+    const items = suggestFurniture(room, project.style);
     let offsetY = 15;
     for (const item of items) {
       room.furniture.push({

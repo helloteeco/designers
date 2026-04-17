@@ -50,6 +50,33 @@ export default function NewProjectPage() {
     });
   }
 
+  function applyTemplate(tpl: typeof TEMPLATES[0], projectType: ProjectType) {
+    const rooms: Room[] = tpl.rooms.map((r) => ({
+      id: generateId(),
+      ...r,
+      selectedBedConfig: null,
+      furniture: [],
+      accentWall: null,
+      notes: "",
+    }));
+    setProject((prev) => ({
+      ...prev,
+      name: prev.name || tpl.name,
+      projectType,
+      style: tpl.style,
+      targetGuests: tpl.targetGuests,
+      rooms,
+      property: {
+        ...prev.property,
+        bedrooms: tpl.rooms.filter((r) =>
+          ["primary-bedroom", "bedroom", "loft", "bonus-room"].includes(r.type)
+        ).length,
+        bathrooms: tpl.rooms.filter((r) => r.type === "bathroom").length,
+        floors: Math.max(...tpl.rooms.map((r) => r.floor), 1),
+      },
+    }));
+  }
+
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -82,49 +109,45 @@ export default function NewProjectPage() {
           <p className="text-sm text-brand-600 mb-3">
             Start from a template or create from scratch:
           </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.id}
-                type="button"
-                onClick={() => {
-                  const rooms: Room[] = tpl.rooms.map((r) => ({
-                    id: generateId(),
-                    ...r,
-                    selectedBedConfig: null,
-                    furniture: [],
-                    accentWall: null,
-                    notes: "",
-                  }));
-                  setProject((prev) => ({
-                    ...prev,
-                    name: prev.name || tpl.name,
-                    style: tpl.style,
-                    targetGuests: tpl.targetGuests,
-                    rooms,
-                    property: {
-                      ...prev.property,
-                      bedrooms: tpl.rooms.filter((r) =>
-                        ["primary-bedroom", "bedroom", "loft", "bonus-room"].includes(r.type)
-                      ).length,
-                      bathrooms: tpl.rooms.filter((r) => r.type === "bathroom").length,
-                      floors: Math.max(...tpl.rooms.map((r) => r.floor), 1),
-                    },
-                  }));
-                }}
-                className="card text-left hover:border-amber/40 transition group"
-              >
-                <h3 className="font-semibold text-brand-900 group-hover:text-amber-dark text-sm">
-                  {tpl.name}
-                </h3>
-                <p className="text-xs text-brand-600 mt-1">{tpl.description}</p>
-                <div className="mt-2 flex gap-2 text-[10px]">
-                  <span className="badge-neutral">{tpl.targetGuests} guests</span>
-                  <span className="badge-neutral capitalize">{tpl.style.replace(/-/g, " ")}</span>
-                  <span className="badge-neutral">{tpl.rooms.length} rooms</span>
-                </div>
-              </button>
-            ))}
+
+          {/* Furnish-Only Templates */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+                Furnish-Only (STR / Vacation Rental)
+              </span>
+              <div className="flex-1 h-px bg-brand-900/10" />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {TEMPLATES.filter(t => !t.id.includes("remodel") && !t.id.includes("reno") && !t.id.includes("adu") && !t.id.includes("refresh")).map(tpl => (
+                <TemplateCard
+                  key={tpl.id}
+                  tpl={tpl}
+                  projectType="furnish-only"
+                  onSelect={() => applyTemplate(tpl, "furnish-only")}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Renovation Templates */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+                Renovation &amp; Remodel
+              </span>
+              <div className="flex-1 h-px bg-brand-900/10" />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {TEMPLATES.filter(t => t.id.includes("remodel") || t.id.includes("reno") || t.id.includes("adu") || t.id.includes("refresh")).map(tpl => (
+                <TemplateCard
+                  key={tpl.id}
+                  tpl={tpl}
+                  projectType="renovation"
+                  onSelect={() => applyTemplate(tpl, "renovation")}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -429,5 +452,43 @@ export default function NewProjectPage() {
         </form>
       </main>
     </div>
+  );
+}
+
+function TemplateCard({
+  tpl,
+  projectType,
+  onSelect,
+}: {
+  tpl: typeof import("@/lib/project-templates").TEMPLATES[0];
+  projectType: ProjectType;
+  onSelect: () => void;
+}) {
+  const isReno = projectType === "renovation";
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="card text-left hover:border-amber/40 transition group"
+    >
+      <div className="flex items-start justify-between mb-1">
+        <h3 className="font-semibold text-brand-900 group-hover:text-amber-dark text-sm">
+          {tpl.name}
+        </h3>
+        {isReno && (
+          <span className="text-[9px] bg-amber/20 text-amber-dark rounded px-1.5 py-0.5 font-semibold uppercase tracking-wider shrink-0 ml-2">
+            Reno
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-brand-600 mt-1">{tpl.description}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+        {tpl.targetGuests > 0 && (
+          <span className="badge-neutral">{tpl.targetGuests} guests</span>
+        )}
+        <span className="badge-neutral capitalize">{tpl.style.replace(/-/g, " ")}</span>
+        <span className="badge-neutral">{tpl.rooms.length} rooms</span>
+      </div>
+    </button>
   );
 }

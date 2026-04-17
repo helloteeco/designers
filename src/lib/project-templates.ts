@@ -143,4 +143,82 @@ export const TEMPLATES: ProjectTemplate[] = [
       { name: "Wraparound Porch", type: "outdoor", widthFt: 40, lengthFt: 12, ceilingHeightFt: 10, floor: 1, features: [] },
     ],
   },
+
+  // ── Renovation Templates ──
+  {
+    id: "kitchen-remodel-mid",
+    name: "Kitchen Remodel",
+    description: "Mid-range kitchen gut + refresh. Demo, new cabinets, quartz, tile backsplash, LVP flooring.",
+    style: "modern",
+    targetGuests: 0,
+    rooms: [
+      { name: "Kitchen", type: "kitchen", widthFt: 14, lengthFt: 12, ceilingHeightFt: 9, floor: 1, features: ["Window"] },
+      { name: "Dining Area", type: "dining-room", widthFt: 12, lengthFt: 10, ceilingHeightFt: 9, floor: 1, features: ["Window"] },
+    ],
+  },
+  {
+    id: "bathroom-remodel-primary",
+    name: "Primary Bath Remodel",
+    description: "Full primary bath: shower + freestanding tub, double vanity, tile, fixtures, lighting.",
+    style: "contemporary",
+    targetGuests: 0,
+    rooms: [
+      { name: "Primary Bathroom", type: "bathroom", widthFt: 12, lengthFt: 10, ceilingHeightFt: 9, floor: 1, features: ["Window"] },
+    ],
+  },
+  {
+    id: "bathroom-remodel-guest",
+    name: "Guest Bath Refresh",
+    description: "Smaller budget bath: new tub/shower combo, vanity, toilet, tile floor, paint.",
+    style: "transitional",
+    targetGuests: 0,
+    rooms: [
+      { name: "Guest Bathroom", type: "bathroom", widthFt: 8, lengthFt: 6, ceilingHeightFt: 9, floor: 1, features: [] },
+    ],
+  },
+  {
+    id: "whole-home-reno",
+    name: "Whole Home Renovation",
+    description: "3BR/2BA cosmetic gut: floors, paint, kitchen + both baths, new fixtures throughout.",
+    style: "modern",
+    targetGuests: 6,
+    rooms: [
+      { name: "Primary Suite", type: "primary-bedroom", widthFt: 14, lengthFt: 12, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet", "En-suite"] },
+      { name: "Bedroom 2", type: "bedroom", widthFt: 12, lengthFt: 11, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet"] },
+      { name: "Bedroom 3", type: "bedroom", widthFt: 11, lengthFt: 10, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet"] },
+      { name: "Living Room", type: "living-room", widthFt: 16, lengthFt: 14, ceilingHeightFt: 9, floor: 1, features: ["Window", "Fireplace"] },
+      { name: "Kitchen", type: "kitchen", widthFt: 14, lengthFt: 12, ceilingHeightFt: 9, floor: 1, features: ["Window"] },
+      { name: "Primary Bathroom", type: "bathroom", widthFt: 10, lengthFt: 8, ceilingHeightFt: 9, floor: 1, features: [] },
+      { name: "Hall Bathroom", type: "bathroom", widthFt: 8, lengthFt: 6, ceilingHeightFt: 9, floor: 1, features: [] },
+    ],
+  },
+  {
+    id: "adu-conversion",
+    name: "ADU / Garage Conversion",
+    description: "400-600 sqft accessory dwelling. Studio layout with kitchenette + bath. San Diego buy-box.",
+    style: "scandinavian",
+    targetGuests: 2,
+    rooms: [
+      { name: "Main Living / Sleeping", type: "primary-bedroom", widthFt: 18, lengthFt: 14, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet"] },
+      { name: "Kitchenette", type: "kitchen", widthFt: 10, lengthFt: 8, ceilingHeightFt: 9, floor: 1, features: ["Window"] },
+      { name: "Bathroom", type: "bathroom", widthFt: 7, lengthFt: 6, ceilingHeightFt: 9, floor: 1, features: [] },
+    ],
+  },
+  {
+    id: "airbnb-ready-refresh",
+    name: "Airbnb-Ready Refresh",
+    description: "Paint, new flooring, kitchen hardware, bath fixtures, furnish for 8. Jeff's Teeco buy-box.",
+    style: "farmhouse",
+    targetGuests: 8,
+    rooms: [
+      { name: "Primary Suite", type: "primary-bedroom", widthFt: 13, lengthFt: 12, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet"] },
+      { name: "Bedroom 2", type: "bedroom", widthFt: 12, lengthFt: 11, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet"] },
+      { name: "Bedroom 3 (Bunks)", type: "bedroom", widthFt: 12, lengthFt: 10, ceilingHeightFt: 9, floor: 1, features: ["Window", "Closet"] },
+      { name: "Living Room", type: "living-room", widthFt: 16, lengthFt: 14, ceilingHeightFt: 9, floor: 1, features: ["Window", "Fireplace"] },
+      { name: "Kitchen + Dining", type: "kitchen", widthFt: 14, lengthFt: 12, ceilingHeightFt: 9, floor: 1, features: ["Window"] },
+      { name: "Primary Bathroom", type: "bathroom", widthFt: 9, lengthFt: 7, ceilingHeightFt: 9, floor: 1, features: [] },
+      { name: "Hall Bathroom", type: "bathroom", widthFt: 8, lengthFt: 6, ceilingHeightFt: 9, floor: 1, features: [] },
+      { name: "Porch / Deck", type: "outdoor", widthFt: 14, lengthFt: 10, ceilingHeightFt: 8, floor: 1, features: [] },
+    ],
+  },
 ];

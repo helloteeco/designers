@@ -24,6 +24,7 @@ import ShoppingList from "@/components/ShoppingList";
 import FinishesPicker from "@/components/FinishesPicker";
 import TeamAssignments from "@/components/TeamAssignments";
 import RenovationScopeBuilder from "@/components/RenovationScopeBuilder";
+import ShareLinkButton from "@/components/ShareLinkButton";
 import {
   getProject,
   saveProject,
@@ -199,17 +200,20 @@ export default function ProjectDetailPage() {
                 <span className="capitalize">{project.style.replace(/-/g, " ")}</span>
               </p>
             </div>
-            <select
-              className="select w-auto text-xs"
-              value={project.status}
-              onChange={(e) => updateStatus(e.target.value as ProjectStatus)}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <ShareLinkButton project={project} />
+              <select
+                className="select w-auto text-xs"
+                value={project.status}
+                onChange={(e) => updateStatus(e.target.value as ProjectStatus)}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

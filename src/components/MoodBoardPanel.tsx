@@ -92,6 +92,29 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
     onUpdate();
   }
 
+  function addImage(boardId: string) {
+    const url = prompt("Paste image URL (Pinterest pin image, Unsplash, direct image link):");
+    if (!url || !url.trim()) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const board = (fresh.moodBoards ?? []).find(b => b.id === boardId);
+    if (!board) return;
+    if (!board.imageUrls) board.imageUrls = [];
+    board.imageUrls.push(url.trim());
+    saveProject(fresh);
+    onUpdate();
+  }
+
+  function removeImage(boardId: string, idx: number) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const board = (fresh.moodBoards ?? []).find(b => b.id === boardId);
+    if (!board || !board.imageUrls) return;
+    board.imageUrls.splice(idx, 1);
+    saveProject(fresh);
+    onUpdate();
+  }
+
   function deleteBoard(id: string) {
     if (!confirm("Delete this mood board?")) return;
     const fresh = getProjectFromStore(project.id);
@@ -186,6 +209,48 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
                   {board.inspirationNotes}
                 </p>
               )}
+
+              {/* Inspiration Images */}
+              <div className="mt-3 pt-3 border-t border-brand-900/5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+                    Inspiration Images ({board.imageUrls?.length ?? 0})
+                  </div>
+                  <button
+                    onClick={() => addImage(board.id)}
+                    className="text-xs text-amber-dark hover:underline"
+                  >
+                    + Add Image
+                  </button>
+                </div>
+                {board.imageUrls && board.imageUrls.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {board.imageUrls.map((url, i) => (
+                      <div key={i} className="relative group/img aspect-square rounded overflow-hidden bg-brand-900/5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <button
+                          onClick={() => removeImage(board.id, i)}
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full bg-white/90 text-xs opacity-0 group-hover/img:opacity-100 transition"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-brand-600/60 italic">
+                    Paste a Pinterest pin, Unsplash, or direct image URL.
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

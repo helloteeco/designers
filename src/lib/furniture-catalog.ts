@@ -1412,15 +1412,31 @@ export function getStyles(): DesignStyle[] {
 
 export function searchCatalog(query: string): FurnitureItem[] {
   const q = query.toLowerCase();
-  return CATALOG.filter(
+  return getFullCatalog().filter(
     (i) =>
       i.name.toLowerCase().includes(q) ||
       i.category.toLowerCase().includes(q) ||
       i.subcategory.toLowerCase().includes(q) ||
       i.vendor.toLowerCase().includes(q) ||
       i.material.toLowerCase().includes(q) ||
-      i.style.toLowerCase().includes(q)
+      i.style.toLowerCase().includes(q) ||
+      i.color.toLowerCase().includes(q)
   );
+}
+
+/**
+ * Returns the built-in CATALOG merged with the designer's custom items
+ * saved via CustomItemCreator. Custom items appear first with "Custom" vendor tag.
+ */
+export function getFullCatalog(): FurnitureItem[] {
+  if (typeof window === "undefined") return CATALOG;
+  try {
+    const raw = localStorage.getItem("designStudio_customItems");
+    const custom: FurnitureItem[] = raw ? JSON.parse(raw) : [];
+    return [...custom, ...CATALOG];
+  } catch {
+    return CATALOG;
+  }
 }
 
 export function filterCatalog(filters: {

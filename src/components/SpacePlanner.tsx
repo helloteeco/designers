@@ -218,7 +218,7 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
         <StatCard
           label="Clearance"
           value={clearanceIssues.length === 0 ? "OK" : `${clearanceIssues.length} issue(s)`}
-          sub="Min 36\" walkways"
+          sub={'Min 36" walkways'}
           warn={clearanceIssues.length > 0}
         />
         <StatCard label="Room Cost" value={`$${roomCost.toLocaleString()}`} sub={`$${sqft > 0 ? (roomCost / sqft).toFixed(0) : 0}/sqft`} />

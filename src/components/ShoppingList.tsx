@@ -91,7 +91,7 @@ export default function ShoppingList({ project }: Props) {
       updated.add(itemId);
     }
     setPurchased(updated);
-    localStorage.setItem(`shopping_${project.id}`, JSON.stringify([...updated]));
+    localStorage.setItem(`shopping_${project.id}`, JSON.stringify(Array.from(updated)));
   }
 
   function downloadShoppingList() {

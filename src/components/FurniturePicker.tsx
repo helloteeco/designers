@@ -3,12 +3,13 @@
 import { useState, useMemo } from "react";
 import { saveProject, getProject as getProjectFromStore } from "@/lib/store";
 import {
-  CATALOG,
   getCategories,
   getSubcategories,
   searchCatalog,
+  getFullCatalog,
 } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
+import CustomItemCreator from "./CustomItemCreator";
 import type { Project, FurnitureItem, SelectedFurniture } from "@/lib/types";
 
 interface Props {
@@ -43,7 +44,7 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
 
   const filteredItems = useMemo(() => {
     if (search.trim()) return searchCatalog(search);
-    return CATALOG.filter((i) => {
+    return getFullCatalog().filter((i) => {
       if (category && i.category !== category) return false;
       if (subcategory && i.subcategory !== subcategory) return false;
       return true;
@@ -165,12 +166,15 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
             )}
           </p>
         </div>
-        <button
-          onClick={() => setShowCatalog(!showCatalog)}
-          className={showCatalog ? "btn-secondary btn-sm" : "btn-accent btn-sm"}
-        >
-          {showCatalog ? "Hide Catalog" : "Browse Catalog"}
-        </button>
+        <div className="flex gap-2">
+          <CustomItemCreator onItemAdded={() => onUpdate()} />
+          <button
+            onClick={() => setShowCatalog(!showCatalog)}
+            className={showCatalog ? "btn-secondary btn-sm" : "btn-accent btn-sm"}
+          >
+            {showCatalog ? "Hide Catalog" : "Browse Catalog"}
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

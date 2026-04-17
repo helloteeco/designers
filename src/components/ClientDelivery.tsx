@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
+import ShareLinkButton from "./ShareLinkButton";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -45,6 +46,7 @@ export default function ClientDelivery({ project }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
+          <ShareLinkButton project={project} />
           <button
             onClick={() => window.open(`/projects/print?id=${project.id}`, "_blank")}
             className="btn-secondary btn-sm"
@@ -242,6 +244,23 @@ export default function ClientDelivery({ project }: Props) {
                     <p className="mt-3 text-sm text-brand-700 border-t border-brand-900/5 pt-3">
                       {board.inspirationNotes}
                     </p>
+                  )}
+                  {board.imageUrls && board.imageUrls.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-1.5 border-t border-brand-900/5 pt-3">
+                      {board.imageUrls.slice(0, 6).map((url, i) => (
+                        <div key={i} className="aspect-square rounded overflow-hidden bg-brand-900/5">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
