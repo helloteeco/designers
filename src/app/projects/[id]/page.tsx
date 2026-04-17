@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import RoomPlanner from "@/components/RoomPlanner";
@@ -15,6 +15,7 @@ import ActivityFeed from "@/components/ActivityFeed";
 import AIRenderingPanel from "@/components/AIRenderingPanel";
 import ProjectChecklist from "@/components/ProjectChecklist";
 import ProjectSummary from "@/components/ProjectSummary";
+import StyleQuiz from "@/components/StyleQuiz";
 import {
   getProject,
   saveProject,
@@ -26,39 +27,96 @@ import { isConfigured, subscribeToProject } from "@/lib/supabase";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import type { Project, ProjectStatus } from "@/lib/types";
 
+// ── Tab system ──
+
 type Tab =
   | "overview"
+  | "ai-workflow"
   | "scans"
+  | "inspiration"
+  | "style-quiz"
   | "rooms"
   | "sleep"
+  | "space-plan"
   | "design"
-  | "furniture"
+  | "catalog"
   | "mood"
-  | "render"
-  | "summary"
   | "export"
+  | "summary"
   | "chat";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "scans", label: "3D Scans" },
-  { id: "rooms", label: "Rooms" },
-  { id: "sleep", label: "Sleep Plan" },
-  { id: "design", label: "Design Board" },
-  { id: "furniture", label: "Item List" },
-  { id: "mood", label: "Mood Board" },
-  { id: "render", label: "AI Renders" },
-  { id: "summary", label: "Summary" },
-  { id: "export", label: "Export" },
-  { id: "chat", label: "Team Chat" },
+interface TabGroup {
+  label: string;
+  tabs: { id: Tab; label: string }[];
+}
+
+const TAB_GROUPS: TabGroup[] = [
+  {
+    label: "Project",
+    tabs: [
+      { id: "overview", label: "Overview" },
+      { id: "ai-workflow", label: "AI Workflow" },
+    ],
+  },
+  {
+    label: "Inputs",
+    tabs: [
+      { id: "scans", label: "3D Scans" },
+      { id: "inspiration", label: "Inspiration" },
+    ],
+  },
+  {
+    label: "Design",
+    tabs: [
+      { id: "style-quiz", label: "Style Quiz" },
+      { id: "rooms", label: "Rooms" },
+      { id: "sleep", label: "Sleep Plan" },
+      { id: "space-plan", label: "Space Plan" },
+      { id: "design", label: "Design Board" },
+    ],
+  },
+  {
+    label: "Catalog",
+    tabs: [{ id: "catalog", label: "Products & Pricing" }],
+  },
+  {
+    label: "Delivery",
+    tabs: [
+      { id: "mood", label: "Mood Board" },
+      { id: "export", label: "Export" },
+      { id: "summary", label: "Summary" },
+    ],
+  },
+  {
+    label: "Team",
+    tabs: [{ id: "chat", label: "Chat" }],
+  },
 ];
 
-const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "in-progress", label: "In Progress" },
-  { value: "review", label: "In Review" },
-  { value: "delivered", label: "Delivered" },
+const STATUS_OPTIONS: { value: ProjectStatus; label: string; color: string }[] = [
+  { value: "draft", label: "Draft", color: "bg-brand-900/10 text-brand-700" },
+  { value: "in-progress", label: "In Progress", color: "bg-blue-100 text-blue-800" },
+  { value: "review", label: "In Review", color: "bg-amber-light/50 text-amber-dark" },
+  { value: "delivered", label: "Delivered", color: "bg-emerald-100 text-emerald-800" },
 ];
+
+// ── Helpers ──
+
+function computeCostPerSqft(totalCost: number, sqft: number): string {
+  if (!sqft || sqft <= 0 || totalCost <= 0) return "—";
+  const val = totalCost / sqft;
+  return `$${val.toFixed(0)}`;
+}
+
+function getBudgetHealth(totalCost: number, budget: number): "ok" | "warn" | "over" | "none" {
+  if (!budget || budget <= 0) return "none";
+  const pct = totalCost / budget;
+  if (pct > 1) return "over";
+  if (pct > 0.85) return "warn";
+  return "ok";
+}
+
+// ── Page ──
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -66,8 +124,18 @@ export default function ProjectDetailPage() {
   const projectId = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "overview";
+    const saved = sessionStorage.getItem(`tab_${projectId}`);
+    return (saved as Tab) || "overview";
+  });
   const [loading, setLoading] = useState(true);
+  const [clientLinkCopied, setClientLinkCopied] = useState(false);
+
+  function switchTab(t: Tab) {
+    setTab(t);
+    try { sessionStorage.setItem(`tab_${projectId}`, t); } catch { /* ignore */ }
+  }
 
   const reload = useCallback(() => {
     setProject(getProject(projectId));
@@ -94,17 +162,29 @@ export default function ProjectDetailPage() {
     }
     load();
 
-    // Subscribe to realtime project updates from other team members
     if (isConfigured()) {
       const unsub = subscribeToProject(projectId, () => {
-        // Another user updated this project — reload from DB
         loadProjectFromDatabase(projectId).then(() => reload());
       });
       return () => unsub();
     }
   }, [projectId, router, reload]);
 
-  if (loading || !project) {
+  // ── Derived stats (memoized) ──
+  const stats = useMemo(() => {
+    if (!project) return null;
+    const sleeping = getTotalSleeping(project.rooms);
+    const totalItems = project.rooms.reduce((s, r) => s + r.furniture.length, 0);
+    const totalCost = project.rooms.reduce(
+      (s, r) => s + r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
+      0
+    );
+    const costPerSqft = computeCostPerSqft(totalCost, project.property.squareFootage);
+    const budgetHealth = getBudgetHealth(totalCost, project.budget);
+    return { sleeping, totalItems, totalCost, costPerSqft, budgetHealth };
+  }, [project]);
+
+  if (loading || !project || !stats) {
     return (
       <div className="min-h-screen bg-cream">
         <Navbar />
@@ -112,8 +192,8 @@ export default function ProjectDetailPage() {
           <div className="animate-pulse space-y-4">
             <div className="h-6 w-1/3 rounded bg-brand-900/10" />
             <div className="h-4 w-1/2 rounded bg-brand-900/5" />
-            <div className="grid grid-cols-4 gap-3 mt-6">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-5 gap-3 mt-6">
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="card py-3 px-4">
                   <div className="h-3 w-12 rounded bg-brand-900/10 mb-2" />
                   <div className="h-5 w-8 rounded bg-brand-900/10" />
@@ -126,102 +206,178 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const sleeping = getTotalSleeping(project.rooms);
-  const totalItems = project.rooms.reduce((s, r) => s + r.furniture.length, 0);
-  const totalCost = project.rooms.reduce(
-    (s, r) => s + r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
-    0
-  );
-
   function updateStatus(status: ProjectStatus) {
     const p = getProject(projectId);
     if (!p) return;
     p.status = status;
     saveProject(p);
-    logActivity(projectId, "status_changed", `Status → ${status}`);
+    logActivity(projectId, "status_changed", `Status -> ${status}`);
     reload();
   }
+
+  function generateClientLink() {
+    const link = `${window.location.origin}/projects/print?id=${project!.id}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(link).then(() => {
+          setClientLinkCopied(true);
+          setTimeout(() => setClientLinkCopied(false), 2000);
+        });
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = link;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        setClientLinkCopied(true);
+        setTimeout(() => setClientLinkCopied(false), 2000);
+      }
+    } catch {
+      window.prompt("Copy this link:", link);
+    }
+  }
+
+  const currentStatus = STATUS_OPTIONS.find((s) => s.value === project.status) ?? STATUS_OPTIONS[0];
 
   return (
     <div className="min-h-screen bg-cream">
       <Navbar />
 
       <main className="mx-auto max-w-7xl px-6 py-6 animate-in">
-        {/* Back + Title */}
+        {/* Back + Header */}
         <div className="mb-6">
           <button
             onClick={() => router.push("/dashboard")}
-            className="mb-3 text-sm text-brand-600 hover:text-brand-900 transition"
+            className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-brand-900/10 bg-white px-3 py-1.5 text-xs font-medium text-brand-700 shadow-sm transition hover:border-brand-900/20 hover:text-brand-900"
           >
-            &larr; All Projects
+            <span aria-hidden>&larr;</span> All Projects
           </button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-brand-900">
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-brand-900 truncate">
                 {project.name || "Untitled"}
               </h1>
-              <p className="text-sm text-brand-600 mt-0.5">
+              <p className="mt-0.5 text-sm text-brand-600">
                 {project.property.address || "No address"} &middot;{" "}
-                {project.client.name || "No client"}
+                {project.client.name || "No client"} &middot;{" "}
+                <span className="capitalize">{project.style.replace(/-/g, " ")}</span>
               </p>
             </div>
-            <select
-              className="select w-auto text-xs"
-              value={project.status}
-              onChange={(e) => updateStatus(e.target.value as ProjectStatus)}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={generateClientLink}
+                className="btn-accent btn-sm"
+              >
+                {clientLinkCopied ? "Copied!" : "Generate Client Link"}
+              </button>
+
+              {/* Status dropdown styled as pill */}
+              <div className="relative">
+                <select
+                  className={`appearance-none rounded-lg border border-brand-900/10 px-4 py-2 pr-8 text-xs font-semibold shadow-sm transition focus:border-amber focus:ring-2 focus:ring-amber/20 outline-none ${currentStatus.color}`}
+                  value={project.status}
+                  onChange={(e) => updateStatus(e.target.value as ProjectStatus)}
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-brand-600">
+                  ▼
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <QuickStat label="Rooms" value={project.rooms.length} />
-          <QuickStat
+        {/* Quick Stats — 5 cards */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <StatCard label="Rooms" value={project.rooms.length} />
+          <StatCard
             label="Sleeps"
-            value={sleeping}
+            value={stats.sleeping}
             target={project.targetGuests}
+            status={
+              stats.sleeping >= project.targetGuests
+                ? "ok"
+                : stats.sleeping > 0
+                ? "warn"
+                : undefined
+            }
           />
-          <QuickStat label="Items" value={totalItems} />
-          <QuickStat
-            label="Budget"
-            value={`$${totalCost.toLocaleString()}`}
+          <StatCard label="Items" value={stats.totalItems} />
+          <StatCard
+            label="Cost"
+            value={`$${stats.totalCost.toLocaleString()}`}
             target={
               project.budget ? `$${project.budget.toLocaleString()}` : undefined
             }
+            status={stats.budgetHealth === "over" ? "over" : stats.budgetHealth === "warn" ? "warn" : undefined}
+          />
+          <StatCard
+            label="$/Sqft"
+            value={stats.costPerSqft}
+            target="$10-20"
           />
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 flex flex-wrap gap-1 rounded-xl bg-white border border-brand-900/10 p-1 overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`shrink-0 ${tab === t.id ? "tab-active" : "tab"}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Grouped Tabs */}
+        <nav
+          className="mb-6 overflow-x-auto rounded-xl border border-brand-900/10 bg-white p-1.5"
+          role="tablist"
+          aria-label="Project sections"
+        >
+          <div className="flex items-center gap-0.5 min-w-max">
+            {TAB_GROUPS.map((group, gi) => (
+              <div key={group.label} className="flex items-center">
+                {gi > 0 && (
+                  <div className="mx-1 h-5 w-px bg-brand-900/10 shrink-0" />
+                )}
+                <span className="mr-1 px-1.5 text-[9px] font-bold uppercase tracking-widest text-brand-600/50 select-none">
+                  {group.label}
+                </span>
+                {group.tabs.map((t) => (
+                  <button
+                    key={t.id}
+                    role="tab"
+                    aria-selected={tab === t.id}
+                    onClick={() => switchTab(t.id)}
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
+                      tab === t.id
+                        ? "bg-brand-900 text-white shadow-sm"
+                        : "text-brand-600 hover:bg-parchment hover:text-brand-900"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </nav>
 
         {/* Tab Content */}
         <div className="animate-in">
           {tab === "overview" && <OverviewTab project={project} />}
+          {tab === "ai-workflow" && <AIRenderingPanel project={project} />}
           {tab === "scans" && <ScanViewer property={project.property} />}
+          {tab === "inspiration" && <MoodBoardPanel project={project} onUpdate={reload} />}
+          {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
+          {tab === "space-plan" && <DesignBoard project={project} onUpdate={reload} />}
           {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
-          {tab === "furniture" && <FurniturePicker project={project} onUpdate={reload} />}
+          {tab === "catalog" && <FurniturePicker project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
-          {tab === "render" && <AIRenderingPanel project={project} />}
-          {tab === "summary" && <ProjectSummary project={project} />}
           {tab === "export" && <ExportPanel project={project} />}
+          {tab === "summary" && <ProjectSummary project={project} />}
           {tab === "chat" && (
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
@@ -238,22 +394,41 @@ export default function ProjectDetailPage() {
   );
 }
 
-function QuickStat({
+// ── Stat Card ──
+
+function StatCard({
   label,
   value,
   target,
+  status,
 }: {
   label: string;
   value: number | string;
   target?: number | string;
+  status?: "ok" | "warn" | "over";
 }) {
+  const statusColor =
+    status === "over"
+      ? "border-red-300 bg-red-50/50"
+      : status === "warn"
+      ? "border-amber/40 bg-amber/5"
+      : status === "ok"
+      ? "border-emerald-200 bg-emerald-50/50"
+      : "border-brand-900/10 bg-white";
+
   return (
-    <div className="card py-3 px-4">
-      <div className="text-[10px] uppercase tracking-wider text-brand-600 mb-0.5">
+    <div className={`rounded-xl border p-4 shadow-sm transition ${statusColor}`}>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1">
         {label}
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold text-brand-900">{value}</span>
+        <span
+          className={`text-xl font-bold ${
+            status === "over" ? "text-red-600" : "text-brand-900"
+          }`}
+        >
+          {value}
+        </span>
         {target !== undefined && target !== 0 && (
           <span className="text-xs text-brand-600/60">/ {target}</span>
         )}
@@ -261,6 +436,8 @@ function QuickStat({
     </div>
   );
 }
+
+// ── Overview Tab ──
 
 function OverviewTab({ project }: { project: Project }) {
   const [editingNotes, setEditingNotes] = useState(false);
@@ -274,14 +451,15 @@ function OverviewTab({ project }: { project: Project }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {/* Checklist */}
       <div className="lg:col-span-2">
         <ProjectChecklist project={project} />
       </div>
 
       {/* Property */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Property</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
+          <span className="text-base" aria-hidden>🏠</span> Property
+        </h2>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <Field label="Address" value={project.property.address} />
           <Field
@@ -312,7 +490,9 @@ function OverviewTab({ project }: { project: Project }) {
 
       {/* Client */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Client</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
+          <span className="text-base" aria-hidden>👤</span> Client
+        </h2>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <Field label="Name" value={project.client.name} />
           <Field label="Email" value={project.client.email} />
@@ -332,9 +512,14 @@ function OverviewTab({ project }: { project: Project }) {
 
       {/* Design */}
       <div className="card lg:col-span-2">
-        <h2 className="text-lg font-semibold mb-4">Design Settings</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
+          <span className="text-base" aria-hidden>🎨</span> Design Settings
+        </h2>
         <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <Field label="Style" value={project.style} />
+          <div>
+            <dt className="text-[10px] uppercase tracking-wider text-brand-600">Style</dt>
+            <dd className="font-medium text-brand-900 capitalize">{project.style.replace(/-/g, " ")}</dd>
+          </div>
           <Field label="Target Guests" value={project.targetGuests} />
           <Field
             label="Budget"
@@ -381,6 +566,8 @@ function OverviewTab({ project }: { project: Project }) {
     </div>
   );
 }
+
+// ── Shared components ──
 
 function Field({ label, value }: { label: string; value: string | number }) {
   return (
