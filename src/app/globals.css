@@ -87,3 +87,7 @@
 .animate-in {
   animation: fadeIn 0.3s ease-out;
 }
+
+/* Hide native scrollbar for tab bars */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

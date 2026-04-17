@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import RoomPlanner from "@/components/RoomPlanner";
@@ -336,40 +336,8 @@ export default function ProjectDetailPage() {
           />
         </div>
 
-        {/* Grouped Tabs */}
-        <nav
-          className="mb-6 overflow-x-auto rounded-xl border border-brand-900/10 bg-white p-1.5"
-          role="tablist"
-          aria-label="Project sections"
-        >
-          <div className="flex items-center gap-0.5 min-w-max">
-            {TAB_GROUPS.map((group, gi) => (
-              <div key={group.label} className="flex items-center">
-                {gi > 0 && (
-                  <div className="mx-1 h-5 w-px bg-brand-900/10 shrink-0" />
-                )}
-                <span className="mr-1 px-1.5 text-[9px] font-bold uppercase tracking-widest text-brand-600/50 select-none">
-                  {group.label}
-                </span>
-                {group.tabs.map((t) => (
-                  <button
-                    key={t.id}
-                    role="tab"
-                    aria-selected={tab === t.id}
-                    onClick={() => switchTab(t.id)}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
-                      tab === t.id
-                        ? "bg-brand-900 text-white shadow-sm"
-                        : "text-brand-600 hover:bg-parchment hover:text-brand-900"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        </nav>
+        {/* Grouped Tabs — scrollable with indicators */}
+        <ScrollableTabs tab={tab} onSwitch={switchTab} />
 
         {/* Tab Content */}
         <div className="animate-in">
@@ -607,6 +575,122 @@ function ScanLink({ label, url }: { label: string; url: string }) {
       >
         Open Link &rarr;
       </a>
+    </div>
+  );
+}
+
+// ── Scrollable Tabs with fade + arrow indicators ──
+
+function ScrollableTabs({ tab, onSwitch }: { tab: Tab; onSwitch: (t: Tab) => void }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  function updateScrollState() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }
+
+  useEffect(() => {
+    updateScrollState();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, []);
+
+  // Auto-scroll active tab into view
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const active = el.querySelector("[data-active-tab]") as HTMLElement | null;
+    if (active) {
+      const left = active.offsetLeft - el.offsetLeft - 40;
+      el.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    }
+  }, [tab]);
+
+  function scroll(dir: "left" | "right") {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative mb-6">
+      {/* Left fade + arrow */}
+      {canScrollLeft && (
+        <>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-12 rounded-l-xl bg-gradient-to-r from-white to-transparent" />
+          <button
+            type="button"
+            onClick={() => scroll("left")}
+            className="absolute left-0 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-brand-900/10 text-brand-700 hover:bg-parchment transition"
+            aria-label="Scroll tabs left"
+          >
+            ‹
+          </button>
+        </>
+      )}
+
+      {/* Right fade + arrow */}
+      {canScrollRight && (
+        <>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-12 rounded-r-xl bg-gradient-to-l from-white to-transparent" />
+          <button
+            type="button"
+            onClick={() => scroll("right")}
+            className="absolute right-0 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-brand-900/10 text-brand-700 hover:bg-parchment transition"
+            aria-label="Scroll tabs right"
+          >
+            ›
+          </button>
+        </>
+      )}
+
+      {/* Scroll container */}
+      <nav
+        ref={scrollRef}
+        className="overflow-x-auto rounded-xl border border-brand-900/10 bg-white p-1.5 scrollbar-hide"
+        role="tablist"
+        aria-label="Project sections"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        <div className="flex items-center gap-0.5 min-w-max">
+          {TAB_GROUPS.map((group, gi) => (
+            <div key={group.label} className="flex items-center">
+              {gi > 0 && (
+                <div className="mx-1 h-5 w-px bg-brand-900/10 shrink-0" />
+              )}
+              <span className="mr-1 px-1 text-[9px] font-bold uppercase tracking-widest text-brand-600/50 select-none whitespace-nowrap">
+                {group.label}
+              </span>
+              {group.tabs.map((t) => (
+                <button
+                  key={t.id}
+                  role="tab"
+                  aria-selected={tab === t.id}
+                  {...(tab === t.id ? { "data-active-tab": "" } : {})}
+                  onClick={() => onSwitch(t.id)}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
+                    tab === t.id
+                      ? "bg-brand-900 text-white shadow-sm"
+                      : "text-brand-600 hover:bg-parchment hover:text-brand-900"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
