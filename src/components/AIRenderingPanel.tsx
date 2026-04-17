@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import type { Project, Room, AIRender, AITool } from "@/lib/types";
 
@@ -154,12 +154,16 @@ function copyToClipboard(text: string): Promise<boolean> {
 function looksLikeImageUrl(url: string): boolean {
   if (!url) return false;
   const trimmed = url.trim();
+  // Accept http(s) URLs, and data:image/ URLs from file uploads.
+  // Reject blob: URLs (session-scoped, don't persist).
+  if (/^data:image\//i.test(trimmed)) return trimmed.length < 8_000_000; // ~8MB cap
   if (!/^https?:\/\//i.test(trimmed)) return false;
   return trimmed.length > 10 && trimmed.length < 2000;
 }
 
 // Real validation: preload the URL as an image. Resolves true if it loads
-// as an image, false if the browser can't decode it.
+// as an image, false if the browser can't decode it. Skips network check
+// for data: URLs since they don't hit the network.
 function validateImageUrl(url: string, timeoutMs: number = 8000): Promise<boolean> {
   return new Promise((resolve) => {
     if (!looksLikeImageUrl(url)) {
@@ -182,10 +186,45 @@ function validateImageUrl(url: string, timeoutMs: number = 8000): Promise<boolea
   });
 }
 
+// Compress a File to a data URL (jpeg) scaled to fit within maxDim.
+// This keeps localStorage-friendly sizes (~100-300KB per render).
+async function compressImageFile(
+  file: File,
+  maxDim: number = 1600,
+  quality: number = 0.82
+): Promise<string | null> {
+  try {
+    // Prefer createImageBitmap (fast, respects EXIF orientation)
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+    const scale = Math.min(1, maxDim / Math.max(width, height));
+    const w = Math.max(1, Math.round(width * scale));
+    const h = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    // JPEG for photo-like AI renders; much smaller than PNG.
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    // Fallback: read file as data URL directly (no compression)
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
 // ── Component ──
 
 const TOOL_STORAGE_KEY = (pid: string) => `aiWorkflow_tool_${pid}`;
 const TARGET_STORAGE_KEY = (pid: string) => `aiWorkflow_target_${pid}`;
+const PROMPT_OVERRIDES_KEY = (pid: string) => `aiWorkflow_prompts_${pid}`;
 
 export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) {
   const [tool, setTool] = useState<AITool>(() => {
@@ -207,7 +246,29 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
   const [urlValidation, setUrlValidation] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const [urlError, setUrlError] = useState<string>("");
   const [editingPrompt, setEditingPrompt] = useState(false);
-  const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>({});
+  const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = sessionStorage.getItem(PROMPT_OVERRIDES_KEY(project.id));
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist prompt overrides
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        PROMPT_OVERRIDES_KEY(project.id),
+        JSON.stringify(promptOverrides)
+      );
+    } catch { /* quota — ignore */ }
+  }, [promptOverrides, project.id]);
   const [editingNotesFor, setEditingNotesFor] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
   const [viewMode, setViewMode] = useState<"target" | "all">("target");
@@ -289,6 +350,45 @@ export default function AIWorkflowPanel({ project, onUpdate, onJumpTo }: Props) 
     setPasteInput("");
     setUrlValidation("idle");
     onUpdate();
+  }
+
+  async function handleFileUpload(file: File | null | undefined) {
+    if (!file) return;
+    setUploadError("");
+    if (!file.type.startsWith("image/")) {
+      setUploadError("That's not an image file. Try a JPG, PNG, or WebP.");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError("Image is over 20 MB. Please use a smaller file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUrl = await compressImageFile(file, 1600, 0.82);
+      if (!dataUrl) {
+        setUploadError("Couldn't read that image. Try a different file.");
+        setUploading(false);
+        return;
+      }
+      await addRender(dataUrl, selectedRoom as string | "overview");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      console.error(err);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function regeneratePromptFromDesign() {
+    // Drop the override so the auto prompt takes over
+    setPromptOverrides((prev) => {
+      const next = { ...prev };
+      delete next[overrideKey];
+      return next;
+    });
+    setEditingPrompt(false);
   }
 
   function saveRenderNotes(id: string, notes: string) {

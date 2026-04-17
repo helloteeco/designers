@@ -469,7 +469,9 @@ export default function ProjectDetailPage() {
           {tab === "ai-workflow" && (
             <AIRenderingPanel project={project} onUpdate={reload} onJumpTo={(t) => switchTab(t as Tab)} />
           )}
-          {tab === "scans" && <ScanViewer property={project.property} />}
+          {tab === "scans" && (
+            <ScanViewer property={project.property} projectId={project.id} onUpdate={reload} />
+          )}
           {tab === "style-quiz" && <StyleQuiz project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
@@ -769,6 +771,51 @@ function OverviewTab({
                     setPropertyDraft({ ...propertyDraft, bathrooms: parseFloat(e.target.value) || 0 })
                   }
                 />
+              </div>
+            </div>
+
+            {/* 3D scan URLs */}
+            <div className="pt-3 mt-1 border-t border-brand-900/5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-brand-600 mb-2">
+                3D Scan Links (optional)
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <label className="label text-[10px]">Matterport</label>
+                  <input
+                    type="url"
+                    className="input"
+                    placeholder="https://my.matterport.com/show/?m=..."
+                    value={propertyDraft.matterportLink}
+                    onChange={(e) =>
+                      setPropertyDraft({ ...propertyDraft, matterportLink: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="label text-[10px]">Polycam</label>
+                  <input
+                    type="url"
+                    className="input"
+                    placeholder="https://poly.cam/capture/..."
+                    value={propertyDraft.polycamLink}
+                    onChange={(e) =>
+                      setPropertyDraft({ ...propertyDraft, polycamLink: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="label text-[10px]">Spoak</label>
+                  <input
+                    type="url"
+                    className="input"
+                    placeholder="https://www.spoak.com/..."
+                    value={propertyDraft.spoakLink}
+                    onChange={(e) =>
+                      setPropertyDraft({ ...propertyDraft, spoakLink: e.target.value })
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>
