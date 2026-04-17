@@ -74,20 +74,27 @@ export default function DashboardPage() {
     setProjects(getProjects());
   }
 
-  const filtered = projects.filter((p) => {
-    if (filter !== "all" && p.status !== filter) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      return (
-        (p.name || "").toLowerCase().includes(q) ||
-        (p.client?.name || "").toLowerCase().includes(q) ||
-        (p.property?.city || "").toLowerCase().includes(q) ||
-        (p.property?.address || "").toLowerCase().includes(q) ||
-        (p.property?.state || "").toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filtered = projects
+    .filter((p) => {
+      if (filter !== "all" && p.status !== filter) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return (
+          (p.name || "").toLowerCase().includes(q) ||
+          (p.client?.name || "").toLowerCase().includes(q) ||
+          (p.property?.city || "").toLowerCase().includes(q) ||
+          (p.property?.address || "").toLowerCase().includes(q) ||
+          (p.property?.state || "").toLowerCase().includes(q)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      // Most-recently-updated first
+      const at = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const bt = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return bt - at;
+    });
 
   const profile = getProfile();
 
@@ -177,13 +184,23 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          filter === "all" ? (
+          filter === "all" && !search.trim() ? (
             <EmptyState onCreateClick={() => router.push("/projects/new")} />
           ) : (
             <div className="card text-center py-8">
               <p className="text-sm text-brand-600">
-                No {filter} projects.
+                {search.trim()
+                  ? `No projects match "${search.trim()}".`
+                  : `No ${filter} projects.`}
               </p>
+              {(search.trim() || filter !== "all") && (
+                <button
+                  onClick={() => { setSearch(""); setFilter("all"); }}
+                  className="mt-3 text-xs font-semibold text-amber-dark hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           )
         ) : (
@@ -266,13 +283,13 @@ function ProjectCard({
         <span>
           Updated {formatDate(project.updatedAt)}
         </span>
-        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+        <div className="flex gap-3">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDuplicate();
             }}
-            className="text-brand-600 hover:text-brand-900"
+            className="text-brand-600 hover:text-brand-900 transition"
           >
             Duplicate
           </button>
@@ -281,7 +298,7 @@ function ProjectCard({
               e.stopPropagation();
               onDelete();
             }}
-            className="text-red-400 hover:text-red-600"
+            className="text-red-500 hover:text-red-700 transition"
           >
             Delete
           </button>

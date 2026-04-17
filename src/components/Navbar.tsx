@@ -32,10 +32,25 @@ export default function Navbar() {
     router.push("/");
   }
 
-  function copyInvite() {
-    navigator.clipboard.writeText(inviteCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function copyInvite() {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteCode);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = inviteCode;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this invite code:", inviteCode);
+    }
   }
 
   return (

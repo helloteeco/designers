@@ -42,11 +42,26 @@ export default function SettingsPage() {
     load();
   }, [router]);
 
-  function copyInvite() {
-    if (profile?.inviteCode) {
-      navigator.clipboard.writeText(profile.inviteCode);
+  async function copyInvite() {
+    if (!profile?.inviteCode) return;
+    const code = profile.inviteCode;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = code;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this invite code:", code);
     }
   }
 
