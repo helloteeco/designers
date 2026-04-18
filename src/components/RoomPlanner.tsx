@@ -1,8 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import type { Project, Room, RoomType } from "@/lib/types";
+
+const VALID_ROOM_TYPES: RoomType[] = [
+  "primary-bedroom", "bedroom", "loft", "den", "living-room", "dining-room",
+  "kitchen", "bathroom", "outdoor", "hallway", "bonus-room", "office",
+  "game-room", "media-room",
+];
+
+interface ParsedRoom {
+  name: string;
+  type: string;
+  widthFt: number;
+  lengthFt: number;
+  floor: number;
+}
+
+function readFileAsBase64(file: File): Promise<{ base64: string; mediaType: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(",");
+      if (comma < 0) return reject(new Error("Invalid data URL"));
+      const header = result.slice(0, comma);
+      const base64 = result.slice(comma + 1);
+      const match = header.match(/data:([^;]+)/);
+      const mediaType = match?.[1] ?? file.type ?? "image/png";
+      resolve({ base64, mediaType });
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
   { value: "primary-bedroom", label: "Primary Bedroom" },
@@ -43,6 +75,77 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form, setForm] = useState(emptyForm());
+  const [parsingPlan, setParsingPlan] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFloorPlanUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!/^image\/(png|jpe?g|webp|gif)$/.test(file.type)) {
+      setParseError("Upload a PNG, JPG, WEBP, or GIF. PDFs: export the page as image first.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setParseError("Image too large — keep it under 10MB.");
+      return;
+    }
+
+    setParsingPlan(true);
+    setParseError(null);
+    try {
+      const { base64, mediaType } = await readFileAsBase64(file);
+      const res = await fetch("/api/parse-floor-plan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mediaType }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Parse failed");
+
+      const parsedRooms = (data.rooms ?? []) as ParsedRoom[];
+      if (parsedRooms.length === 0) {
+        setParseError("No rooms detected. Try a clearer image or add rooms manually.");
+        return;
+      }
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) return;
+
+      for (const r of parsedRooms) {
+        const type: RoomType = VALID_ROOM_TYPES.includes(r.type as RoomType)
+          ? (r.type as RoomType)
+          : "bedroom";
+        const width = Math.max(4, Number(r.widthFt) || 10);
+        const length = Math.max(4, Number(r.lengthFt) || 10);
+        fresh.rooms.push({
+          id: generateId(),
+          name: r.name || "Room",
+          type,
+          widthFt: Math.min(width, length),
+          lengthFt: Math.max(width, length),
+          ceilingHeightFt: 9,
+          floor: Math.max(1, Number(r.floor) || 1),
+          features: [],
+          selectedBedConfig: null,
+          furniture: [],
+          accentWall: null,
+          notes: "",
+        });
+      }
+
+      saveProject(fresh);
+      logActivity(project.id, "room_added", `Parsed ${parsedRooms.length} rooms from floor plan`);
+      onUpdate();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setParseError(msg);
+    } finally {
+      setParsingPlan(false);
+    }
+  }
 
   function emptyForm() {
     return {
@@ -161,118 +264,6 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
     }));
   }
 
-  function quickAddRooms() {
-    const fresh = getProjectFromStore(project.id);
-    if (!fresh) return;
-    const bedrooms = Math.max(1, fresh.property.bedrooms || 3);
-    const bathrooms = Math.max(1, fresh.property.bathrooms || 2);
-    const floors = Math.max(1, fresh.property.floors || 1);
-
-    // Primary bedroom
-    fresh.rooms.push({
-      id: generateId(),
-      name: "Primary Bedroom",
-      type: "primary-bedroom",
-      widthFt: 14,
-      lengthFt: 16,
-      ceilingHeightFt: 9,
-      floor: 1,
-      features: ["En-suite", "Closet", "Window"],
-      selectedBedConfig: null,
-      furniture: [],
-      accentWall: null,
-      notes: "",
-    });
-
-    // Additional bedrooms
-    for (let i = 2; i <= bedrooms; i++) {
-      fresh.rooms.push({
-        id: generateId(),
-        name: `Bedroom ${i}`,
-        type: "bedroom",
-        widthFt: 12,
-        lengthFt: 12,
-        ceilingHeightFt: 9,
-        floor: Math.min(i <= Math.ceil(bedrooms / floors) ? 1 : 2, floors),
-        features: ["Closet", "Window"],
-        selectedBedConfig: null,
-        furniture: [],
-        accentWall: null,
-        notes: "",
-      });
-    }
-
-    // Living room
-    fresh.rooms.push({
-      id: generateId(),
-      name: "Living Room",
-      type: "living-room",
-      widthFt: 18,
-      lengthFt: 16,
-      ceilingHeightFt: 9,
-      floor: 1,
-      features: ["Window", "Fireplace"],
-      selectedBedConfig: null,
-      furniture: [],
-      accentWall: null,
-      notes: "",
-    });
-
-    // Kitchen
-    fresh.rooms.push({
-      id: generateId(),
-      name: "Kitchen",
-      type: "kitchen",
-      widthFt: 14,
-      lengthFt: 12,
-      ceilingHeightFt: 9,
-      floor: 1,
-      features: [],
-      selectedBedConfig: null,
-      furniture: [],
-      accentWall: null,
-      notes: "",
-    });
-
-    // Dining
-    fresh.rooms.push({
-      id: generateId(),
-      name: "Dining Room",
-      type: "dining-room",
-      widthFt: 14,
-      lengthFt: 12,
-      ceilingHeightFt: 9,
-      floor: 1,
-      features: ["Window"],
-      selectedBedConfig: null,
-      furniture: [],
-      accentWall: null,
-      notes: "",
-    });
-
-    // Bathrooms
-    for (let i = 1; i <= Math.floor(bathrooms); i++) {
-      fresh.rooms.push({
-        id: generateId(),
-        name: i === 1 ? "Primary Bathroom" : `Bathroom ${i}`,
-        type: "bathroom",
-        widthFt: i === 1 ? 10 : 8,
-        lengthFt: i === 1 ? 8 : 6,
-        ceilingHeightFt: 9,
-        floor: Math.min(i <= Math.ceil(bathrooms / floors) ? 1 : 2, floors),
-        features: [],
-        selectedBedConfig: null,
-        furniture: [],
-        accentWall: null,
-        notes: "",
-      });
-    }
-
-    saveProject(fresh);
-    logActivity(project.id, "room_added", `Quick setup: added ${fresh.rooms.length} rooms`);
-    onUpdate();
-  }
-
   return (
     <div>
       {/* Header */}
@@ -286,25 +277,44 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          {project.rooms.length === 0 && (
-            <button onClick={quickAddRooms} className="btn-secondary btn-sm">
-              Quick Setup from Property
-            </button>
-          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={handleFloorPlanUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={parsingPlan}
+            className="btn-secondary btn-sm"
+          >
+            {parsingPlan ? "Parsing plan…" : "Upload Floor Plan"}
+          </button>
           <button onClick={openNew} className="btn-primary btn-sm">
             + Add Room
           </button>
         </div>
       </div>
 
+      {parseError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {parseError}
+        </div>
+      )}
+
       {/* Room List */}
       {project.rooms.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-brand-600 mb-4">
-            No rooms added yet. Add rooms manually or use Quick Setup.
+            Upload a floor plan image — Claude reads the room labels + dimensions and creates them automatically. Or add rooms manually.
           </p>
-          <button onClick={quickAddRooms} className="btn-secondary">
-            Quick Setup
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={parsingPlan}
+            className="btn-secondary"
+          >
+            {parsingPlan ? "Parsing plan…" : "Upload Floor Plan"}
           </button>
         </div>
       ) : (

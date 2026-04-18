@@ -1392,6 +1392,87 @@ export const CATALOG: FurnitureItem[] = [
   }),
 ];
 
+// ── Install-guide markers (Art / Mirror / TV / String Lights) ──
+// These are rendered with fixed colors on the floor plan to match the Teeco install-guide key.
+// Color codes match the legend: Art=blue, Mirror=yellow, TV=red, String Lights=green.
+
+export const MARKER_IDS = {
+  art: "marker-art",
+  mirror: "marker-mirror",
+  tv: "marker-tv",
+  stringLights: "marker-string-lights",
+} as const;
+
+export const MARKER_COLORS: Record<string, string> = {
+  [MARKER_IDS.art]: "#3B82F6",        // blue
+  [MARKER_IDS.mirror]: "#EAB308",     // yellow
+  [MARKER_IDS.tv]: "#DC2626",         // red
+  [MARKER_IDS.stringLights]: "#22C55E", // green
+};
+
+export const MARKERS: FurnitureItem[] = [
+  {
+    id: MARKER_IDS.art,
+    name: "Wall Art",
+    category: "decor",
+    subcategory: "marker",
+    widthIn: 24, depthIn: 2, heightIn: 36,
+    price: 0,
+    vendor: "—",
+    vendorUrl: "",
+    imageUrl: "",
+    color: "Blue (key)",
+    material: "",
+    style: "modern",
+  },
+  {
+    id: MARKER_IDS.mirror,
+    name: "Mirror",
+    category: "decor",
+    subcategory: "marker",
+    widthIn: 24, depthIn: 2, heightIn: 36,
+    price: 0,
+    vendor: "—",
+    vendorUrl: "",
+    imageUrl: "",
+    color: "Yellow (key)",
+    material: "",
+    style: "modern",
+  },
+  {
+    id: MARKER_IDS.tv,
+    name: "TV",
+    category: "decor",
+    subcategory: "marker",
+    widthIn: 55, depthIn: 3, heightIn: 32,
+    price: 0,
+    vendor: "—",
+    vendorUrl: "",
+    imageUrl: "",
+    color: "Red (key)",
+    material: "",
+    style: "modern",
+  },
+  {
+    id: MARKER_IDS.stringLights,
+    name: "String Lights",
+    category: "lighting",
+    subcategory: "marker",
+    widthIn: 120, depthIn: 1, heightIn: 1,
+    price: 0,
+    vendor: "—",
+    vendorUrl: "",
+    imageUrl: "",
+    color: "Green (key)",
+    material: "",
+    style: "modern",
+  },
+];
+
+export function isMarker(itemId: string): boolean {
+  return itemId.startsWith("marker-");
+}
+
 // ── Query helpers ──
 
 export function getCategories(): string[] {

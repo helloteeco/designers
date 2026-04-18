@@ -1,34 +1,25 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { saveProject, getProject as getProjectFromStore, logActivity } from "@/lib/store";
-import { CATALOG, getCategories, getSubcategories, searchCatalog } from "@/lib/furniture-catalog";
+import {
+  searchCatalog,
+  MARKERS,
+  MARKER_COLORS,
+  isMarker,
+} from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
-import type { Project, Room, FurnitureItem, SelectedFurniture } from "@/lib/types";
+import type { Project, FurnitureItem, SelectedFurniture } from "@/lib/types";
 
 interface Props {
   project: Project;
   onUpdate: () => void;
 }
 
-// Furniture items with position on the room canvas
 interface PlacedItem extends SelectedFurniture {
-  x: number; // 0-100 percentage of room width
-  y: number; // 0-100 percentage of room length
+  x: number;
+  y: number;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "beds-mattresses": "Beds & Mattresses",
-  seating: "Seating",
-  tables: "Tables",
-  storage: "Storage",
-  lighting: "Lighting",
-  decor: "Decor",
-  "rugs-textiles": "Rugs & Textiles",
-  outdoor: "Outdoor",
-  "kitchen-dining": "Kitchen & Dining",
-  bathroom: "Bathroom",
-};
 
 const ROOM_COLORS: Record<string, string> = {
   "primary-bedroom": "#E8D5C4",
@@ -60,35 +51,63 @@ const ITEM_COLORS: Record<string, string> = {
   bathroom: "#6B9BAB",
 };
 
+function colorForItem(item: FurnitureItem): string {
+  if (isMarker(item.id)) {
+    // Placed markers have IDs like "marker-art-1700000000" — match by prefix
+    const entry = Object.entries(MARKER_COLORS).find(([key]) =>
+      item.id.startsWith(key)
+    );
+    return entry?.[1] ?? "#666";
+  }
+  return ITEM_COLORS[item.category] ?? "#8B7B6B";
+}
+
+interface SearchResult {
+  name: string;
+  vendor: string;
+  vendorUrl: string;
+  price: number;
+  rating?: number;
+  reviewCount?: number;
+  imageUrl?: string;
+  widthIn?: number;
+  depthIn?: number;
+  heightIn?: number;
+  color?: string;
+  material?: string;
+}
+
 export default function DesignBoard({ project, onUpdate }: Props) {
   const [selectedRoom, setSelectedRoom] = useState<string>(
     project.rooms[0]?.id ?? ""
   );
-  const [showCatalog, setShowCatalog] = useState(true);
-  const [category, setCategory] = useState("");
-  const [search, setSearch] = useState("");
-  const [draggingItem, setDraggingItem] = useState<FurnitureItem | null>(null);
   const [selectedPlaced, setSelectedPlaced] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [urlInput, setUrlInput] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [webResults, setWebResults] = useState<SearchResult[] | null>(null);
+  const [webLoading, setWebLoading] = useState(false);
+  const [webError, setWebError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<{
+    itemId: string;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
 
   const currentRoom = project.rooms.find((r) => r.id === selectedRoom);
 
-  const categories = getCategories();
-  const subcategories = category ? getSubcategories(category) : [];
-  const filteredItems = search.trim()
-    ? searchCatalog(search)
-    : CATALOG.filter((i) => (!category || i.category === category));
-
   const totalCost = project.rooms.reduce(
     (sum, r) =>
-      sum + r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
+      sum +
+      r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
     0
   );
 
-  // Calculate room scale
   const CANVAS_WIDTH = 600;
   const maxDim = Math.max(currentRoom?.widthFt ?? 12, currentRoom?.lengthFt ?? 12);
-  const scale = CANVAS_WIDTH / maxDim; // px per foot
+  const scale = CANVAS_WIDTH / maxDim;
   const canvasHeight = currentRoom ? currentRoom.lengthFt * scale : 400;
   const canvasW = currentRoom ? currentRoom.widthFt * scale : CANVAS_WIDTH;
 
@@ -99,38 +118,36 @@ export default function DesignBoard({ project, onUpdate }: Props) {
     };
   }
 
-  function handleCanvasDrop(e: React.MouseEvent) {
-    if (!draggingItem || !currentRoom || !canvasRef.current) return;
+  // ── Placement helpers ──
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / canvasW) * 100;
-    const y = ((e.clientY - rect.top) / canvasHeight) * 100;
-
+  function placeItem(item: FurnitureItem, x?: number, y?: number) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const room = fresh.rooms.find((r) => r.id === selectedRoom);
     if (!room) return;
 
-    const existing = room.furniture.find((f) => f.item.id === draggingItem.id);
-    if (existing) {
-      // Move existing item
-      (existing as PlacedItem).x = Math.max(0, Math.min(100, x));
-      (existing as PlacedItem).y = Math.max(0, Math.min(100, y));
-    } else {
-      // Add new item
-      const placed: PlacedItem = {
-        item: draggingItem,
-        quantity: 1,
-        roomId: room.id,
-        notes: "",
-        x: Math.max(0, Math.min(100, x)),
-        y: Math.max(0, Math.min(100, y)),
-      };
-      room.furniture.push(placed);
+    const existing = room.furniture.find((f) => f.item.id === item.id);
+    if (existing && !isMarker(item.id)) {
+      existing.quantity += 1;
+      saveProject(fresh);
+      onUpdate();
+      return;
     }
 
+    const placed: PlacedItem = {
+      item,
+      quantity: 1,
+      roomId: room.id,
+      notes: "",
+      x: x ?? 30 + Math.random() * 40,
+      y: y ?? 30 + Math.random() * 40,
+    };
+    // Markers can stack (multiple TVs/Art), so use a unique id suffix on placement
+    if (isMarker(item.id)) {
+      placed.item = { ...item, id: `${item.id}-${Date.now()}` };
+    }
+    room.furniture.push(placed);
     saveProject(fresh);
-    setDraggingItem(null);
     onUpdate();
   }
 
@@ -142,32 +159,6 @@ export default function DesignBoard({ project, onUpdate }: Props) {
     room.furniture = room.furniture.filter((f) => f.item.id !== itemId);
     saveProject(fresh);
     setSelectedPlaced(null);
-    onUpdate();
-  }
-
-  function addFromCatalog(item: FurnitureItem) {
-    const fresh = getProjectFromStore(project.id);
-    if (!fresh) return;
-    const room = fresh.rooms.find((r) => r.id === selectedRoom);
-    if (!room) return;
-
-    const existing = room.furniture.find((f) => f.item.id === item.id);
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      // Auto-place: find an open spot
-      const placed: PlacedItem = {
-        item,
-        quantity: 1,
-        roomId: room.id,
-        notes: "",
-        x: 20 + Math.random() * 60,
-        y: 20 + Math.random() * 60,
-      };
-      room.furniture.push(placed);
-    }
-
-    saveProject(fresh);
     onUpdate();
   }
 
@@ -183,29 +174,6 @@ export default function DesignBoard({ project, onUpdate }: Props) {
     onUpdate();
   }
 
-  function copyFurnitureTo(targetRoomId: string) {
-    if (!currentRoom || currentRoom.furniture.length === 0) return;
-    const fresh = getProjectFromStore(project.id);
-    if (!fresh) return;
-    const targetRoom = fresh.rooms.find((r) => r.id === targetRoomId);
-    if (!targetRoom) return;
-
-    for (const f of currentRoom.furniture) {
-      if (!targetRoom.furniture.find((tf) => tf.item.id === f.item.id)) {
-        targetRoom.furniture.push({
-          ...f,
-          roomId: targetRoomId,
-          x: 20 + Math.random() * 60,
-          y: 20 + Math.random() * 60,
-        } as PlacedItem);
-      }
-    }
-
-    saveProject(fresh);
-    logActivity(project.id, "furniture_added", `Copied furniture from ${currentRoom.name} to ${targetRoom.name}`);
-    onUpdate();
-  }
-
   function addAllSuggestions() {
     if (!currentRoom) return;
     const fresh = getProjectFromStore(project.id);
@@ -217,64 +185,213 @@ export default function DesignBoard({ project, onUpdate }: Props) {
     let offsetY = 15;
     for (const item of suggestions) {
       if (!room.furniture.find((f) => f.item.id === item.id)) {
-        const placed: PlacedItem = {
+        room.furniture.push({
           item,
           quantity: 1,
           roomId: room.id,
           notes: "",
           x: 30 + Math.random() * 40,
           y: offsetY,
-        };
-        room.furniture.push(placed);
+        } as PlacedItem);
         offsetY = (offsetY + 15) % 85;
       }
     }
-
     saveProject(fresh);
     logActivity(project.id, "furniture_added", `Auto-added suggestions to ${room.name}`);
     onUpdate();
   }
 
+  // ── Drag handlers ──
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!dragState.current || !canvasRef.current || !currentRoom) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const { itemId, offsetX, offsetY } = dragState.current;
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) return;
+      const room = fresh.rooms.find((r) => r.id === selectedRoom);
+      if (!room) return;
+      const placed = room.furniture.find((f) => f.item.id === itemId) as PlacedItem | undefined;
+      if (!placed) return;
+
+      const dims = getItemDimsPx(placed.item);
+      const xPx = e.clientX - rect.left - offsetX;
+      const yPx = e.clientY - rect.top - offsetY;
+      // Convert px back to % (centered)
+      const xCenter = xPx + dims.w / 2;
+      const yCenter = yPx + dims.h / 2;
+      placed.x = Math.max(0, Math.min(100, (xCenter / canvasW) * 100));
+      placed.y = Math.max(0, Math.min(100, (yCenter / canvasHeight) * 100));
+
+      // Update without saving on every frame — just mutate localStorage's in-memory snapshot
+      saveProject(fresh);
+      onUpdate();
+    },
+    [project.id, selectedRoom, canvasW, canvasHeight, currentRoom, onUpdate]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    dragState.current = null;
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+  }, [handleMouseMove]);
+
+  function startDrag(e: React.MouseEvent, placed: PlacedItem) {
+    e.stopPropagation();
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const dims = getItemDimsPx(placed.item);
+    const xPx = ((placed.x ?? 50) / 100) * canvasW - dims.w / 2;
+    const yPx = ((placed.y ?? 50) / 100) * canvasHeight - dims.h / 2;
+    dragState.current = {
+      itemId: placed.item.id,
+      offsetX: e.clientX - rect.left - xPx,
+      offsetY: e.clientY - rect.top - yPx,
+    };
+    setSelectedPlaced(placed.item.id);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
+
+  // ── URL paste + web search ──
+
+  async function addFromUrl() {
+    const url = urlInput.trim();
+    if (!url) return;
+    setUrlError(null);
+    setUrlLoading(true);
+    try {
+      const res = await fetch("/api/product-from-url", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Fetch failed");
+
+      const item: FurnitureItem = {
+        id: `url-${Date.now()}`,
+        name: data.name || "Untitled product",
+        category: data.category || "decor",
+        subcategory: data.subcategory || "sourced",
+        widthIn: Number(data.widthIn) || 24,
+        depthIn: Number(data.depthIn) || 24,
+        heightIn: Number(data.heightIn) || 30,
+        price: Number(data.price) || 0,
+        vendor: data.vendor || new URL(url).hostname.replace(/^www\./, ""),
+        vendorUrl: url,
+        imageUrl: data.imageUrl || "",
+        color: data.color || "",
+        material: data.material || "",
+        style: project.style,
+      };
+      placeItem(item);
+      setUrlInput("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setUrlError(msg);
+    } finally {
+      setUrlLoading(false);
+    }
+  }
+
+  async function runWebSearch() {
+    if (!searchQuery.trim() || !currentRoom) return;
+    setWebError(null);
+    setWebLoading(true);
+    setWebResults(null);
+    try {
+      const res = await fetch("/api/search-products", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: searchQuery.trim(),
+          roomType: currentRoom.type,
+          style: project.style,
+          budget: project.budget,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Search failed");
+      setWebResults(data.results || []);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setWebError(msg);
+    } finally {
+      setWebLoading(false);
+    }
+  }
+
+  function addWebResult(r: SearchResult) {
+    const item: FurnitureItem = {
+      id: `web-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: r.name,
+      category: "decor",
+      subcategory: "sourced",
+      widthIn: r.widthIn ?? 24,
+      depthIn: r.depthIn ?? 24,
+      heightIn: r.heightIn ?? 30,
+      price: r.price,
+      vendor: r.vendor,
+      vendorUrl: r.vendorUrl,
+      imageUrl: r.imageUrl ?? "",
+      color: r.color ?? "",
+      material: r.material ?? "",
+      style: project.style,
+    };
+    placeItem(item);
+  }
+
+  // ── Catalog search (local fallback) ──
+  const localCatalogResults = searchQuery.trim()
+    ? searchCatalog(searchQuery).slice(0, 6)
+    : [];
+
+  // ── Render ──
+
   if (project.rooms.length === 0) {
     return (
       <div className="card text-center py-12">
-        <div className="text-4xl mb-3">🎨</div>
         <p className="text-brand-600">
-          Add rooms first in the Rooms tab to start designing.
+          Add rooms first in the Rooms tab — upload a floor plan to create them automatically.
         </p>
       </div>
     );
   }
+
+  const suggestions = currentRoom
+    ? suggestFurniture(currentRoom, project.style).slice(0, 6)
+    : [];
 
   return (
     <div>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold">Design Board</h2>
+          <h2 className="text-lg font-semibold">Space Planner</h2>
           <p className="text-sm text-brand-600">
-            Place furniture in your rooms visually. Drag from the catalog or
-            click to add.{" "}
+            Drag furniture to arrange it.{" "}
             <span className="font-medium text-brand-900">
               ${totalCost.toLocaleString()}
             </span>
             {project.budget > 0 && (
               <span
-                className={
-                  totalCost > project.budget ? " text-red-500" : ""
-                }
+                className={totalCost > project.budget ? " text-red-500" : ""}
               >
                 {" "}/ ${project.budget.toLocaleString()}
               </span>
             )}
           </p>
         </div>
-        <button
-          onClick={() => setShowCatalog(!showCatalog)}
-          className={showCatalog ? "btn-secondary btn-sm" : "btn-accent btn-sm"}
-        >
-          {showCatalog ? "Hide Catalog" : "Show Catalog"}
-        </button>
       </div>
 
       {/* Room selector */}
@@ -299,17 +416,16 @@ export default function DesignBoard({ project, onUpdate }: Props) {
       </div>
 
       <div className="flex gap-4">
-        {/* Main canvas area */}
+        {/* Canvas */}
         <div className="flex-1">
           {currentRoom && (
             <div className="card p-3">
-              {/* Room info bar */}
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-medium text-brand-900">
                   {currentRoom.name}
                   <span className="text-brand-600 font-normal ml-2">
-                    {currentRoom.widthFt}&apos; &times; {currentRoom.lengthFt}&apos;
-                    &middot; {(currentRoom.widthFt * currentRoom.lengthFt).toFixed(0)} sqft
+                    {currentRoom.widthFt}&apos; × {currentRoom.lengthFt}&apos;{" "}
+                    · {(currentRoom.widthFt * currentRoom.lengthFt).toFixed(0)} sqft
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -322,36 +438,15 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                     </button>
                   )}
                   {currentRoom.furniture.length > 0 && (
-                    <>
-                      {/* Copy to another room */}
-                      <div className="relative group">
-                        <button className="text-xs text-brand-600 hover:text-brand-900">
-                          Copy to...
-                        </button>
-                        <div className="hidden group-hover:block absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border border-brand-900/10 bg-white shadow-lg py-1">
-                          {project.rooms
-                            .filter((r) => r.id !== selectedRoom)
-                            .map((r) => (
-                              <button
-                                key={r.id}
-                                onClick={() => copyFurnitureTo(r.id)}
-                                className="block w-full text-left px-3 py-1.5 text-xs text-brand-700 hover:bg-brand-900/5"
-                              >
-                                {r.name}
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-                      <button
-                        onClick={clearAllFurniture}
-                        className="text-xs text-red-400 hover:text-red-600"
-                      >
-                        Clear All
-                      </button>
-                    </>
+                    <button
+                      onClick={clearAllFurniture}
+                      className="text-xs text-red-400 hover:text-red-600"
+                    >
+                      Clear All
+                    </button>
                   )}
                   <span className="text-xs text-brand-600">
-                    {currentRoom.furniture.length} items &middot; $
+                    {currentRoom.furniture.length} items · $
                     {currentRoom.furniture
                       .reduce((s, f) => s + f.item.price * f.quantity, 0)
                       .toLocaleString()}
@@ -362,33 +457,32 @@ export default function DesignBoard({ project, onUpdate }: Props) {
               {/* 2D Room Canvas */}
               <div
                 ref={canvasRef}
-                className="relative mx-auto border-2 border-brand-900/20 rounded-lg overflow-hidden"
+                className="relative mx-auto border-2 border-brand-900/20 rounded-lg overflow-hidden select-none"
                 style={{
                   width: canvasW,
                   height: canvasHeight,
                   backgroundColor: ROOM_COLORS[currentRoom.type] ?? "#E8E4DC",
-                  cursor: draggingItem ? "crosshair" : "default",
                 }}
-                onClick={handleCanvasDrop}
+                onClick={() => setSelectedPlaced(null)}
               >
-                {/* Room dimensions */}
-                <div className="absolute top-0 left-0 right-0 flex justify-center">
+                {/* Dimension labels */}
+                <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none">
                   <span className="bg-white/80 px-2 py-0.5 text-[10px] font-medium text-brand-700 rounded-b">
                     {currentRoom.widthFt}&apos;
                   </span>
                 </div>
-                <div className="absolute top-0 bottom-0 right-0 flex items-center">
+                <div className="absolute top-0 bottom-0 right-0 flex items-center pointer-events-none">
                   <span className="bg-white/80 px-1 py-0.5 text-[10px] font-medium text-brand-700 rounded-l -rotate-90 origin-center">
                     {currentRoom.lengthFt}&apos;
                   </span>
                 </div>
 
-                {/* Grid lines */}
+                {/* Grid */}
                 {Array.from({ length: Math.floor(currentRoom.widthFt) - 1 }).map(
                   (_, i) => (
                     <div
                       key={`v${i}`}
-                      className="absolute top-0 bottom-0 border-l border-brand-900/5"
+                      className="absolute top-0 bottom-0 border-l border-brand-900/5 pointer-events-none"
                       style={{ left: (i + 1) * scale }}
                     />
                   )
@@ -398,25 +492,25 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                 }).map((_, i) => (
                   <div
                     key={`h${i}`}
-                    className="absolute left-0 right-0 border-t border-brand-900/5"
+                    className="absolute left-0 right-0 border-t border-brand-900/5 pointer-events-none"
                     style={{ top: (i + 1) * scale }}
                   />
                 ))}
 
                 {/* Features */}
                 {currentRoom.features.includes("Window") && (
-                  <div className="absolute top-0 left-1/4 right-1/4 h-1 bg-blue-300/60" />
+                  <div className="absolute top-0 left-1/4 right-1/4 h-1 bg-blue-300/60 pointer-events-none" />
                 )}
                 {currentRoom.features.includes("Fireplace") && (
-                  <div className="absolute bottom-0 left-1/3 w-16 h-2 bg-orange-300/60 rounded-t" />
+                  <div className="absolute bottom-0 left-1/3 w-16 h-2 bg-orange-300/60 rounded-t pointer-events-none" />
                 )}
                 {currentRoom.features.includes("Closet") && (
-                  <div className="absolute top-0 right-0 w-10 h-12 bg-brand-900/10 rounded-bl border-l border-b border-brand-900/10">
+                  <div className="absolute top-0 right-0 w-10 h-12 bg-brand-900/10 rounded-bl border-l border-b border-brand-900/10 pointer-events-none">
                     <span className="text-[7px] text-brand-600/60 p-0.5 block">closet</span>
                   </div>
                 )}
                 {currentRoom.features.includes("En-suite") && (
-                  <div className="absolute bottom-0 right-0 w-16 h-12 bg-blue-100/40 rounded-tl border-l border-t border-blue-200/40">
+                  <div className="absolute bottom-0 right-0 w-16 h-12 bg-blue-100/40 rounded-tl border-l border-t border-blue-200/40 pointer-events-none">
                     <span className="text-[7px] text-blue-400/60 p-0.5 block">en-suite</span>
                   </div>
                 )}
@@ -424,7 +518,7 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                 {/* Accent wall */}
                 {currentRoom.accentWall && (
                   <div
-                    className="absolute"
+                    className="absolute pointer-events-none"
                     style={{
                       backgroundColor: currentRoom.accentWall.color + "40",
                       borderColor: currentRoom.accentWall.color,
@@ -439,18 +533,20 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                   />
                 )}
 
-                {/* Placed furniture items */}
+                {/* Placed items */}
                 {currentRoom.furniture.map((f) => {
                   const placed = f as PlacedItem;
                   const dims = getItemDimsPx(f.item);
                   const isSelected = selectedPlaced === f.item.id;
                   const xPx = ((placed.x ?? 50) / 100) * canvasW - dims.w / 2;
                   const yPx = ((placed.y ?? 50) / 100) * canvasHeight - dims.h / 2;
+                  const itemColor = colorForItem(f.item);
+                  const isMark = isMarker(f.item.id);
 
                   return (
                     <div
                       key={f.item.id}
-                      className={`absolute rounded shadow-sm flex items-center justify-center cursor-pointer transition-all ${
+                      className={`absolute rounded shadow-sm flex items-center justify-center transition-shadow cursor-grab active:cursor-grabbing ${
                         isSelected
                           ? "ring-2 ring-amber ring-offset-1 z-10"
                           : "hover:ring-1 hover:ring-amber/50"
@@ -460,88 +556,80 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                         top: Math.max(0, Math.min(canvasHeight - dims.h, yPx)),
                         width: dims.w,
                         height: dims.h,
-                        backgroundColor:
-                          (ITEM_COLORS[f.item.category] ?? "#8B7B6B") + "CC",
+                        backgroundColor: itemColor + (isMark ? "" : "CC"),
                         borderWidth: 1,
-                        borderColor:
-                          (ITEM_COLORS[f.item.category] ?? "#8B7B6B") + "FF",
+                        borderColor: itemColor,
+                        borderStyle: isMark ? "dashed" : "solid",
                       }}
+                      onMouseDown={(e) => startDrag(e, placed)}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedPlaced(
-                          isSelected ? null : f.item.id
-                        );
-                        setDraggingItem(null);
+                        setSelectedPlaced(isSelected ? null : f.item.id);
                       }}
                     >
                       <span
-                        className="text-white text-center leading-tight font-medium drop-shadow-sm"
+                        className="text-white text-center leading-tight font-medium drop-shadow-sm pointer-events-none px-1"
                         style={{ fontSize: Math.max(8, Math.min(11, dims.w / 8)) }}
                       >
                         {f.item.name.length > 20
-                          ? f.item.name.slice(0, 18) + "..."
+                          ? f.item.name.slice(0, 18) + "…"
                           : f.item.name}
                       </span>
                     </div>
                   );
                 })}
-
-                {/* Drag indicator */}
-                {draggingItem && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-amber/20 border-2 border-amber border-dashed rounded-lg px-4 py-2 text-sm font-medium text-amber-dark">
-                      Click to place: {draggingItem.name}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Selected item detail bar */}
-              {selectedPlaced && currentRoom.furniture.find((f) => f.item.id === selectedPlaced) && (
-                <div className="mt-3 flex items-center justify-between rounded-lg bg-brand-900/5 px-4 py-2">
-                  {(() => {
-                    const f = currentRoom.furniture.find(
-                      (f) => f.item.id === selectedPlaced
-                    )!;
-                    return (
-                      <>
-                        <div className="text-sm">
-                          <span className="font-medium text-brand-900">
-                            {f.item.name}
-                          </span>
-                          <span className="text-brand-600 ml-2">
-                            {f.item.vendor} &middot; {f.item.color} &middot; $
-                            {f.item.price}
-                          </span>
-                          <span className="text-brand-600/60 ml-2">
-                            {f.item.widthIn}&quot;W &times; {f.item.depthIn}
-                            &quot;D &times; {f.item.heightIn}&quot;H
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setDraggingItem(f.item);
-                              setSelectedPlaced(null);
-                            }}
-                            className="text-xs text-amber-dark hover:underline"
-                          >
-                            Move
-                          </button>
-                          <button
-                            onClick={() => removeItem(f.item.id)}
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
+              {selectedPlaced &&
+                currentRoom.furniture.find((f) => f.item.id === selectedPlaced) && (
+                  <div className="mt-3 flex items-center justify-between rounded-lg bg-brand-900/5 px-4 py-2">
+                    {(() => {
+                      const f = currentRoom.furniture.find(
+                        (f) => f.item.id === selectedPlaced
+                      )!;
+                      return (
+                        <>
+                          <div className="text-sm min-w-0">
+                            <span className="font-medium text-brand-900">
+                              {f.item.name}
+                            </span>
+                            {f.item.vendor && f.item.vendor !== "—" && (
+                              <span className="text-brand-600 ml-2">
+                                {f.item.vendor}
+                                {f.item.price > 0 && ` · $${f.item.price}`}
+                              </span>
+                            )}
+                            <span className="text-brand-600/60 ml-2">
+                              {f.item.widthIn}&quot;W × {f.item.depthIn}&quot;D ×{" "}
+                              {f.item.heightIn}&quot;H
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            {f.item.vendorUrl && (
+                              <a
+                                href={f.item.vendorUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-amber-dark hover:underline"
+                              >
+                                Open
+                              </a>
+                            )}
+                            <button
+                              onClick={() => removeItem(f.item.id)}
+                              className="text-xs text-red-500 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
 
-              {/* Furniture list for this room */}
+              {/* Item list */}
               {currentRoom.furniture.length > 0 && (
                 <div className="mt-3 border-t border-brand-900/5 pt-3">
                   <div className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-2">
@@ -565,15 +653,12 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                         <div className="flex items-center gap-2 min-w-0">
                           <div
                             className="h-2 w-2 rounded-full shrink-0"
-                            style={{
-                              backgroundColor:
-                                ITEM_COLORS[f.item.category] ?? "#8B7B6B",
-                            }}
+                            style={{ backgroundColor: colorForItem(f.item) }}
                           />
                           <span className="truncate">{f.item.name}</span>
                         </div>
                         <span className="text-brand-600 shrink-0 ml-2">
-                          ${f.item.price}
+                          {f.item.price > 0 ? `$${f.item.price}` : ""}
                         </span>
                       </div>
                     ))}
@@ -584,120 +669,201 @@ export default function DesignBoard({ project, onUpdate }: Props) {
           )}
         </div>
 
-        {/* Catalog sidebar */}
-        {showCatalog && (
-          <div className="w-72 shrink-0">
-            <div className="card max-h-[80vh] overflow-y-auto sticky top-4">
-              <h3 className="font-semibold mb-3 text-sm">Furniture Catalog</h3>
+        {/* Right-side "Add" panel (selected-only, no full catalog) */}
+        <div className="w-80 shrink-0">
+          <div className="card max-h-[80vh] overflow-y-auto sticky top-4 space-y-4">
+            <h3 className="font-semibold text-sm">Add Furniture</h3>
 
-              {/* Search */}
-              <input
-                className="input mb-2 text-xs"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCategory("");
-                }}
-              />
+            {/* Install-guide markers */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+                Install Guide Markers
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {MARKERS.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => placeItem(m)}
+                    className="flex items-center gap-2 rounded border border-brand-900/10 px-2 py-1.5 text-xs hover:bg-brand-900/5 transition"
+                  >
+                    <span
+                      className="h-3 w-3 rounded-sm"
+                      style={{ backgroundColor: MARKER_COLORS[m.id] }}
+                    />
+                    <span className="truncate">{m.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              {!search && (
-                <select
-                  className="select mb-2 text-xs"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="">All Categories</option>
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {CATEGORY_LABELS[c] || c}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {/* Suggestions */}
-              {currentRoom && currentRoom.furniture.length === 0 && (
-                <div className="mb-3 rounded bg-amber/5 border border-amber/20 p-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-dark mb-1.5">
-                    Suggested
-                  </div>
-                  {suggestFurniture(currentRoom, project.style)
-                    .slice(0, 5)
-                    .map((item) => (
+            {/* Auto-suggest */}
+            {suggestions.length > 0 && currentRoom && (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+                  Suggested for {currentRoom.name}
+                </div>
+                <div className="space-y-1">
+                  {suggestions.map((item) => {
+                    const added = currentRoom.furniture.some(
+                      (f) => f.item.id === item.id
+                    );
+                    return (
                       <button
                         key={item.id}
-                        onClick={() => addFromCatalog(item)}
-                        className="flex w-full items-center justify-between rounded px-2 py-1 text-xs hover:bg-amber/10 transition"
+                        disabled={added}
+                        onClick={() => placeItem(item)}
+                        className={`flex w-full items-center justify-between rounded border px-2 py-1.5 text-xs transition text-left ${
+                          added
+                            ? "border-amber/30 bg-amber/5 opacity-60 cursor-default"
+                            : "border-brand-900/5 hover:border-amber/30"
+                        }`}
                       >
-                        <span className="truncate text-brand-900">
-                          {item.name}
-                        </span>
-                        <span className="text-amber-dark shrink-0 ml-1">
-                          +
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-brand-900 truncate">
+                            {item.name}
+                          </div>
+                          <div className="text-brand-600/60 truncate">
+                            {item.vendor} · {item.color}
+                          </div>
+                        </div>
+                        <div className="text-right ml-2 shrink-0">
+                          <div className="font-medium text-brand-900">
+                            ${item.price}
+                          </div>
+                          <span className="text-[9px] text-brand-600">
+                            {added ? "Added" : "+ Add"}
+                          </span>
+                        </div>
                       </button>
-                    ))}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Paste product URL */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+                Paste Product URL
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  className="input text-xs flex-1"
+                  placeholder="https://wayfair.com/…"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addFromUrl()}
+                />
+                <button
+                  onClick={addFromUrl}
+                  disabled={urlLoading || !urlInput.trim()}
+                  className="btn-accent btn-sm shrink-0"
+                >
+                  {urlLoading ? "…" : "Add"}
+                </button>
+              </div>
+              {urlError && (
+                <div className="mt-1 text-[10px] text-red-500">{urlError}</div>
+              )}
+              <div className="mt-1 text-[10px] text-brand-600/60">
+                Any vendor URL — pulls title, price, dimensions.
+              </div>
+            </div>
+
+            {/* Search */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+                Search Products
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  className="input text-xs flex-1"
+                  placeholder="sage green velvet sofa…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && runWebSearch()}
+                />
+                <button
+                  onClick={runWebSearch}
+                  disabled={webLoading || !searchQuery.trim()}
+                  className="btn-secondary btn-sm shrink-0"
+                >
+                  {webLoading ? "…" : "Web"}
+                </button>
+              </div>
+              <div className="mt-1 text-[10px] text-brand-600/60">
+                Web search finds top-rated picks across Wayfair, Amazon, Target, Costco, Article, and beyond.
+              </div>
+
+              {webError && (
+                <div className="mt-2 text-[10px] text-red-500">{webError}</div>
+              )}
+
+              {webResults && webResults.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="text-[10px] text-brand-600">
+                    {webResults.length} web result{webResults.length !== 1 ? "s" : ""}
+                  </div>
+                  {webResults.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => addWebResult(r)}
+                      className="flex w-full items-start justify-between rounded border border-brand-900/5 px-2 py-1.5 text-xs hover:border-amber/30 text-left"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-brand-900 truncate">
+                          {r.name}
+                        </div>
+                        <div className="text-brand-600/60 truncate">
+                          {r.vendor}
+                          {r.rating !== undefined && ` · ${r.rating}★`}
+                          {r.reviewCount !== undefined && ` (${r.reviewCount})`}
+                        </div>
+                      </div>
+                      <div className="text-right ml-2 shrink-0">
+                        <div className="font-medium text-brand-900">
+                          ${r.price}
+                        </div>
+                        <span className="text-[9px] text-amber-dark">+ Add</span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
 
-              {/* Items */}
-              <div className="text-[10px] text-brand-600 mb-1.5">
-                {filteredItems.length} items
-              </div>
-              <div className="space-y-1">
-                {filteredItems.slice(0, 50).map((item) => {
-                  const isAdded = currentRoom?.furniture.some(
-                    (f) => f.item.id === item.id
-                  );
-                  return (
-                    <div
+              {/* Local catalog matches — fallback */}
+              {localCatalogResults.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="text-[10px] text-brand-600">
+                    Local catalog matches
+                  </div>
+                  {localCatalogResults.map((item) => (
+                    <button
                       key={item.id}
-                      className={`flex items-center justify-between rounded border px-2 py-1.5 text-xs transition cursor-pointer ${
-                        draggingItem?.id === item.id
-                          ? "border-amber bg-amber/10"
-                          : isAdded
-                            ? "border-amber/30 bg-amber/5"
-                            : "border-brand-900/5 hover:border-amber/30"
-                      }`}
-                      onClick={() => {
-                        if (isAdded) {
-                          // Select it on canvas
-                          setSelectedPlaced(item.id);
-                        } else {
-                          addFromCatalog(item);
-                        }
-                      }}
+                      onClick={() => placeItem(item)}
+                      className="flex w-full items-start justify-between rounded border border-brand-900/5 px-2 py-1.5 text-xs hover:border-amber/30 text-left"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-brand-900 truncate">
                           {item.name}
                         </div>
                         <div className="text-brand-600/60 truncate">
-                          {item.vendor} &middot; {item.color}
+                          {item.vendor} · {item.color}
                         </div>
                       </div>
                       <div className="text-right ml-2 shrink-0">
                         <div className="font-medium text-brand-900">
                           ${item.price}
                         </div>
-                        {isAdded ? (
-                          <span className="text-[9px] text-amber-dark">
-                            Added
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-brand-600">
-                            + Add
-                          </span>
-                        )}
+                        <span className="text-[9px] text-brand-600">+ Add</span>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
