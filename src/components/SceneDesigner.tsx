@@ -5,6 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { getFullCatalog, searchCatalog } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
 import { placeFurniture } from "@/lib/space-planning";
+import AiSceneStudio from "./AiSceneStudio";
 import { useToast } from "./Toast";
 import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
 
@@ -426,6 +427,9 @@ export default function SceneDesigner({ project, onUpdate }: Props) {
           </button>
         ))}
       </div>
+
+      {/* AI Scene Studio — the headline feature */}
+      <AiSceneStudio project={project} room={room} onUpdate={onUpdate} />
 
       <div className="flex gap-4">
         {/* Canvas */}

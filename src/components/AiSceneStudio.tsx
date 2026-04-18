@@ -1,0 +1,501 @@
+"use client";
+
+import { useState } from "react";
+import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
+import { STYLE_PRESETS } from "@/lib/style-presets";
+import { placeFurniture } from "@/lib/space-planning";
+import { useToast } from "./Toast";
+import type { Project, Room, FurnitureItem } from "@/lib/types";
+
+interface Props {
+  project: Project;
+  room: Room;
+  onUpdate: () => void;
+}
+
+interface SourcedOption {
+  name: string;
+  vendor: string;
+  price: number | null;
+  url: string;
+  imageUrl?: string;
+  dimensions?: string;
+}
+
+interface SourcedItem {
+  description: string;
+  category: string;
+  searchQuery: string;
+  estimatedSize?: string;
+  options: SourcedOption[];
+  /** Index of chosen option, or null for rejected/pending */
+  chosenIndex: number | null;
+}
+
+/**
+ * AI Scene Studio — the 80→20 engine for per-room design.
+ *
+ * Flow:
+ *   1. Designer picks a style preset (Japandi, Groovy, etc.)
+ *   2. Click "Generate Scene" → Gemini 2.5 Flash Image creates a
+ *      photorealistic interior in that style for the room type
+ *   3. Generated image becomes the Scene Designer background
+ *   4. Click "Source Items" → Gemini Vision identifies items in the
+ *      scene + Google Search grounding finds 3 real products per piece
+ *   5. Designer confirms 1 of 3 per item (or rejects) — confirmed items
+ *      drop into the masterlist as custom FurnitureItems and flow to
+ *      the Space Planner + Install Guide
+ *
+ * Budget-aware: total-of-picks vs remaining budget shown as a bar; if
+ * picks exceed remaining, the Confirm button turns red.
+ */
+export default function AiSceneStudio({ project, room, onUpdate }: Props) {
+  const toast = useToast();
+  const [styleId, setStyleId] = useState<string>(
+    project.moodBoards.find(b => b.isLockedConcept)?.style
+      ? matchStyleFromDesignStyle(project.moodBoards.find(b => b.isLockedConcept)!.style)
+      : STYLE_PRESETS[0].id
+  );
+  const [generating, setGenerating] = useState(false);
+  const [sourcing, setSourcing] = useState(false);
+  const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
+  const [showSourceModal, setShowSourceModal] = useState(false);
+
+  const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
+  const hasScene = !!room.sceneBackgroundUrl;
+
+  // Budget math: approved-only vs total budget
+  const budgetTotal = project.budget || 0;
+  const approvedSpend = project.rooms.reduce((s, r) =>
+    s + r.furniture.reduce((fs, f) => {
+      const st = f.status ?? "specced";
+      if (st === "approved" || st === "ordered" || st === "delivered") {
+        return fs + f.item.price * f.quantity;
+      }
+      return fs;
+    }, 0),
+  0);
+  const remainingBudget = Math.max(0, budgetTotal - approvedSpend);
+
+  async function generateScene() {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/generate-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          styleId: preset.id,
+          room: {
+            name: room.name,
+            type: room.type,
+            widthFt: room.widthFt,
+            lengthFt: room.lengthFt,
+          },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const { imageDataUrl } = await res.json();
+
+      // Save as the room's scene background
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) return;
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) return;
+      target.sceneBackgroundUrl = imageDataUrl;
+      target.sceneSnapshot = imageDataUrl; // also use for install guide hero
+      saveProject(fresh);
+      logActivity(project.id, "scene_generated", `AI-generated ${preset.label} scene for ${target.name}`);
+      toast.success(`${preset.label} scene ready for ${target.name}`);
+      onUpdate();
+      // Clear any previous sourcing results since scene changed
+      setSourcedItems(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Scene generation failed: " + msg);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function sourceItems() {
+    if (!room.sceneBackgroundUrl) {
+      toast.error("Generate a scene first, then I can source items from it.");
+      return;
+    }
+    setSourcing(true);
+    setShowSourceModal(true);
+    try {
+      const res = await fetch("/api/source-from-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: room.sceneBackgroundUrl,
+          budget: remainingBudget || undefined,
+          styleHint: preset.id,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const { items } = await res.json() as {
+        items: Array<{
+          description: string;
+          category: string;
+          searchQuery: string;
+          estimatedSize?: string;
+          options: SourcedOption[];
+        }>;
+      };
+      setSourcedItems(
+        items.map(i => ({
+          ...i,
+          chosenIndex: i.options.length > 0 ? 0 : null,
+        }))
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Sourcing failed: " + msg);
+      setShowSourceModal(false);
+    } finally {
+      setSourcing(false);
+    }
+  }
+
+  function pickOption(itemIdx: number, optIdx: number | null) {
+    setSourcedItems(prev => prev?.map((it, i) =>
+      i === itemIdx ? { ...it, chosenIndex: optIdx } : it
+    ) ?? null);
+  }
+
+  function commitChosen() {
+    if (!sourcedItems) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+
+    let added = 0;
+    for (const item of sourcedItems) {
+      if (item.chosenIndex === null) continue;
+      const opt = item.options[item.chosenIndex];
+      if (!opt) continue;
+
+      const customItem: FurnitureItem = {
+        id: `ai-${generateId()}`,
+        name: opt.name,
+        category: mapCategory(item.category),
+        subcategory: item.category,
+        widthIn: parseFirstDim(opt.dimensions) ?? 36,
+        depthIn: parseSecondDim(opt.dimensions) ?? 36,
+        heightIn: parseThirdDim(opt.dimensions) ?? 30,
+        price: opt.price ?? 0,
+        vendor: opt.vendor,
+        vendorUrl: opt.url,
+        imageUrl: opt.imageUrl ?? "",
+        color: "",
+        material: "",
+        style: preset.designStyle,
+      };
+      target.furniture.push(placeFurniture(target, customItem));
+      added++;
+    }
+
+    saveProject(fresh);
+    logActivity(project.id, "ai_sourced", `AI-sourced ${added} items for ${target.name}`);
+    toast.success(`Added ${added} item${added === 1 ? "" : "s"} to ${target.name}`);
+    setShowSourceModal(false);
+    setSourcedItems(null);
+    onUpdate();
+  }
+
+  const chosenTotal = sourcedItems?.reduce((s, i) => {
+    if (i.chosenIndex === null) return s;
+    const opt = i.options[i.chosenIndex];
+    return s + (opt?.price ?? 0);
+  }, 0) ?? 0;
+  const overBudget = budgetTotal > 0 && chosenTotal > remainingBudget;
+
+  return (
+    <div className="card bg-gradient-to-br from-amber/5 to-amber/0 border-amber/30 mb-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="font-semibold text-brand-900 text-sm flex items-center gap-1.5">
+            🪄 AI Scene Studio
+            <span className="text-[10px] font-normal text-brand-600/70 ml-1">
+              powered by Gemini
+            </span>
+          </h3>
+          <p className="text-xs text-brand-600 mt-1">
+            Pick a style, generate a photorealistic scene, then source real products from it.
+          </p>
+        </div>
+      </div>
+
+      {/* Style preset chips — horizontally scrollable */}
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {STYLE_PRESETS.map(p => {
+          const active = p.id === styleId;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setStyleId(p.id)}
+              className={`shrink-0 rounded-lg border px-3 py-2 text-left transition ${
+                active
+                  ? "border-amber bg-amber/15 shadow-sm"
+                  : "border-brand-900/10 bg-white hover:border-amber/40"
+              }`}
+              title={p.description}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-base">{p.emoji}</span>
+                <span className={`text-xs font-semibold ${active ? "text-brand-900" : "text-brand-700"}`}>
+                  {p.label}
+                </span>
+              </div>
+              <div className="flex gap-0.5">
+                {p.palette.map((c, i) => (
+                  <div key={i} className="h-3 w-3 rounded-sm" style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 text-xs text-brand-700 italic">{preset.description}</div>
+
+      {/* Action buttons */}
+      <div className="mt-3 flex gap-2 flex-wrap">
+        <button
+          onClick={generateScene}
+          disabled={generating}
+          className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {generating
+            ? "Generating scene..."
+            : hasScene
+              ? `🎨 Re-generate in ${preset.label}`
+              : `🎨 Generate ${preset.label} Scene`}
+        </button>
+        {hasScene && (
+          <button
+            onClick={sourceItems}
+            disabled={sourcing}
+            className="rounded-lg border border-amber/50 px-4 py-2 text-sm font-medium text-amber-dark hover:bg-amber/10 disabled:opacity-60"
+          >
+            {sourcing ? "Sourcing..." : "🛒 Source Real Products"}
+          </button>
+        )}
+      </div>
+
+      {budgetTotal > 0 && (
+        <div className="mt-3 text-[10px] text-brand-600">
+          Budget: ${approvedSpend.toLocaleString()} approved · ${remainingBudget.toLocaleString()} remaining of ${budgetTotal.toLocaleString()}
+        </div>
+      )}
+
+      {/* Sourcing modal */}
+      {showSourceModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-brand-900/10 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Source Real Products</h2>
+                <p className="text-xs text-brand-600 mt-0.5">
+                  3 options per item from the web. Pick one per row, or reject.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSourceModal(false)}
+                className="text-brand-600 hover:text-brand-900 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {sourcing && (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-3 animate-pulse">🔍</div>
+                  <div className="text-sm font-medium text-brand-900">
+                    Analyzing scene + searching the web...
+                  </div>
+                  <div className="text-xs text-brand-600 mt-1">
+                    Gemini identifies each piece, then grounds each query in Google Search. 30–60 seconds.
+                  </div>
+                </div>
+              )}
+
+              {!sourcing && sourcedItems && sourcedItems.length === 0 && (
+                <div className="text-center py-12 text-brand-600 text-sm">
+                  Couldn&apos;t identify any items. Try regenerating the scene.
+                </div>
+              )}
+
+              {!sourcing && sourcedItems && sourcedItems.length > 0 && (
+                <div className="space-y-4">
+                  {sourcedItems.map((item, itemIdx) => (
+                    <div key={itemIdx} className="rounded-lg border border-brand-900/10 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="text-sm font-semibold text-brand-900">{item.description}</div>
+                          <div className="text-[10px] text-brand-600">
+                            {item.category} · {item.searchQuery}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => pickOption(itemIdx, null)}
+                          className={`text-[10px] px-2 py-1 rounded ${
+                            item.chosenIndex === null
+                              ? "bg-red-100 text-red-700"
+                              : "text-brand-600 hover:text-red-600"
+                          }`}
+                        >
+                          Reject all
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {item.options.length === 0 && (
+                          <div className="col-span-3 text-xs text-brand-600 italic">
+                            No matches found for this piece.
+                          </div>
+                        )}
+                        {item.options.map((opt, optIdx) => {
+                          const picked = item.chosenIndex === optIdx;
+                          return (
+                            <button
+                              key={optIdx}
+                              onClick={() => pickOption(itemIdx, optIdx)}
+                              className={`text-left rounded-lg border p-2 transition ${
+                                picked
+                                  ? "border-amber bg-amber/10 shadow-sm"
+                                  : "border-brand-900/10 bg-white hover:border-amber/40"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="text-xs font-medium text-brand-900 line-clamp-2">
+                                  {opt.name}
+                                </div>
+                                {picked && <span className="text-amber-dark shrink-0">✓</span>}
+                              </div>
+                              <div className="text-[10px] text-brand-600 mt-1">{opt.vendor}</div>
+                              <div className="text-sm font-semibold text-brand-900 mt-1">
+                                {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
+                              </div>
+                              {opt.dimensions && (
+                                <div className="text-[9px] text-brand-600/70 mt-0.5">{opt.dimensions}</div>
+                              )}
+                              {opt.url && (
+                                <a
+                                  href={opt.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                  className="text-[10px] text-amber-dark hover:underline mt-1 inline-block"
+                                >
+                                  View on {opt.vendor} →
+                                </a>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!sourcing && sourcedItems && sourcedItems.length > 0 && (
+              <div className="px-6 py-4 border-t border-brand-900/10 flex items-center justify-between flex-wrap gap-3">
+                <div className="text-xs">
+                  <div className="font-semibold text-brand-900">
+                    Picks total: ${chosenTotal.toLocaleString()}
+                    <span className="text-brand-600 font-normal ml-2">
+                      ({sourcedItems.filter(i => i.chosenIndex !== null).length}/{sourcedItems.length} chosen)
+                    </span>
+                  </div>
+                  {budgetTotal > 0 && (
+                    <div className={overBudget ? "text-red-600" : "text-brand-600"}>
+                      {overBudget
+                        ? `Over remaining budget by $${(chosenTotal - remainingBudget).toLocaleString()}`
+                        : `$${(remainingBudget - chosenTotal).toLocaleString()} budget left after confirming`}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowSourceModal(false)}
+                    className="btn-secondary btn-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={commitChosen}
+                    disabled={sourcedItems.every(i => i.chosenIndex === null)}
+                    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed ${
+                      overBudget ? "bg-red-600 hover:bg-red-700" : "bg-amber hover:bg-amber-dark"
+                    }`}
+                  >
+                    Add {sourcedItems.filter(i => i.chosenIndex !== null).length} items to {room.name}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+
+function matchStyleFromDesignStyle(ds: string): string {
+  const map: Record<string, string> = {
+    "scandinavian": "scandinavian",
+    "mid-century": "mid-century-modern",
+    "coastal": "coastal",
+    "bohemian": "boho",
+    "traditional": "traditional",
+    "contemporary": "organic-modern",
+    "modern": "japandi",
+    "rustic": "mediterranean",
+  };
+  return map[ds] ?? "japandi";
+}
+
+function mapCategory(c: string): FurnitureItem["category"] {
+  const s = c.toLowerCase();
+  if (s.includes("bed") || s.includes("mattress")) return "beds-mattresses";
+  if (s.includes("sofa") || s.includes("chair") || s.includes("seating") || s.includes("ottoman")) return "seating";
+  if (s.includes("table") || s.includes("desk") || s.includes("nightstand")) return "tables";
+  if (s.includes("storage") || s.includes("dresser") || s.includes("shelf") || s.includes("cabinet")) return "storage";
+  if (s.includes("lamp") || s.includes("light") || s.includes("pendant") || s.includes("sconce")) return "lighting";
+  if (s.includes("rug") || s.includes("textile") || s.includes("curtain") || s.includes("pillow")) return "rugs-textiles";
+  if (s.includes("art") || s.includes("mirror") || s.includes("vase") || s.includes("plant")) return "decor";
+  if (s.includes("outdoor") || s.includes("patio")) return "outdoor";
+  if (s.includes("bathroom") || s.includes("towel")) return "bathroom";
+  if (s.includes("kitchen") || s.includes("dinner")) return "kitchen-dining";
+  return "decor";
+}
+
+function parseFirstDim(s?: string): number | null {
+  if (!s) return null;
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(?:\"|in|inches)?/i);
+  return m ? parseFloat(m[1]) : null;
+}
+function parseSecondDim(s?: string): number | null {
+  if (!s) return null;
+  const m = s.match(/\d+(?:\.\d+)?["\s]*[xX×]\s*(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : null;
+}
+function parseThirdDim(s?: string): number | null {
+  if (!s) return null;
+  const m = s.match(/\d+(?:\.\d+)?["\s]*[xX×]\s*\d+(?:\.\d+)?["\s]*[xX×]\s*(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : null;
+}
