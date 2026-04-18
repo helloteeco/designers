@@ -142,6 +142,10 @@ export interface Property {
   heroImageUrl?: string;
   /** Room-level notes designer writes for install guide tips */
   installNotes?: string;
+  /** Raw SVG text of the most-recent Matterport schematic uploaded. Stored
+   *  once at the property level and cropped per-room via Room.svgBBox in
+   *  the Space Planner backdrop. */
+  floorPlanSvgContent?: string;
 }
 
 export interface BedItem {
@@ -234,6 +238,10 @@ export interface Room {
   /** Snapshot of the rendered scene as base64 image, for use in install guide
    *  without needing to re-render. Regenerated when designer clicks "Snapshot Scene". */
   sceneSnapshot?: string;
+  /** Bounding box of this room within the project's floorPlanSvgContent.
+   *  Used to crop the SVG so the Space Planner backdrop shows just this
+   *  room's walls, doors, and windows. */
+  svgBBox?: { x: number; y: number; width: number; height: number };
 }
 
 export interface MoodBoard {

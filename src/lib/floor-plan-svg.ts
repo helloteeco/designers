@@ -13,6 +13,22 @@
 import type { DetectedRoom } from "./floor-plan-ocr";
 import { ROOM_KEYWORDS, parseDimensionOnly, prettifyLabel, guessRoomType } from "./floor-plan-ocr";
 
+/**
+ * Per-room SVG bounding box: where in the SVG's coordinate space this room
+ * lives. Used to crop the floor plan so each room shows only its own walls,
+ * doors, and windows in the Space Planner backdrop.
+ */
+export interface SvgBBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface SvgDetectedRoom extends DetectedRoom {
+  svgBBox?: SvgBBox;
+}
+
 /** True if the data: URL or raw text appears to be SVG. */
 export function isSvgSource(input: string): boolean {
   return (
@@ -85,6 +101,88 @@ function extractTextNodes(svgText: string): SvgTextNode[] {
   return out;
 }
 
+/**
+ * Compute per-room bounding boxes by mounting the SVG offscreen and asking
+ * the browser. For each room's label position, walk up parent <g> groups
+ * until we find one whose getBBox() looks like a room (big enough, contains
+ * the label, but not the whole house).
+ *
+ * Returns null entries if no usable bbox could be determined for a label.
+ * The caller falls back to a synthetic bbox (square around the label).
+ */
+function computeRoomBBoxes(
+  svgText: string,
+  labelPositions: { label: string; x: number; y: number }[]
+): (SvgBBox | null)[] {
+  if (typeof document === "undefined") return labelPositions.map(() => null);
+
+  const host = document.createElement("div");
+  host.style.position = "fixed";
+  host.style.left = "-99999px";
+  host.style.top = "0";
+  host.style.width = "1000px";
+  host.style.height = "1000px";
+  host.style.visibility = "hidden";
+  host.style.pointerEvents = "none";
+  host.innerHTML = svgText;
+
+  const svg = host.querySelector("svg") as SVGSVGElement | null;
+  if (!svg) return labelPositions.map(() => null);
+  // Force a viewBox if the SVG only declared width/height — getBBox needs
+  // resolved geometry, and Matterport's SVGs are usually sized correctly.
+  document.body.appendChild(host);
+
+  let rootBBox: DOMRect | null = null;
+  try {
+    rootBBox = (svg as unknown as SVGGraphicsElement).getBBox();
+  } catch {
+    rootBBox = null;
+  }
+  const houseArea = rootBBox ? rootBBox.width * rootBBox.height : Infinity;
+
+  const out: (SvgBBox | null)[] = [];
+  try {
+    // Walk all text nodes, find the one whose textContent matches each label
+    const allTexts = Array.from(svg.querySelectorAll("text, tspan")) as SVGGraphicsElement[];
+
+    for (const lp of labelPositions) {
+      const target = allTexts.find(t => (t.textContent ?? "").trim() === lp.label.trim());
+      if (!target) {
+        out.push(null);
+        continue;
+      }
+      // Walk up: find the smallest <g> whose bbox is "room-sized"
+      // (≥ ~5% of house area, ≤ ~80% of house area). Avoids selecting just
+      // the text bbox or the whole house group.
+      let cursor: Element | null = target.parentElement;
+      let best: SvgBBox | null = null;
+      while (cursor && cursor !== svg) {
+        try {
+          const bb = (cursor as unknown as SVGGraphicsElement).getBBox?.();
+          if (bb) {
+            const area = bb.width * bb.height;
+            const frac = area / houseArea;
+            if (frac >= 0.005 && frac <= 0.8) {
+              best = { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+              // Prefer the smallest qualifying bbox — keep walking up only
+              // until we exceed the upper bound.
+              break;
+            }
+          }
+        } catch {
+          // ignore — element may not be SVGGraphicsElement
+        }
+        cursor = cursor.parentElement;
+      }
+      out.push(best);
+    }
+  } finally {
+    document.body.removeChild(host);
+  }
+
+  return out;
+}
+
 function parseTranslate(transform: string): { x: number; y: number } {
   // Match translate(x, y) or translate(x y) — first occurrence is enough for our needs
   const m = transform.match(/translate\(\s*(-?\d+(?:\.\d+)?)[\s,]+(-?\d+(?:\.\d+)?)?\s*\)/);
@@ -100,11 +198,11 @@ function parseTranslate(transform: string): { x: number; y: number } {
  *  1. Same-text-node label+dimension (e.g. "BEDROOM 13'8" × 11'7"")
  *  2. Otherwise pair each label-node with its nearest dimension-node
  */
-export async function detectRoomsFromSvg(svgInput: string): Promise<DetectedRoom[]> {
+export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedRoom[]> {
   const svgText = await readSvgText(svgInput);
   const nodes = extractTextNodes(svgText);
 
-  const detected: DetectedRoom[] = [];
+  const detected: SvgDetectedRoom[] = [];
 
   // Pass 1: label + dim on the same node
   const consumed = new Set<number>();
@@ -167,7 +265,7 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<DetectedRoom
   }
 
   // Dedupe identical labels with very similar dimensions
-  const deduped: DetectedRoom[] = [];
+  const deduped: SvgDetectedRoom[] = [];
   const seen = new Set<string>();
   for (const r of detected) {
     const key = `${r.normalizedLabel}-${Math.round(r.widthFt)}-${Math.round(r.lengthFt)}`;
@@ -175,6 +273,27 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<DetectedRoom
     seen.add(key);
     deduped.push(r);
   }
+
+  // Enrich each detected room with an SVG bounding box. We use the rawText
+  // as the matching label since that's what we found in the SVG verbatim.
+  // Falls back to a synthetic bbox (square around the label position) when
+  // we couldn't pin down a containing group — the Space Planner backdrop
+  // will still render, just slightly larger than the room.
+  if (deduped.length > 0) {
+    const labelPositions = deduped.map(r => ({
+      label: r.rawText,
+      x: (r.bbox.x0 + r.bbox.x1) / 2,
+      y: (r.bbox.y0 + r.bbox.y1) / 2,
+    }));
+    const bboxes = computeRoomBBoxes(svgText, labelPositions);
+    for (let i = 0; i < deduped.length; i++) {
+      const bb = bboxes[i];
+      if (bb) {
+        deduped[i].svgBBox = bb;
+      }
+    }
+  }
+
   return deduped;
 }
 

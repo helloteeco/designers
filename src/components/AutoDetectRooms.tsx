@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { detectRoomsFromImage, matchDetectedToExisting, type DetectedRoom, type RoomMatch } from "@/lib/floor-plan-ocr";
-import { detectRoomsFromSvg, isSvgSource } from "@/lib/floor-plan-svg";
+import { detectRoomsFromSvg, isSvgSource, readSvgText, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
 import type { Project, FloorPlan, Room, RoomType } from "@/lib/types";
 
@@ -94,21 +94,34 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
     ));
   }
 
-  function applyChanges() {
+  async function applyChanges() {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
+
+    // If we ran the SVG path, persist the raw SVG once at the property level
+    // so the Space Planner backdrop can crop it per-room.
+    if (sourceKind === "svg") {
+      try {
+        const svgText = await readSvgText(plan.url);
+        fresh.property.floorPlanSvgContent = svgText;
+      } catch {
+        // Non-fatal — we still apply the room dimensions.
+      }
+    }
 
     let created = 0;
     let updated = 0;
 
     for (const m of matches) {
       if (m.action === "skip") continue;
+      const svgBBox = (m.detected as SvgDetectedRoom).svgBBox;
 
       if (m.action === "update" && m.existingRoomId) {
         const room = fresh.rooms.find(r => r.id === m.existingRoomId);
         if (!room) continue;
         room.widthFt = m.detected.widthFt;
         room.lengthFt = m.detected.lengthFt;
+        if (svgBBox) room.svgBBox = svgBBox;
         // Don't overwrite name if user has set one — but update type if still default
         if (room.type !== m.detected.guessedType) {
           // Leave existing type; OCR type is just a guess
@@ -128,8 +141,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
           furniture: [],
           accentWall: null,
           notes: "",
-          // No annotation here — designer can spatially pin via manual
-          // annotator if they want. Auto-detect prioritizes name + dims.
+          ...(svgBBox ? { svgBBox } : {}),
         };
         fresh.rooms.push(newRoom);
         created++;

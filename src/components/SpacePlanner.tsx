@@ -435,7 +435,7 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
             <div className="overflow-auto max-h-[600px]">
               <div
                 ref={canvasRef}
-                className="relative mx-auto border-2 border-brand-900/20 rounded-lg"
+                className="relative mx-auto border-2 border-brand-900/20 rounded-lg overflow-hidden"
                 style={{
                   width: canvasW,
                   height: canvasH,
@@ -443,6 +443,20 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                 }}
                 onClick={handleCanvasClick}
               >
+                {/* SVG floor-plan backdrop — the actual walls/doors/windows from the
+                    Matterport schematic, cropped to this room's bbox. Sits behind the
+                    grid + furniture so designer can place items relative to real
+                    door swings instead of guessing. */}
+                {project.property.floorPlanSvgContent && room.svgBBox && (
+                  <svg
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    viewBox={`${room.svgBBox.x} ${room.svgBBox.y} ${room.svgBBox.width} ${room.svgBBox.height}`}
+                    preserveAspectRatio="xMidYMid meet"
+                    style={{ opacity: 0.55 }}
+                    dangerouslySetInnerHTML={{ __html: extractSvgInner(project.property.floorPlanSvgContent) }}
+                  />
+                )}
+
                 {/* Grid */}
                 {showGrid && Array.from({ length: Math.floor(room.widthFt) - 1 }).map((_, i) => (
                   <div key={`v${i}`} className="absolute top-0 bottom-0 border-l border-brand-900/5" style={{ left: (i + 1) * SCALE_FACTOR * zoom }} />
@@ -731,6 +745,23 @@ function StatCard({ label, value, sub, warn }: { label: string; value: string; s
       <div className="text-[10px] text-brand-600/60">{sub}</div>
     </div>
   );
+}
+
+// Strip the outer <svg> wrapper from a Matterport schematic, leaving just
+// the inner geometry to inject under our own <svg viewBox>. We cache the
+// extracted inner content so we're not re-parsing on every render.
+const _svgInnerCache = new WeakMap<object, string>();
+const _svgInnerStringCache = new Map<string, string>();
+function extractSvgInner(svgText: string): string {
+  const cached = _svgInnerStringCache.get(svgText);
+  if (cached !== undefined) return cached;
+  const match = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
+  const inner = match ? match[1] : svgText;
+  // Limit cache size to avoid leaks if multiple SVGs are loaded.
+  if (_svgInnerStringCache.size > 8) _svgInnerStringCache.clear();
+  _svgInnerStringCache.set(svgText, inner);
+  void _svgInnerCache; // keep weak-map symbol around for future caching by object key
+  return inner;
 }
 
 // Hide rooms that look like junk from auto-detect (or duplicates from
