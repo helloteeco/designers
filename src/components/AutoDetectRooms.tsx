@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { detectRoomsFromImage, matchDetectedToExisting, type DetectedRoom, type RoomMatch } from "@/lib/floor-plan-ocr";
+import { detectRoomsFromSvg, isSvgSource } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
 import type { Project, FloorPlan, Room, RoomType } from "@/lib/types";
 
@@ -29,7 +30,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
 
   async function runDetection() {
     if (plan.type !== "image") {
-      toast.error("Can only auto-detect from image floor plans. Export your PDF as PNG first.");
+      toast.error("Can only auto-detect from image floor plans. Export your PDF as PNG (or SVG) first.");
       return;
     }
 
@@ -37,9 +38,19 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
     setProgress({ pct: 0, status: "Starting..." });
 
     try {
-      const rooms = await detectRoomsFromImage(plan.url, (pct, status) => {
-        setProgress({ pct, status });
-      });
+      // Matterport schematic SVG: parse text nodes directly — no OCR needed.
+      // Way faster + exact, since SVG text isn't recognized, it's literal.
+      const isSvg = isSvgSource(plan.url);
+      let rooms: DetectedRoom[];
+      if (isSvg) {
+        setProgress({ pct: 30, status: "Reading SVG text + dimensions..." });
+        rooms = await detectRoomsFromSvg(plan.url);
+        setProgress({ pct: 100, status: `Found ${rooms.length} rooms` });
+      } else {
+        rooms = await detectRoomsFromImage(plan.url, (pct, status) => {
+          setProgress({ pct, status });
+        });
+      }
 
       if (rooms.length === 0) {
         setPhase("error");
@@ -152,30 +163,41 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
-          {phase === "ready" && (
-            <div>
-              <p className="text-sm text-brand-700 mb-3">
-                Reads room labels and dimensions directly off your floor plan using in-browser OCR.
-                Works best on cleanly typeset plans (Matterport, architect exports).
-              </p>
-              <div className="rounded-lg bg-brand-900/5 p-3 text-xs text-brand-700 mb-4">
-                <strong>What it does:</strong>
-                <ul className="list-disc list-inside space-y-0.5 mt-1">
-                  <li>Finds labels like &quot;BEDROOM&quot;, &quot;KITCHEN&quot;, &quot;PRIMARY SUITE&quot;</li>
-                  <li>Extracts dimensions like <code className="bg-white px-1 rounded">13&apos;8&quot; × 11&apos;7&quot;</code></li>
-                  <li>Matches to your existing rooms (or creates new ones)</li>
-                  <li>You review and edit before anything is saved</li>
-                </ul>
+          {phase === "ready" && (() => {
+            const isSvg = isSvgSource(plan.url);
+            return (
+              <div>
+                <p className="text-sm text-brand-700 mb-3">
+                  {isSvg ? (
+                    <>Detected a <strong>Matterport SVG schematic</strong> — text + dimensions are vector elements, so we read them directly. Instant and exact.</>
+                  ) : (
+                    <>Reads room labels and dimensions directly off your floor plan using in-browser OCR. Works best on cleanly typeset plans (Matterport, architect exports).</>
+                  )}
+                </p>
+                <div className="rounded-lg bg-brand-900/5 p-3 text-xs text-brand-700 mb-4">
+                  <strong>What it does:</strong>
+                  <ul className="list-disc list-inside space-y-0.5 mt-1">
+                    <li>Finds labels like &quot;BEDROOM&quot;, &quot;KITCHEN&quot;, &quot;PRIMARY SUITE&quot;</li>
+                    <li>Extracts dimensions like <code className="bg-white px-1 rounded">13&apos;8&quot; × 11&apos;7&quot;</code></li>
+                    <li>Matches to your existing rooms (or creates new ones)</li>
+                    <li>You review and edit before anything is saved</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-brand-600 mb-4">
+                  🔒 Runs entirely in your browser. Nothing is uploaded to a server.
+                  {!isSvg && <> May take 10-30 seconds on first run (loads OCR engine).</>}
+                </p>
+                <button onClick={runDetection} className="btn-primary w-full">
+                  {isSvg ? "⚡ Parse SVG" : "🔍 Scan this Floor Plan"}
+                </button>
+                {!isSvg && (
+                  <p className="text-[11px] text-brand-600/70 mt-3 text-center">
+                    💡 Tip: a Matterport <strong>Schematic Floor Plan SVG export</strong> parses instantly and more accurately than a PNG.
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-brand-600 mb-4">
-                🔒 Runs entirely in your browser. Nothing is uploaded to a server.
-                May take 10-30 seconds on first run (loads OCR engine).
-              </p>
-              <button onClick={runDetection} className="btn-primary w-full">
-                🔍 Scan this Floor Plan
-              </button>
-            </div>
-          )}
+            );
+          })()}
 
           {phase === "scanning" && (
             <div className="text-center py-8">

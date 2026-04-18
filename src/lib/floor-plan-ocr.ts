@@ -38,7 +38,7 @@ const DIMENSION_RE = new RegExp(
 );
 
 // ── Room-type vocabulary ──
-const ROOM_KEYWORDS: { keywords: string[]; type: RoomType; label?: string }[] = [
+export const ROOM_KEYWORDS: { keywords: string[]; type: RoomType; label?: string }[] = [
   { keywords: ["primary suite", "primary bedroom", "master suite", "master bedroom"], type: "primary-bedroom", label: "Primary Suite" },
   { keywords: ["bedroom", "bed rm", "br "], type: "bedroom" },
   { keywords: ["loft"], type: "loft" },
@@ -247,7 +247,7 @@ function parseRoomLine(text: string): { label: string; widthFt: number; lengthFt
   return { label: pretty, widthFt: dim.widthFt, lengthFt: dim.lengthFt };
 }
 
-function parseDimensionOnly(text: string): { widthFt: number; lengthFt: number } | null {
+export function parseDimensionOnly(text: string): { widthFt: number; lengthFt: number } | null {
   DIMENSION_RE.lastIndex = 0;
   const match = DIMENSION_RE.exec(text);
   if (!match) return null;
@@ -284,7 +284,7 @@ function extractLabel(text: string): { label: string; type: RoomType } | null {
   return null;
 }
 
-function guessRoomType(label: string): RoomType {
+export function guessRoomType(label: string): RoomType {
   const lower = label.toLowerCase();
   for (const entry of ROOM_KEYWORDS) {
     for (const kw of entry.keywords) {
@@ -294,7 +294,7 @@ function guessRoomType(label: string): RoomType {
   return "bedroom";
 }
 
-function prettifyLabel(raw: string, type: RoomType, override?: string): string {
+export function prettifyLabel(raw: string, type: RoomType, override?: string): string {
   if (override) return override;
   // Title-case the raw label
   const trimmed = raw

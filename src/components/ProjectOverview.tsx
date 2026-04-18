@@ -124,17 +124,19 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
           </dl>
         )}
 
-        {/* 3D Scans */}
+        {/* 3D Scans — one smart paste field; chips show what's already linked */}
         <div className="mt-4 pt-4 border-t border-brand-900/5">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">3D Scans &amp; Design Links</div>
-            <span className="text-[10px] text-brand-600/60">Paste URLs below</span>
+            <span className="text-[10px] text-brand-600/60">Auto-detects Matterport · Polycam · Spoak</span>
           </div>
-          <div className="space-y-2">
-            <ScanInput label="Matterport" icon="📐" placeholder="https://my.matterport.com/show/?m=..." url={editingProperty ? propertyForm.matterportLink : project.property.matterportLink} onChange={editingProperty ? (v) => setPropertyForm({ ...propertyForm, matterportLink: v }) : (v) => { const fresh = getProject(project.id); if (!fresh) return; fresh.property.matterportLink = v; saveProject(fresh); onUpdate(); }} color="blue" />
-            <ScanInput label="Polycam" icon="📱" placeholder="https://poly.cam/capture/..." url={editingProperty ? propertyForm.polycamLink : project.property.polycamLink} onChange={editingProperty ? (v) => setPropertyForm({ ...propertyForm, polycamLink: v }) : (v) => { const fresh = getProject(project.id); if (!fresh) return; fresh.property.polycamLink = v; saveProject(fresh); onUpdate(); }} color="emerald" />
-            <ScanInput label="Spoak" icon="🎨" placeholder="https://www.spoak.com/..." url={editingProperty ? propertyForm.spoakLink : project.property.spoakLink} onChange={editingProperty ? (v) => setPropertyForm({ ...propertyForm, spoakLink: v }) : (v) => { const fresh = getProject(project.id); if (!fresh) return; fresh.property.spoakLink = v; saveProject(fresh); onUpdate(); }} color="purple" />
-          </div>
+          <SmartScanInput
+            project={project}
+            editingProperty={editingProperty}
+            propertyForm={propertyForm}
+            setPropertyForm={setPropertyForm}
+            onUpdate={onUpdate}
+          />
         </div>
 
         {/* Floor Plans */}
@@ -306,28 +308,129 @@ function HeroImageUploader({ project, onUpdate }: { project: Project; onUpdate: 
   );
 }
 
-function ScanInput({ label, icon, placeholder, url, onChange, color }: { label: string; icon: string; placeholder: string; url: string; onChange: (v: string) => void; color: string }) {
-  const [value, setValue] = useState(url);
-  const [focused, setFocused] = useState(false);
-  const colorDot = { blue: "bg-blue-500", emerald: "bg-emerald-500", purple: "bg-purple-500" }[color] ?? "bg-gray-400";
+type ScanKind = "matterport" | "polycam" | "spoak";
 
-  useEffect(() => { setValue(url); }, [url]);
+const SCAN_META: Record<ScanKind, { label: string; icon: string; field: "matterportLink" | "polycamLink" | "spoakLink"; color: string }> = {
+  matterport: { label: "Matterport", icon: "📐", field: "matterportLink", color: "bg-blue-500" },
+  polycam: { label: "Polycam", icon: "📱", field: "polycamLink", color: "bg-emerald-500" },
+  spoak: { label: "Spoak", icon: "🎨", field: "spoakLink", color: "bg-purple-500" },
+};
 
-  function handleBlur() {
-    setFocused(false);
-    if (value !== url) onChange(value);
+function detectScanKind(url: string): ScanKind | null {
+  const u = url.toLowerCase().trim();
+  if (!u) return null;
+  if (u.includes("matterport.com")) return "matterport";
+  if (u.includes("poly.cam") || u.includes("polycam.com")) return "polycam";
+  if (u.includes("spoak.com")) return "spoak";
+  return null;
+}
+
+function SmartScanInput({
+  project,
+  editingProperty,
+  propertyForm,
+  setPropertyForm,
+  onUpdate,
+}: {
+  project: Project;
+  editingProperty: boolean;
+  propertyForm: Project["property"];
+  setPropertyForm: (p: Project["property"]) => void;
+  onUpdate: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const links = editingProperty ? propertyForm : project.property;
+
+  function commit(url: string) {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    const kind = detectScanKind(trimmed);
+    if (!kind) {
+      setError("Couldn't tell what kind of link that is. Paste a Matterport, Polycam, or Spoak URL.");
+      return;
+    }
+    setError(null);
+    if (editingProperty) {
+      setPropertyForm({ ...propertyForm, [SCAN_META[kind].field]: trimmed });
+    } else {
+      const fresh = getProject(project.id);
+      if (!fresh) return;
+      (fresh.property as unknown as Record<string, string>)[SCAN_META[kind].field] = trimmed;
+      saveProject(fresh);
+      onUpdate();
+    }
+    setDraft("");
   }
 
+  function clearLink(kind: ScanKind) {
+    if (editingProperty) {
+      setPropertyForm({ ...propertyForm, [SCAN_META[kind].field]: "" });
+    } else {
+      const fresh = getProject(project.id);
+      if (!fresh) return;
+      (fresh.property as unknown as Record<string, string>)[SCAN_META[kind].field] = "";
+      saveProject(fresh);
+      onUpdate();
+    }
+  }
+
+  const linkedKinds: ScanKind[] = (Object.keys(SCAN_META) as ScanKind[]).filter(k => links[SCAN_META[k].field]);
+
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-base" aria-hidden>{icon}</span>
-      <div className="flex items-center gap-1.5 w-24 shrink-0">
-        <div className={`h-1.5 w-1.5 rounded-full ${colorDot}`} />
-        <span className="text-xs font-medium text-brand-700">{label}</span>
+    <div>
+      <div className="flex items-center gap-2">
+        <input
+          type="url"
+          className="input flex-1 text-xs py-2"
+          placeholder="Paste a Matterport, Polycam, or Spoak link…"
+          value={draft}
+          onChange={e => { setDraft(e.target.value); setError(null); }}
+          onBlur={() => commit(draft)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(draft); } }}
+        />
       </div>
-      <input type="url" className="input flex-1 text-xs py-1.5" placeholder={placeholder} value={value} onChange={e => setValue(e.target.value)} onBlur={handleBlur} onFocus={() => setFocused(true)} />
-      {url && !focused && (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-dark hover:underline shrink-0" title={`Open ${label}`}>Open →</a>
+      {error && (
+        <div className="text-[10px] text-red-500 mt-1">{error}</div>
+      )}
+
+      {linkedKinds.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {linkedKinds.map(kind => {
+            const meta = SCAN_META[kind];
+            const url = links[meta.field];
+            return (
+              <div key={kind} className="inline-flex items-center gap-1.5 rounded-full bg-brand-900/5 px-2 py-1 text-[10px]">
+                <span className={`h-1.5 w-1.5 rounded-full ${meta.color}`} />
+                <span className="text-brand-700 font-medium">{meta.label}</span>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-dark hover:underline"
+                  title={url}
+                >
+                  Open →
+                </a>
+                <button
+                  onClick={() => clearLink(kind)}
+                  className="text-brand-600/60 hover:text-red-500 ml-0.5"
+                  title="Remove link"
+                  aria-label={`Remove ${meta.label} link`}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {linkedKinds.includes("matterport") && (
+        <div className="mt-2 rounded-lg bg-amber/10 border border-amber/20 px-3 py-2 text-[10px] text-brand-700">
+          <strong>📐 Matterport tip:</strong> from your Matterport space, click <strong>Export → Schematic Floor Plan</strong> and download the SVG or PNG. Upload it under Floor Plans below to auto-detect rooms + dimensions.
+        </div>
       )}
     </div>
   );

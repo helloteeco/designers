@@ -120,6 +120,10 @@ export interface FloorPlan {
   uploadedAt: string;
   notes: string;
   sizeBytes?: number;     // informational; warns on backup if huge
+  /** The Primary plan drives Install Guide cover, room auto-detect, and Space
+   *  Planner reference. Exactly zero or one plan should be primary; if none is
+   *  flagged, treat the most-recent image plan as primary. */
+  isPrimary?: boolean;
 }
 
 export interface Property {

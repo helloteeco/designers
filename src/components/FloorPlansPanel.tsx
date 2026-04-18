@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { useToast } from "./Toast";
+import AutoDetectRooms from "./AutoDetectRooms";
 import type { Project, FloorPlan } from "@/lib/types";
 
 interface Props {
@@ -35,6 +36,8 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
+  const [autoDetectPlan, setAutoDetectPlan] = useState<FloorPlan | null>(null);
+  const [showAllPlans, setShowAllPlans] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleDragEnter(e: React.DragEvent) {
@@ -103,11 +106,13 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
     if (accepted.length === 0) return;
 
     setUploading(true);
+    const newlyAdded: FloorPlan[] = [];
     try {
       const fresh = getProjectFromStore(project.id);
       if (!fresh) return;
       if (!fresh.property.floorPlans) fresh.property.floorPlans = [];
 
+      const hadPlansBefore = fresh.property.floorPlans.length > 0;
       const useCustomLabel = accepted.length === 1 && form.name.trim();
       for (let i = 0; i < accepted.length; i++) {
         const file = accepted[i];
@@ -123,8 +128,12 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
           uploadedAt: new Date().toISOString(),
           notes: form.notes,
           sizeBytes: file.size,
+          // First-ever plan is auto-primary so the Install Guide cover and
+          // Space Planner reference have something to lock onto.
+          isPrimary: !hadPlansBefore && i === 0 && type === "image" ? true : undefined,
         };
         fresh.property.floorPlans.push(plan);
+        newlyAdded.push(plan);
       }
 
       saveProject(fresh);
@@ -137,6 +146,14 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
       setShowForm(false);
       setForm({ name: "", url: "", notes: "" });
       onUpdate();
+
+      // Auto-trigger room detection on a fresh image plan. Skips PDFs (OCR
+      // requires an image) and skips when many plans were uploaded at once
+      // (the designer is probably importing a set, not a single primary plan).
+      const candidate = newlyAdded.find(p => p.type === "image");
+      if (candidate && newlyAdded.length === 1) {
+        setAutoDetectPlan(candidate);
+      }
     } catch (err) {
       toast.error("Upload failed: " + (err instanceof Error ? err.message : "unknown"));
     } finally {
@@ -198,6 +215,24 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
     saveProject(fresh);
     onUpdate();
   }
+
+  function setPrimaryPlan(id: string) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const plans = fresh.property.floorPlans ?? [];
+    for (const p of plans) p.isPrimary = p.id === id ? true : undefined;
+    saveProject(fresh);
+    toast.success("Primary plan updated");
+    onUpdate();
+  }
+
+  // Resolve the primary plan: explicit flag wins, else fall back to the most
+  // recent image plan (same rule InstallGuide / SpacePlanner use).
+  const primaryPlan =
+    floorPlans.find(p => p.isPrimary) ??
+    [...floorPlans].filter(p => p.type === "image").sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))[0] ??
+    null;
+  const otherPlans = floorPlans.filter(p => p.id !== primaryPlan?.id);
 
   return (
     <div
@@ -261,64 +296,62 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
       )}
 
       {floorPlans.length > 0 && (
-        <div className={compact ? "grid grid-cols-2 gap-2" : "grid sm:grid-cols-2 gap-2"}>
-          {floorPlans.map(plan => (
-            <div
-              key={plan.id}
-              className="group relative rounded-lg border border-brand-900/10 bg-white overflow-hidden hover:border-amber/40 transition"
-            >
-              {/* Preview / thumb */}
-              <button
-                onClick={() => {
-                  if (plan.type === "pdf" || plan.type === "link") {
-                    window.open(plan.url, "_blank");
-                  } else {
-                    setPreview(plan);
-                  }
-                }}
-                className="block w-full aspect-video bg-brand-900/5 overflow-hidden"
-              >
-                {plan.type === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={plan.url}
-                    alt={plan.name}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-3xl">
-                    {plan.type === "pdf" ? "📄" : "🔗"}
-                  </div>
-                )}
-              </button>
+        <div className="space-y-3">
+          {/* Primary plan — shown big */}
+          {primaryPlan && (
+            <PlanCard
+              plan={primaryPlan}
+              isPrimary
+              canSetPrimary={false}
+              isOnly={otherPlans.length === 0}
+              onPreview={() => primaryPlan.type === "image" ? setPreview(primaryPlan) : window.open(primaryPlan.url, "_blank")}
+              onRename={(n) => renamePlan(primaryPlan.id, n)}
+              onRemove={() => removePlan(primaryPlan.id)}
+              onSetPrimary={() => {}}
+              onAutoDetect={primaryPlan.type === "image" ? () => setAutoDetectPlan(primaryPlan) : undefined}
+            />
+          )}
 
-              {/* Meta */}
-              <div className="p-2">
-                <div className="flex items-center justify-between gap-2">
-                  <input
-                    className="flex-1 text-xs font-medium text-brand-900 bg-transparent outline-none focus:bg-amber/10 px-1 rounded"
-                    value={plan.name}
-                    onChange={e => renamePlan(plan.id, e.target.value)}
-                  />
-                  <button
-                    onClick={() => removePlan(plan.id)}
-                    className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 shrink-0"
-                  >
-                    ×
-                  </button>
+          {/* Other plans — collapsed by default */}
+          {otherPlans.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowAllPlans(s => !s)}
+                className="text-xs text-brand-600 hover:text-brand-900 underline"
+              >
+                {showAllPlans ? "Hide" : "+ Show"} {otherPlans.length} other plan{otherPlans.length === 1 ? "" : "s"}
+              </button>
+              {showAllPlans && (
+                <div className={compact ? "mt-2 grid grid-cols-2 gap-2" : "mt-2 grid sm:grid-cols-2 gap-2"}>
+                  {otherPlans.map(plan => (
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      isPrimary={false}
+                      canSetPrimary={plan.type === "image"}
+                      isOnly={false}
+                      onPreview={() => plan.type === "image" ? setPreview(plan) : window.open(plan.url, "_blank")}
+                      onRename={(n) => renamePlan(plan.id, n)}
+                      onRemove={() => removePlan(plan.id)}
+                      onSetPrimary={() => setPrimaryPlan(plan.id)}
+                      onAutoDetect={plan.type === "image" ? () => setAutoDetectPlan(plan) : undefined}
+                    />
+                  ))}
                 </div>
-                <div className="text-[9px] text-brand-600/60 mt-0.5">
-                  {plan.type === "pdf" ? "PDF" : plan.type === "image" ? "Image" : "Link"}
-                  {plan.sizeBytes && ` · ${(plan.sizeBytes / 1024).toFixed(0)} KB`}
-                  {` · ${new Date(plan.uploadedAt).toLocaleDateString()}`}
-                </div>
-              </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
+      )}
+
+      {/* Auto-detect modal — opens automatically after a fresh single upload */}
+      {autoDetectPlan && (
+        <AutoDetectRooms
+          project={project}
+          plan={autoDetectPlan}
+          onUpdate={onUpdate}
+          onClose={() => setAutoDetectPlan(null)}
+        />
       )}
 
       {/* Add Form Modal */}
@@ -516,4 +549,108 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
+}
+
+function PlanCard({
+  plan,
+  isPrimary,
+  canSetPrimary,
+  isOnly,
+  onPreview,
+  onRename,
+  onRemove,
+  onSetPrimary,
+  onAutoDetect,
+}: {
+  plan: FloorPlan;
+  isPrimary: boolean;
+  canSetPrimary: boolean;
+  isOnly: boolean;
+  onPreview: () => void;
+  onRename: (name: string) => void;
+  onRemove: () => void;
+  onSetPrimary: () => void;
+  onAutoDetect?: () => void;
+}) {
+  return (
+    <div
+      className={`group relative rounded-lg border bg-white overflow-hidden transition ${
+        isPrimary
+          ? "border-amber/60 shadow-sm"
+          : "border-brand-900/10 hover:border-amber/40"
+      }`}
+    >
+      {isPrimary && (
+        <div className="absolute top-2 left-2 z-10 rounded-full bg-amber px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white shadow">
+          Primary
+        </div>
+      )}
+      <button
+        onClick={onPreview}
+        className={`block w-full bg-brand-900/5 overflow-hidden ${isPrimary ? "aspect-[16/9]" : "aspect-video"}`}
+      >
+        {plan.type === "image" ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={plan.url}
+            alt={plan.name}
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-3xl">
+            {plan.type === "pdf" ? "📄" : "🔗"}
+          </div>
+        )}
+      </button>
+
+      <div className="p-2">
+        <div className="flex items-center justify-between gap-2">
+          <input
+            className="flex-1 text-xs font-medium text-brand-900 bg-transparent outline-none focus:bg-amber/10 px-1 rounded"
+            value={plan.name}
+            onChange={e => onRename(e.target.value)}
+          />
+          {!isOnly && (
+            <button
+              onClick={onRemove}
+              className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 shrink-0"
+              title="Remove plan"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <div className="text-[9px] text-brand-600/60">
+            {plan.type === "pdf" ? "PDF" : plan.type === "image" ? "Image" : "Link"}
+            {plan.sizeBytes && ` · ${(plan.sizeBytes / 1024).toFixed(0)} KB`}
+            {` · ${new Date(plan.uploadedAt).toLocaleDateString()}`}
+          </div>
+          <div className="flex gap-2">
+            {onAutoDetect && (
+              <button
+                onClick={onAutoDetect}
+                className="text-[10px] text-amber-dark hover:underline font-medium"
+                title="Extract rooms + dimensions from this plan"
+              >
+                🤖 Detect Rooms
+              </button>
+            )}
+            {canSetPrimary && (
+              <button
+                onClick={onSetPrimary}
+                className="text-[10px] text-brand-600 hover:text-amber-dark hover:underline"
+                title="Use this plan for Install Guide cover and as Space Planner reference"
+              >
+                Set as Primary
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

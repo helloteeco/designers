@@ -8,6 +8,7 @@ import ConceptHub from "@/components/ConceptHub";
 import RoomPlanner from "@/components/RoomPlanner";
 import SleepOptimizer from "@/components/SleepOptimizer";
 import DesignHub from "@/components/DesignHub";
+import SceneDesigner from "@/components/SceneDesigner";
 import ItemsHub from "@/components/ItemsHub";
 import RenovationHub from "@/components/RenovationHub";
 import ReviewHub from "@/components/ReviewHub";
@@ -32,6 +33,7 @@ type Tab =
   | "rooms"
   | "sleep"
   | "design"
+  | "scene"
   | "items"
   | "renovation"
   | "review"
@@ -65,7 +67,8 @@ const ALL_TABS: TabDef[] = [
     // Only STR / furnish-only projects need sleep optimization
     visible: (p) => p.projectType === "furnish-only" || p.projectType === "full-redesign",
   },
-  { id: "design", label: "Design", week: "Wk 2-3" },
+  { id: "design", label: "Space Plan", week: "Wk 2-3" },
+  { id: "scene", label: "Scene", week: "Wk 2-3" },
   { id: "items", label: "Items", week: "Wk 2-3" },
   {
     id: "renovation",
@@ -290,6 +293,7 @@ export default function ProjectDetailPage() {
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
           {tab === "design" && <DesignHub project={project} onUpdate={reload} />}
+          {tab === "scene" && <SceneDesigner project={project} onUpdate={reload} />}
           {tab === "items" && <ItemsHub project={project} onUpdate={reload} />}
           {tab === "renovation" && <RenovationHub project={project} onUpdate={reload} />}
           {tab === "review" && <ReviewHub project={project} />}
