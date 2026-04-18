@@ -50,7 +50,7 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
     onUpdate();
   }
 
-  const hasScans = !!(project.property.matterportLink || project.property.polycamLink || project.property.spoakLink);
+  const hasFloorPlan = (project.property.floorPlans ?? []).length > 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -59,30 +59,25 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
         <ProjectChecklist project={project} />
       </div>
 
-      {/* Missing-scans nudge */}
-      {!hasScans && (
-        <div className="lg:col-span-2 card bg-amber/10 border-amber/30">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">📐</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-brand-900 text-sm">
-                Link your 3D scan for best results
-              </h3>
-              <p className="text-xs text-brand-700 mt-1 mb-2">
-                The AI workflow and space planner use real dimensions from your Matterport, Polycam, or Spoak scan. Paste any URL below.
-              </p>
-              <div className="text-[10px] text-brand-600/80">
-                No scan yet?&nbsp;
-                <a href="https://matterport.com" target="_blank" rel="noopener noreferrer" className="text-amber-dark underline">Matterport</a>
-                &nbsp;·&nbsp;
-                <a href="https://poly.cam" target="_blank" rel="noopener noreferrer" className="text-amber-dark underline">Polycam (free iPhone app)</a>
-                &nbsp;·&nbsp;
-                <a href="https://www.spoak.com" target="_blank" rel="noopener noreferrer" className="text-amber-dark underline">Spoak</a>
-              </div>
-            </div>
+      {/* Floor plan = the centerpiece. SVG upload becomes the entire wall feature
+          when the project has nothing yet, so designers can't miss it. */}
+      <div className="lg:col-span-2 card bg-amber/10 border-amber/30">
+        <div className="flex items-start gap-3">
+          <div className="text-2xl">📐</div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-brand-900 text-sm">
+              {hasFloorPlan ? "Floor plan" : "Start by dropping a floor plan"}
+            </h3>
+            <p className="text-xs text-brand-700 mt-1 mb-3">
+              {hasFloorPlan
+                ? "Upload an SVG to auto-replace rooms. PNG/PDF works too — review pops up for those."
+                : <>From your Matterport space: <strong>Export → Schematic Floor Plan → SVG</strong>. Drop the SVG below and rooms get created automatically with exact dimensions, walls, doors, and windows.</>
+              }
+            </p>
+            <FloorPlansPanel project={project} onUpdate={onUpdate} />
           </div>
         </div>
-      )}
+      </div>
 
       {/* Property */}
       <div className="card">
@@ -123,26 +118,6 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
             <Field label="Design Budget" value={project.budget ? `$${project.budget.toLocaleString()}` : "Not set"} />
           </dl>
         )}
-
-        {/* 3D Scans — one smart paste field; chips show what's already linked */}
-        <div className="mt-4 pt-4 border-t border-brand-900/5">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">3D Scans &amp; Design Links</div>
-            <span className="text-[10px] text-brand-600/60">Auto-detects Matterport · Polycam · Spoak</span>
-          </div>
-          <SmartScanInput
-            project={project}
-            editingProperty={editingProperty}
-            propertyForm={propertyForm}
-            setPropertyForm={setPropertyForm}
-            onUpdate={onUpdate}
-          />
-        </div>
-
-        {/* Floor Plans */}
-        <div className="mt-4 pt-4 border-t border-brand-900/5">
-          <FloorPlansPanel project={project} onUpdate={onUpdate} />
-        </div>
 
         {/* Hero image (for Install Guide cover) */}
         <div className="mt-4 pt-4 border-t border-brand-900/5">

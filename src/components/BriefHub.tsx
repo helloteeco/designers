@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import ProjectOverview from "./ProjectOverview";
-import ScanViewer from "./ScanViewer";
 import InspirationBoard from "./InspirationBoard";
-import WorkflowEngine from "./WorkflowEngine";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -12,21 +10,18 @@ interface Props {
   onUpdate: () => void;
 }
 
-type View = "overview" | "scans" | "inspiration" | "workflow";
+type View = "overview" | "inspiration";
 
 /**
  * Brief Hub — Week 1 of Teeco process.
- * Consolidates kickoff needs: property/client, 3D scans, inspiration refs,
- * and the AI auto-build button to draft the whole project.
+ * Two surfaces only: project setup (property/client + floor plan upload),
+ * and an inspiration board for designer references. The 3D Scans embed and
+ * the AI Auto-Build pipeline were removed — Matterport links don't work
+ * for clients without account login, and the SVG-driven auto-detect in
+ * Floor Plans replaced what AI Auto-Build was trying to do.
  */
 export default function BriefHub({ project, onUpdate }: Props) {
   const [view, setView] = useState<View>("overview");
-
-  const scansCount = [
-    project.property.matterportLink,
-    project.property.polycamLink,
-    project.property.spoakLink,
-  ].filter(Boolean).length + (project.property.floorPlans?.length ?? 0);
 
   const inspirationCount = (() => {
     try {
@@ -38,10 +33,8 @@ export default function BriefHub({ project, onUpdate }: Props) {
   })();
 
   const views: { id: View; label: string; hint: string; count?: number }[] = [
-    { id: "overview", label: "Property & Client", hint: "Core info + delivery checklist" },
-    { id: "scans", label: "3D Scans", hint: "Matterport, Polycam, Spoak embeds", count: scansCount },
+    { id: "overview", label: "Project Setup", hint: "Property, client, floor plan" },
     { id: "inspiration", label: "Inspiration", hint: "Pinterest, Houzz, client refs", count: inspirationCount },
-    { id: "workflow", label: "AI Auto-Build", hint: "12-step pipeline to draft the whole project" },
   ];
 
   return (
@@ -50,7 +43,7 @@ export default function BriefHub({ project, onUpdate }: Props) {
         <div>
           <h2 className="text-lg font-semibold text-brand-900">Project Brief</h2>
           <p className="text-sm text-brand-600">
-            Week 1 · Kickoff, measurements, client alignment. Run AI Auto-Build to draft the whole project in minutes.
+            Week 1 · Property info, client, and a floor plan. Drop a Matterport SVG to auto-create rooms.
           </p>
         </div>
         <div className="flex gap-1 rounded-xl bg-white border border-brand-900/10 p-1 overflow-x-auto">
@@ -71,9 +64,7 @@ export default function BriefHub({ project, onUpdate }: Props) {
       </div>
 
       {view === "overview" && <ProjectOverview project={project} onUpdate={onUpdate} />}
-      {view === "scans" && <ScanViewer property={project.property} />}
       {view === "inspiration" && <InspirationBoard project={project} onUpdate={onUpdate} />}
-      {view === "workflow" && <WorkflowEngine project={project} onUpdate={onUpdate} />}
     </div>
   );
 }
