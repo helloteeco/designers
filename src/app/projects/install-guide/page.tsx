@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { getProject } from "@/lib/store";
 import { getStudioSettings, type StudioSettings } from "@/lib/studio-settings";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
+import RoomTopDown from "@/components/RoomTopDown";
 import type { Project, Room } from "@/lib/types";
 
 /**
@@ -247,9 +248,34 @@ function InstallGuideContent() {
         </div>
       </div>
 
+      {/* 6b. Per-room space plans grid — pulled from the Space Planner */}
+      {roomsForGuide.some(r => r.furniture.length > 0) && (
+        <div className="guide-page page-break">
+          <h2 className="text-3xl font-semibold text-center mb-2">SPACE PLAN</h2>
+          <p className="text-center text-sm text-gray-600 mb-8">
+            Top-down furniture layout — measurements scaled from the Space Planner.
+          </p>
+          <div className="grid grid-cols-3 gap-6">
+            {roomsForGuide.map(r => (
+              <div key={r.id} className="text-center no-break">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                  {r.name}
+                </div>
+                <div className="text-[10px] text-gray-500 mb-2">
+                  {r.widthFt}&apos; × {r.lengthFt}&apos;
+                </div>
+                <div className="flex items-center justify-center min-h-[180px]">
+                  <RoomTopDown room={r} size={180} showLabels={false} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 7. Per-room pages */}
       {roomsForGuide.map(room => (
-        <RoomPage key={room.id} room={room} mainFloorPlan={mainFloorPlan?.url} />
+        <RoomPage key={room.id} room={room} />
       ))}
 
       {/* 8. Back cover */}
@@ -301,24 +327,29 @@ function InstallGuideContent() {
 
 // ── Per-room page ──
 
-function RoomPage({ room, mainFloorPlan }: { room: Room; mainFloorPlan?: string }) {
+function RoomPage({ room }: { room: Room }) {
   const scene = room.sceneSnapshot ?? room.sceneBackgroundUrl;
   const hasScene = !!scene;
+  const hasSpacePlan = room.furniture.length > 0;
 
   return (
     <div className="guide-page page-break">
       <h2 className="text-2xl font-semibold text-center mb-6">{room.name.toUpperCase()}</h2>
 
-      {/* Main image — scene or placeholder */}
+      {/* Main image — scene render, otherwise the top-down space plan as a fallback */}
       <div className="mb-6">
         {hasScene ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={scene} alt={room.name} className="w-full aspect-[16/10] object-contain bg-gray-50 rounded" />
+        ) : hasSpacePlan ? (
+          <div className="w-full aspect-[16/10] bg-gray-50 rounded flex items-center justify-center">
+            <RoomTopDown room={room} size={420} showLabels={true} />
+          </div>
         ) : (
           <div className="w-full aspect-[16/10] bg-gray-100 rounded flex items-center justify-center text-gray-400 text-sm">
             <div className="text-center">
               <div className="text-3xl mb-2">🎨</div>
-              <div>Build this room in Scene Designer to see the render here</div>
+              <div>Build this room in Scene Designer or Space Planner to see the render here</div>
             </div>
           </div>
         )}
@@ -350,13 +381,19 @@ function RoomPage({ room, mainFloorPlan }: { room: Room; mainFloorPlan?: string 
           )}
         </div>
 
-        {/* Mini floor plan inset */}
-        <div className="border border-gray-200 rounded bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
-          {mainFloorPlan ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={mainFloorPlan} alt="" className="max-w-full max-h-full object-contain" />
+        {/* Mini space plan inset — actual top-down for THIS room */}
+        <div className="border border-gray-200 rounded bg-gray-50 aspect-square flex flex-col items-center justify-center overflow-hidden p-2">
+          {hasSpacePlan ? (
+            <>
+              <RoomTopDown room={room} size={160} showLabels={false} />
+              <div className="text-[9px] text-gray-500 mt-1">
+                {room.widthFt}&apos; × {room.lengthFt}&apos;
+              </div>
+            </>
           ) : (
-            <div className="text-[10px] text-gray-400 text-center p-2">Floor plan reference</div>
+            <div className="text-[10px] text-gray-400 text-center p-2">
+              Place furniture in the Space Planner to see this room&apos;s plan here.
+            </div>
           )}
         </div>
       </div>

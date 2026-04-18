@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { saveProject, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import { CATALOG, searchCatalog } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
@@ -30,6 +30,14 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
   const [catalogSearch, setCatalogSearch] = useState("");
   const [showCatalog, setShowCatalog] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
+  // Drag state — tracked outside React to keep mousemove cheap.
+  // dragLive holds the in-flight position so we can re-render at 60fps without
+  // touching localStorage; commit happens on mouseup.
+  const dragRef = useRef<{ id: string; offsetXPct: number; offsetYPct: number } | null>(null);
+  const [dragLive, setDragLive] = useState<{ id: string; x: number; y: number } | null>(null);
+  // Local-only install-tips draft (persisted on blur).
+  const [tipsDraft, setTipsDraft] = useState("");
+  const [tipsSaved, setTipsSaved] = useState(false);
 
   // If no rooms defined yet OR selected room is stale
   const rooms = project.rooms ?? [];
@@ -59,8 +67,9 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
   const canvasH = room.lengthFt * SCALE_FACTOR * zoom;
   const sqft = room.widthFt * room.lengthFt;
 
-  // Calculate furniture coverage
-  const furnitureSqft = room.furniture.reduce((s, f) => {
+  // Calculate furniture coverage from floor-occupying items only.
+  const floorFurniture = room.furniture.filter(f => !isAccessory(f.item));
+  const furnitureSqft = floorFurniture.reduce((s, f) => {
     return s + ((f.item.widthIn * f.item.depthIn) / 144) * f.quantity;
   }, 0);
   const coveragePercent = sqft > 0 ? (furnitureSqft / sqft) * 100 : 0;
@@ -77,14 +86,48 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     const isRotated = rotation === 90 || rotation === 270;
     const w = (isRotated ? f.item.depthIn : f.item.widthIn) / 12 * SCALE_FACTOR * zoom;
     const h = (isRotated ? f.item.widthIn : f.item.depthIn) / 12 * SCALE_FACTOR * zoom;
-    const x = ((placed.x ?? 50) / 100) * canvasW;
-    const y = ((placed.y ?? 50) / 100) * canvasH;
+    const live = dragLive && dragLive.id === f.item.id ? dragLive : null;
+    const xPct = live ? live.x : (placed.x ?? 50);
+    const yPct = live ? live.y : (placed.y ?? 50);
+    const x = (xPct / 100) * canvasW;
+    const y = (yPct / 100) * canvasH;
     return { x: x - w / 2, y: y - h / 2, w, h };
   }
 
   function handleCanvasClick() {
     if (!canvasRef.current) return;
     setSelectedItemId(null);
+  }
+
+  // Find a free slot for a new item by scanning a 4×3 grid and picking
+  // the first cell that doesn't collide with existing items.
+  function findOpenSlot(r: Room, item: FurnitureItem): { x: number; y: number } {
+    const itemWPct = ((item.widthIn / 12) / r.widthFt) * 100;
+    const itemHPct = ((item.depthIn / 12) / r.lengthFt) * 100;
+    const cols = 4;
+    const rows = 3;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        // grid centers from 15% to 85%
+        const x = 15 + (col * 70) / (cols - 1);
+        const y = 15 + (row * 70) / (rows - 1);
+        const collides = r.furniture.some(f => {
+          const p = f as PlacedItem;
+          const px = p.x ?? 50;
+          const py = p.y ?? 50;
+          const pw = ((f.item.widthIn / 12) / r.widthFt) * 100;
+          const ph = ((f.item.depthIn / 12) / r.lengthFt) * 100;
+          return (
+            Math.abs(px - x) < (pw + itemWPct) / 2 &&
+            Math.abs(py - y) < (ph + itemHPct) / 2
+          );
+        });
+        if (!collides) return { x, y };
+      }
+    }
+    // Fallback if room is packed: stagger the spawn.
+    const n = r.furniture.length;
+    return { x: 20 + ((n * 13) % 60), y: 20 + ((n * 17) % 60) };
   }
 
   function addItemToRoom(item: FurnitureItem) {
@@ -95,13 +138,14 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
 
     if (r.furniture.find(f => f.item.id === item.id)) return;
 
+    const slot = findOpenSlot(r, item);
     const placed: PlacedItem = {
       item,
       quantity: 1,
       roomId: r.id,
       notes: "",
-      x: 30 + Math.random() * 40,
-      y: 30 + Math.random() * 40,
+      x: slot.x,
+      y: slot.y,
       rotation: 0,
     };
     r.furniture.push(placed);
@@ -109,6 +153,70 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     logActivity(project.id, "furniture_placed", `Placed ${item.name} in ${r.name}`);
     onUpdate();
   }
+
+  // ── Drag handlers ─────────────────────────────────────────────────────
+  // Mousedown on an item: record where the cursor is relative to the item
+  // center, in % of canvas. We then update item position on mousemove.
+  function handleItemMouseDown(e: React.MouseEvent, f: SelectedFurniture) {
+    e.stopPropagation();
+    if (!canvasRef.current) return;
+    const placed = f as PlacedItem;
+    const cRect = canvasRef.current.getBoundingClientRect();
+    const cursorXPct = ((e.clientX - cRect.left) / cRect.width) * 100;
+    const cursorYPct = ((e.clientY - cRect.top) / cRect.height) * 100;
+    dragRef.current = {
+      id: f.item.id,
+      offsetXPct: cursorXPct - (placed.x ?? 50),
+      offsetYPct: cursorYPct - (placed.y ?? 50),
+    };
+    setSelectedItemId(f.item.id);
+    setDragLive({ id: f.item.id, x: placed.x ?? 50, y: placed.y ?? 50 });
+  }
+
+  function commitDrag(xPct: number, yPct: number) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const r = fresh.rooms.find(r => r.id === selectedRoom);
+    if (!r) return;
+    const f = r.furniture.find(f => f.item.id === drag.id) as PlacedItem | undefined;
+    if (!f) return;
+    f.x = xPct;
+    f.y = yPct;
+    saveProject(fresh);
+    onUpdate();
+  }
+
+  // Window-level mousemove/mouseup so dragging continues even if the cursor
+  // briefly leaves the canvas. We always clamp to the canvas bounds.
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      const drag = dragRef.current;
+      if (!drag || !canvasRef.current) return;
+      const cRect = canvasRef.current.getBoundingClientRect();
+      const cursorXPct = ((e.clientX - cRect.left) / cRect.width) * 100;
+      const cursorYPct = ((e.clientY - cRect.top) / cRect.height) * 100;
+      const xPct = Math.max(0, Math.min(100, cursorXPct - drag.offsetXPct));
+      const yPct = Math.max(0, Math.min(100, cursorYPct - drag.offsetYPct));
+      setDragLive({ id: drag.id, x: xPct, y: yPct });
+    }
+    function onUp() {
+      const drag = dragRef.current;
+      if (drag && dragLive) {
+        commitDrag(dragLive.x, dragLive.y);
+      }
+      dragRef.current = null;
+      setDragLive(null);
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragLive?.id, selectedRoom]);
 
   function removeFromRoom(itemId: string) {
     const fresh = getProjectFromStore(project.id);
@@ -140,23 +248,19 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     if (!r) return;
 
     const items = suggestFurniture(r, fresh.style);
-    let offsetX = 20;
-    let offsetY = 20;
     for (const item of items) {
-      if (!r.furniture.find(f => f.item.id === item.id)) {
-        const placed: PlacedItem = {
-          item,
-          quantity: 1,
-          roomId: r.id,
-          notes: "",
-          x: offsetX,
-          y: offsetY,
-          rotation: 0,
-        };
-        r.furniture.push(placed);
-        offsetX += 15;
-        if (offsetX > 80) { offsetX = 20; offsetY += 15; }
-      }
+      if (r.furniture.find(f => f.item.id === item.id)) continue;
+      const slot = findOpenSlot(r, item);
+      const placed: PlacedItem = {
+        item,
+        quantity: 1,
+        roomId: r.id,
+        notes: "",
+        x: slot.x,
+        y: slot.y,
+        rotation: 0,
+      };
+      r.furniture.push(placed);
     }
 
     saveProject(fresh);
@@ -164,8 +268,27 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     onUpdate();
   }
 
+  function saveInstallTips(value: string) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const r = fresh.rooms.find(r => r.id === selectedRoom);
+    if (!r) return;
+    r.installTips = value;
+    saveProject(fresh);
+    setTipsSaved(true);
+    setTimeout(() => setTipsSaved(false), 1500);
+    onUpdate();
+  }
+
   const roomCost = room.furniture.reduce((s, f) => s + f.item.price * f.quantity, 0);
   const selectedItem = selectedItemId ? room.furniture.find(f => f.item.id === selectedItemId) : null;
+  const currentRoomId = room.id;
+
+  // Sync local tips draft when the selected room changes.
+  useEffect(() => {
+    setTipsDraft(room.installTips ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRoomId]);
 
   return (
     <div>
@@ -368,11 +491,16 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                   const isSelected = selectedItemId === f.item.id;
                   const categoryColor = getCategoryColor(f.item.category);
 
+                  const isDragging = dragLive?.id === f.item.id;
                   return (
                     <div
                       key={f.item.id}
-                      className={`absolute rounded flex items-center justify-center cursor-pointer transition-all ${
-                        isSelected ? "ring-2 ring-amber ring-offset-1 z-10 shadow-md" : "hover:ring-1 hover:ring-amber/50 shadow-sm"
+                      className={`absolute rounded flex items-center justify-center transition-shadow ${
+                        isDragging
+                          ? "ring-2 ring-amber z-20 shadow-lg cursor-grabbing"
+                          : isSelected
+                          ? "ring-2 ring-amber ring-offset-1 z-10 shadow-md cursor-grab"
+                          : "hover:ring-1 hover:ring-amber/50 shadow-sm cursor-grab"
                       }`}
                       style={{
                         left: Math.max(0, Math.min(canvasW - rect.w, rect.x)),
@@ -382,10 +510,12 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                         backgroundColor: categoryColor + "CC",
                         borderWidth: 1,
                         borderColor: categoryColor,
+                        userSelect: "none",
                       }}
+                      onMouseDown={e => handleItemMouseDown(e, f)}
                       onClick={e => {
                         e.stopPropagation();
-                        setSelectedItemId(isSelected ? null : f.item.id);
+                        setSelectedItemId(isSelected && !isDragging ? null : f.item.id);
                       }}
                     >
                       <span
@@ -520,6 +650,28 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                 </div>
               )}
 
+              {/* Install tips editor — feeds the per-room page in the Install Guide */}
+              <div className="mt-4 pt-3 border-t border-brand-900/5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+                    Install Tips for {room.name}
+                  </div>
+                  {tipsSaved && <span className="text-[10px] text-emerald-600">Saved</span>}
+                </div>
+                <textarea
+                  className="input text-xs min-h-[72px]"
+                  placeholder={`e.g. "Center the bed under the window. Hang art 8\" above the headboard."`}
+                  value={tipsDraft}
+                  onChange={e => setTipsDraft(e.target.value)}
+                  onBlur={() => {
+                    if (tipsDraft !== (room.installTips ?? "")) saveInstallTips(tipsDraft);
+                  }}
+                />
+                <div className="text-[10px] text-brand-600/60 mt-1">
+                  Shown on this room&apos;s page in the Install Guide PDF.
+                </div>
+              </div>
+
               {/* Room items */}
               {room.furniture.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-brand-900/5">
@@ -556,10 +708,20 @@ function StatCard({ label, value, sub, warn }: { label: string; value: string; s
   );
 }
 
+// Items that don't sit on the floor (wall-mount, on-counter accessories).
+// These don't count against clearance or coverage.
+function isAccessory(item: FurnitureItem): boolean {
+  if (item.category === "bathroom") return true;
+  if (item.category === "decor") return true;
+  if (item.depthIn === 0 || item.widthIn === 0) return true; // wall-mounted
+  return false;
+}
+
 function checkClearance(room: Room): string[] {
   const issues: string[] = [];
+  const floorItems = room.furniture.filter(f => !isAccessory(f.item));
   const sqft = room.widthFt * room.lengthFt;
-  const furnitureSqft = room.furniture.reduce((s, f) => {
+  const furnitureSqft = floorItems.reduce((s, f) => {
     return s + ((f.item.widthIn * f.item.depthIn) / 144) * f.quantity;
   }, 0);
 
@@ -567,8 +729,7 @@ function checkClearance(room: Room): string[] {
     issues.push("Room coverage exceeds 60% — may feel cramped. Consider removing items.");
   }
 
-  // Check for large items in small rooms
-  for (const f of room.furniture) {
+  for (const f of floorItems) {
     const itemWidthFt = f.item.widthIn / 12;
     const itemDepthFt = f.item.depthIn / 12;
     if (itemWidthFt > room.widthFt * 0.5 || itemDepthFt > room.lengthFt * 0.5) {
@@ -576,7 +737,6 @@ function checkClearance(room: Room): string[] {
     }
   }
 
-  // Check bed clearance
   const beds = room.furniture.filter(f => f.item.category === "beds-mattresses");
   if (beds.length > 0) {
     const totalBedWidth = beds.reduce((s, f) => s + f.item.widthIn / 12, 0);
