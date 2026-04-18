@@ -67,8 +67,25 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     );
   }
 
-  const canvasW = room.widthFt * SCALE_FACTOR * zoom;
-  const canvasH = room.lengthFt * SCALE_FACTOR * zoom;
+  // Canvas size: prefer the SVG bbox aspect when present (so the canvas
+  // matches the actual room shape from the floor plan, not just a rectangle
+  // derived from widthFt × lengthFt). Falls back to the dimensional rectangle.
+  const baseLong = Math.max(room.widthFt, room.lengthFt) * SCALE_FACTOR * zoom;
+  let canvasW: number;
+  let canvasH: number;
+  if (room.svgBBox && room.svgBBox.width > 0 && room.svgBBox.height > 0) {
+    const svgAspect = room.svgBBox.width / room.svgBBox.height;
+    if (svgAspect >= 1) {
+      canvasW = baseLong;
+      canvasH = baseLong / svgAspect;
+    } else {
+      canvasH = baseLong;
+      canvasW = baseLong * svgAspect;
+    }
+  } else {
+    canvasW = room.widthFt * SCALE_FACTOR * zoom;
+    canvasH = room.lengthFt * SCALE_FACTOR * zoom;
+  }
   const sqft = room.widthFt * room.lengthFt;
 
   // Calculate furniture coverage from floor-occupying items only.
@@ -435,7 +452,11 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
             <div className="overflow-auto max-h-[600px]">
               <div
                 ref={canvasRef}
-                className="relative mx-auto border-2 border-brand-900/20 rounded-lg overflow-hidden"
+                className={`relative mx-auto rounded-lg overflow-hidden ${
+                  project.property.floorPlanSvgContent && room.svgBBox
+                    ? ""
+                    : "border-2 border-brand-900/20"
+                }`}
                 style={{
                   width: canvasW,
                   height: canvasH,
@@ -443,16 +464,15 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                 }}
                 onClick={handleCanvasClick}
               >
-                {/* SVG floor-plan backdrop — the actual walls/doors/windows from the
-                    Matterport schematic, cropped to this room's bbox. Sits behind the
-                    grid + furniture so designer can place items relative to real
-                    door swings instead of guessing. */}
+                {/* SVG floor-plan backdrop — when present, this IS the canvas:
+                    real walls, doors, windows, fixtures from the Matterport
+                    schematic at full opacity. Furniture renders on top. */}
                 {project.property.floorPlanSvgContent && room.svgBBox && (
                   <svg
                     className="absolute inset-0 w-full h-full pointer-events-none"
                     viewBox={`${room.svgBBox.x} ${room.svgBBox.y} ${room.svgBBox.width} ${room.svgBBox.height}`}
                     preserveAspectRatio="xMidYMid meet"
-                    style={{ opacity: 0.55 }}
+                    style={{ opacity: 0.95 }}
                     dangerouslySetInnerHTML={{ __html: extractSvgInner(project.property.floorPlanSvgContent) }}
                   />
                 )}

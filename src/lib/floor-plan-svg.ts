@@ -102,19 +102,30 @@ function extractTextNodes(svgText: string): SvgTextNode[] {
 }
 
 /**
- * Compute per-room bounding boxes by mounting the SVG offscreen and asking
- * the browser. For each room's label position, walk up parent <g> groups
- * until we find one whose getBBox() looks like a room (big enough, contains
- * the label, but not the whole house).
+ * Compute per-room bounding boxes from the SVG.
  *
- * Returns null entries if no usable bbox could be determined for a label.
- * The caller falls back to a synthetic bbox (square around the label).
+ * Matterport's schematic SVGs are flat (every room is a sibling, not nested
+ * inside its own <g>). So we can't just walk up parents to find the room
+ * group — that picks the whole house. Instead we use a Voronoi-style
+ * heuristic:
+ *
+ *   1. Use the label position as the room's center
+ *   2. Find the nearest other room label — half the distance to it is the
+ *      room's effective "reach" in any direction
+ *   3. Build a bbox of that reach, sized in the room's actual widthFt:lengthFt
+ *      aspect ratio so it shows as a portrait/landscape rectangle (not square)
+ *   4. Clamp to the SVG's overall bbox
+ *
+ * Result: each room gets a believable rectangular region of the floor plan
+ * that doesn't overlap into its neighbors. The SVG inside that region — walls,
+ * doors, windows, fixtures — renders accurately.
  */
 function computeRoomBBoxes(
   svgText: string,
-  labelPositions: { label: string; x: number; y: number }[]
+  labelPositions: { label: string; x: number; y: number; widthFt?: number; lengthFt?: number }[]
 ): (SvgBBox | null)[] {
   if (typeof document === "undefined") return labelPositions.map(() => null);
+  if (labelPositions.length === 0) return [];
 
   const host = document.createElement("div");
   host.style.position = "fixed";
@@ -125,56 +136,70 @@ function computeRoomBBoxes(
   host.style.visibility = "hidden";
   host.style.pointerEvents = "none";
   host.innerHTML = svgText;
-
-  const svg = host.querySelector("svg") as SVGSVGElement | null;
-  if (!svg) return labelPositions.map(() => null);
-  // Force a viewBox if the SVG only declared width/height — getBBox needs
-  // resolved geometry, and Matterport's SVGs are usually sized correctly.
   document.body.appendChild(host);
-
-  let rootBBox: DOMRect | null = null;
-  try {
-    rootBBox = (svg as unknown as SVGGraphicsElement).getBBox();
-  } catch {
-    rootBBox = null;
-  }
-  const houseArea = rootBBox ? rootBBox.width * rootBBox.height : Infinity;
 
   const out: (SvgBBox | null)[] = [];
   try {
-    // Walk all text nodes, find the one whose textContent matches each label
-    const allTexts = Array.from(svg.querySelectorAll("text, tspan")) as SVGGraphicsElement[];
+    const svg = host.querySelector("svg") as SVGSVGElement | null;
+    if (!svg) {
+      for (let i = 0; i < labelPositions.length; i++) out.push(null);
+      return out;
+    }
 
-    for (const lp of labelPositions) {
-      const target = allTexts.find(t => (t.textContent ?? "").trim() === lp.label.trim());
-      if (!target) {
-        out.push(null);
-        continue;
+    let rootBBox: { x: number; y: number; width: number; height: number };
+    try {
+      const bb = (svg as unknown as SVGGraphicsElement).getBBox();
+      rootBBox = { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+    } catch {
+      // Fall back to the SVG's declared viewBox
+      const vb = svg.getAttribute("viewBox")?.split(/[\s,]+/).map(Number);
+      rootBBox = vb && vb.length === 4
+        ? { x: vb[0], y: vb[1], width: vb[2], height: vb[3] }
+        : { x: 0, y: 0, width: 1000, height: 1000 };
+    }
+
+    for (let i = 0; i < labelPositions.length; i++) {
+      const lp = labelPositions[i];
+
+      // Distance to nearest other label
+      let nearestDist = Infinity;
+      for (let j = 0; j < labelPositions.length; j++) {
+        if (i === j) continue;
+        const other = labelPositions[j];
+        const d = Math.hypot(lp.x - other.x, lp.y - other.y);
+        if (d < nearestDist) nearestDist = d;
       }
-      // Walk up: find the smallest <g> whose bbox is "room-sized"
-      // (≥ ~5% of house area, ≤ ~80% of house area). Avoids selecting just
-      // the text bbox or the whole house group.
-      let cursor: Element | null = target.parentElement;
-      let best: SvgBBox | null = null;
-      while (cursor && cursor !== svg) {
-        try {
-          const bb = (cursor as unknown as SVGGraphicsElement).getBBox?.();
-          if (bb) {
-            const area = bb.width * bb.height;
-            const frac = area / houseArea;
-            if (frac >= 0.005 && frac <= 0.8) {
-              best = { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
-              // Prefer the smallest qualifying bbox — keep walking up only
-              // until we exceed the upper bound.
-              break;
-            }
-          }
-        } catch {
-          // ignore — element may not be SVGGraphicsElement
-        }
-        cursor = cursor.parentElement;
+      // If only one room, use a fraction of the house bbox
+      if (!Number.isFinite(nearestDist)) {
+        nearestDist = Math.min(rootBBox.width, rootBBox.height) / 2;
       }
-      out.push(best);
+
+      // Half-distance to nearest = the maximum diagonal half of this room.
+      // Convert to a per-axis bbox using the room's aspect ratio.
+      const halfReach = nearestDist * 0.55; // slight overshoot so walls land inside
+      const aspect =
+        lp.widthFt && lp.lengthFt && lp.lengthFt > 0
+          ? lp.widthFt / lp.lengthFt
+          : 1;
+
+      // Solve for halfW, halfH so that hypot(halfW, halfH) = halfReach
+      // and halfW / halfH = aspect.
+      // halfW = aspect * halfH; (aspect² + 1) * halfH² = halfReach²
+      const halfH = halfReach / Math.sqrt(aspect * aspect + 1);
+      const halfW = aspect * halfH;
+
+      let x = lp.x - halfW;
+      let y = lp.y - halfH;
+      let w = halfW * 2;
+      let h = halfH * 2;
+
+      // Clamp to root bbox
+      if (x < rootBBox.x) { w -= rootBBox.x - x; x = rootBBox.x; }
+      if (y < rootBBox.y) { h -= rootBBox.y - y; y = rootBBox.y; }
+      if (x + w > rootBBox.x + rootBBox.width) w = rootBBox.x + rootBBox.width - x;
+      if (y + h > rootBBox.y + rootBBox.height) h = rootBBox.y + rootBBox.height - y;
+
+      out.push({ x, y, width: w, height: h });
     }
   } finally {
     document.body.removeChild(host);
@@ -274,16 +299,16 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
     deduped.push(r);
   }
 
-  // Enrich each detected room with an SVG bounding box. We use the rawText
-  // as the matching label since that's what we found in the SVG verbatim.
-  // Falls back to a synthetic bbox (square around the label position) when
-  // we couldn't pin down a containing group — the Space Planner backdrop
-  // will still render, just slightly larger than the room.
+  // Enrich each detected room with an SVG bounding box. We pass the known
+  // dimensions (widthFt, lengthFt) so the bbox heuristic uses the right
+  // aspect ratio — landscape rooms get landscape bboxes, not squares.
   if (deduped.length > 0) {
     const labelPositions = deduped.map(r => ({
       label: r.rawText,
       x: (r.bbox.x0 + r.bbox.x1) / 2,
       y: (r.bbox.y0 + r.bbox.y1) / 2,
+      widthFt: r.widthFt,
+      lengthFt: r.lengthFt,
     }));
     const bboxes = computeRoomBBoxes(svgText, labelPositions);
     for (let i = 0; i < deduped.length; i++) {
