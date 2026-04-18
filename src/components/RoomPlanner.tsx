@@ -5,6 +5,8 @@ import { saveProject, generateId, getProject as getProjectFromStore, logActivity
 import FloorPlanReference from "./FloorPlanReference";
 import FloorPlanAnnotator from "./FloorPlanAnnotator";
 import AutoDetectRooms from "./AutoDetectRooms";
+import RoomLabeler from "./RoomLabeler";
+import { findDuplicateNames } from "@/lib/smart-label";
 import type { Project, Room, RoomType } from "@/lib/types";
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
@@ -45,11 +47,15 @@ interface Props {
 export default function RoomPlanner({ project, onUpdate }: Props) {
   const [showAnnotator, setShowAnnotator] = useState(false);
   const [showAutoDetect, setShowAutoDetect] = useState(false);
+  const [showLabeler, setShowLabeler] = useState(false);
   const imagePlans = (project.property?.floorPlans ?? []).filter(p => p.type === "image");
   const hasImagePlans = imagePlans.length > 0;
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form, setForm] = useState(emptyForm());
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [inlineName, setInlineName] = useState("");
+  const duplicates = findDuplicateNames(project.rooms);
 
   function emptyForm() {
     return {
@@ -157,6 +163,36 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
     saveProject(fresh);
     logActivity(project.id, "room_deleted", `Removed room: ${roomName}`);
     onUpdate();
+  }
+
+  function startInlineEdit(room: Room, e: React.MouseEvent) {
+    e.stopPropagation();
+    setInlineEditId(room.id);
+    setInlineName(room.name);
+  }
+
+  function commitInlineEdit() {
+    if (!inlineEditId) return;
+    const name = inlineName.trim();
+    if (!name) {
+      setInlineEditId(null);
+      return;
+    }
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const room = fresh.rooms.find((r) => r.id === inlineEditId);
+    if (room && room.name !== name) {
+      room.name = name;
+      saveProject(fresh);
+      logActivity(project.id, "room_updated", `Renamed room to "${name}"`);
+      onUpdate();
+    }
+    setInlineEditId(null);
+  }
+
+  function cancelInlineEdit() {
+    setInlineEditId(null);
+    setInlineName("");
   }
 
   function toggleFeature(feat: string) {
@@ -296,9 +332,23 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {project.rooms.length > 0 && (
+            <button
+              onClick={() => setShowLabeler(true)}
+              className="btn-accent btn-sm"
+              title="Bulk-rename rooms with AI suggestions"
+            >
+              ✨ Label Rooms
+              {duplicates.size > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] px-1.5 py-0.5 font-semibold">
+                  {duplicates.size}
+                </span>
+              )}
+            </button>
+          )}
           {hasImagePlans && (
             <>
-              <button onClick={() => setShowAutoDetect(true)} className="btn-accent btn-sm">
+              <button onClick={() => setShowAutoDetect(true)} className="btn-secondary btn-sm">
                 🤖 Auto-Detect from Plan
               </button>
               <button onClick={() => setShowAnnotator(true)} className="btn-secondary btn-sm">
@@ -336,6 +386,15 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
         />
       )}
 
+      {/* Room labeler modal */}
+      {showLabeler && (
+        <RoomLabeler
+          project={project}
+          onUpdate={onUpdate}
+          onClose={() => setShowLabeler(false)}
+        />
+      )}
+
       {/* Room List */}
       {project.rooms.length === 0 ? (
         <div className="card text-center py-12">
@@ -365,8 +424,37 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
               onClick={() => openEdit(room)}
             >
               <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="font-semibold text-brand-900">{room.name}</h3>
+                <div className="flex-1 min-w-0">
+                  {inlineEditId === room.id ? (
+                    <input
+                      autoFocus
+                      className="input text-sm py-1 font-semibold text-brand-900 w-full"
+                      value={inlineName}
+                      onChange={(e) => setInlineName(e.target.value)}
+                      onBlur={commitInlineEdit}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") commitInlineEdit();
+                        else if (e.key === "Escape") cancelInlineEdit();
+                      }}
+                    />
+                  ) : (
+                    <h3
+                      className={`font-semibold text-brand-900 truncate cursor-text hover:text-amber-dark ${
+                        duplicates.has(room.id) ? "text-red-600" : ""
+                      }`}
+                      onClick={(e) => startInlineEdit(room, e)}
+                      title="Click to rename"
+                    >
+                      {room.name}
+                      {duplicates.has(room.id) && (
+                        <span className="ml-1.5 text-[10px] text-red-500 font-normal">
+                          dup
+                        </span>
+                      )}
+                    </h3>
+                  )}
                   <p className="text-xs text-brand-600 capitalize">
                     {room.type.replace(/-/g, " ")} &middot; Floor {room.floor}
                   </p>
@@ -376,7 +464,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
                     e.stopPropagation();
                     handleDelete(room.id);
                   }}
-                  className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+                  className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition ml-2"
                 >
                   Delete
                 </button>
