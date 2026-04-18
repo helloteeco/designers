@@ -12,7 +12,10 @@ export type RoomType =
   | "bonus-room"
   | "office"
   | "game-room"
-  | "media-room";
+  | "media-room"
+  | "laundry"
+  | "storage"
+  | "closet";
 
 export type BedType =
   | "king"

@@ -67,25 +67,11 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     );
   }
 
-  // Canvas size: prefer the SVG bbox aspect when present (so the canvas
-  // matches the actual room shape from the floor plan, not just a rectangle
-  // derived from widthFt × lengthFt). Falls back to the dimensional rectangle.
-  const baseLong = Math.max(room.widthFt, room.lengthFt) * SCALE_FACTOR * zoom;
-  let canvasW: number;
-  let canvasH: number;
-  if (room.svgBBox && room.svgBBox.width > 0 && room.svgBBox.height > 0) {
-    const svgAspect = room.svgBBox.width / room.svgBBox.height;
-    if (svgAspect >= 1) {
-      canvasW = baseLong;
-      canvasH = baseLong / svgAspect;
-    } else {
-      canvasH = baseLong;
-      canvasW = baseLong * svgAspect;
-    }
-  } else {
-    canvasW = room.widthFt * SCALE_FACTOR * zoom;
-    canvasH = room.lengthFt * SCALE_FACTOR * zoom;
-  }
+  // Canvas dimensions come from the room's real feet — that way furniture
+  // (drawn at SCALE_FACTOR px per foot) matches the walls drawn by the SVG
+  // backdrop, which we crop to a bbox of the same widthFt:lengthFt aspect.
+  const canvasW = room.widthFt * SCALE_FACTOR * zoom;
+  const canvasH = room.lengthFt * SCALE_FACTOR * zoom;
   const sqft = room.widthFt * room.lengthFt;
 
   // Calculate furniture coverage from floor-occupying items only.

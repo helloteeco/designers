@@ -38,6 +38,9 @@ const DIMENSION_RE = new RegExp(
 );
 
 // ── Room-type vocabulary ──
+// Order matters — more specific keywords come first so "primary bathroom"
+// matches before generic "bathroom", and "walk-in closet / w.i.c" matches
+// before "closet".
 export const ROOM_KEYWORDS: { keywords: string[]; type: RoomType; label?: string }[] = [
   { keywords: ["primary suite", "primary bedroom", "master suite", "master bedroom"], type: "primary-bedroom", label: "Primary Suite" },
   { keywords: ["bedroom", "bed rm", "br "], type: "bedroom" },
@@ -53,6 +56,11 @@ export const ROOM_KEYWORDS: { keywords: string[]; type: RoomType; label?: string
   { keywords: ["office"], type: "office" },
   { keywords: ["media", "theater"], type: "media-room" },
   { keywords: ["game", "rec"], type: "game-room" },
+  // Utility rooms — all Matterport labels them
+  { keywords: ["laundry", "mud"], type: "laundry", label: "Laundry" },
+  { keywords: ["storage", "pantry", "utility"], type: "storage" },
+  { keywords: ["walk-in closet", "walk in closet", "w.i.c", "wic"], type: "closet", label: "Walk-in Closet" },
+  { keywords: ["closet"], type: "closet" },
   { keywords: ["hallway", "hall", "entry", "foyer"], type: "hallway" },
   { keywords: ["porch", "deck", "patio", "balcony", "outdoor"], type: "outdoor" },
 ];
@@ -260,8 +268,8 @@ export function parseDimensionOnly(text: string): { widthFt: number; lengthFt: n
   const width = wFt + wIn / 12;
   const length = lFt + lIn / 12;
 
-  // Sanity: residential rooms are between 3' and 60'
-  if (width < 3 || width > 60 || length < 3 || length > 60) return null;
+  // Sanity: residential rooms range from ~2' closets to 60' great rooms
+  if (width < 2 || width > 60 || length < 2 || length > 60) return null;
 
   return {
     widthFt: Math.round(width * 10) / 10,

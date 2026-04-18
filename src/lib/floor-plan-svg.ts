@@ -102,6 +102,54 @@ function extractTextNodes(svgText: string): SvgTextNode[] {
 }
 
 /**
+ * Resolve each label's TRUE position in the SVG's coordinate space by
+ * mounting the SVG offscreen and asking the browser for the rendered
+ * center of each matching <text>. This handles Matterport's nested
+ * matrix() transforms that our hand-rolled translate()-only walker can't.
+ *
+ * Returns a map from rawText → { x, y } in the SVG's resolved coord space
+ * (matches viewBox).
+ */
+function resolveLabelPositions(
+  svgText: string,
+  labels: string[]
+): Map<string, { x: number; y: number }> {
+  const out = new Map<string, { x: number; y: number }>();
+  if (typeof document === "undefined") return out;
+
+  const host = document.createElement("div");
+  host.style.position = "fixed";
+  host.style.left = "-99999px";
+  host.style.top = "0";
+  host.style.width = "1200px";
+  host.style.height = "1200px";
+  host.style.visibility = "hidden";
+  host.style.pointerEvents = "none";
+  host.innerHTML = svgText;
+  document.body.appendChild(host);
+
+  try {
+    const svg = host.querySelector("svg") as SVGSVGElement | null;
+    if (!svg) return out;
+    const allTexts = Array.from(svg.querySelectorAll("text, tspan")) as SVGGraphicsElement[];
+    for (const label of labels) {
+      if (out.has(label)) continue;
+      const match = allTexts.find(t => (t.textContent ?? "").trim() === label.trim());
+      if (!match) continue;
+      try {
+        const bb = match.getBBox();
+        out.set(label, { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 });
+      } catch {
+        // ignore
+      }
+    }
+  } finally {
+    document.body.removeChild(host);
+  }
+  return out;
+}
+
+/**
  * Pixel-perfect bbox detection by rasterizing the SVG and flood-filling
  * outward from each room's label position.
  *
@@ -122,10 +170,19 @@ function extractTextNodes(svgText: string): SvgTextNode[] {
  * Returns null entries if rasterization fails (e.g., browser blocks the
  * SVG-as-image load); caller falls back to nearest-neighbor bbox alone.
  */
+interface FloodFillResult {
+  bbox: SvgBBox;
+  /** Centroid of filled pixels in SVG coords — more accurate than bbox center */
+  cx: number;
+  cy: number;
+  /** Total filled area in SVG units² — used to estimate units-per-foot */
+  area: number;
+}
+
 async function detectRoomBBoxesByFloodFill(
   svgText: string,
   labelPositions: { label: string; x: number; y: number }[]
-): Promise<(SvgBBox | null)[]> {
+): Promise<(FloodFillResult | null)[]> {
   if (typeof document === "undefined" || labelPositions.length === 0) {
     return labelPositions.map(() => null);
   }
@@ -215,24 +272,48 @@ async function detectRoomBBoxesByFloodFill(
     return (pixels[p] + pixels[p + 1] + pixels[p + 2]) / 3 < DARK;
   }
 
-  const out: (SvgBBox | null)[] = [];
+  const out: (FloodFillResult | null)[] = [];
+  // Per-pixel svg-unit dimensions so we can convert area/centroid correctly
+  const unitPerPxX = vb.width / RW;
+  const unitPerPxY = vb.height / RH;
+  const unitPerPx2 = unitPerPxX * unitPerPxY;
+
   for (const lp of labelPositions) {
-    const [sx, sy] = svgToPx(lp.x, lp.y);
+    let [sx, sy] = svgToPx(lp.x, lp.y);
     if (sx < 0 || sx >= RW || sy < 0 || sy >= RH) {
       out.push(null);
       continue;
     }
 
-    // Flood-fill (4-connected) from the label position. We have a hard cap
-    // on filled pixels (50% of total) so a door leak can't run away with
-    // the whole house — the resulting bbox will at worst include the room
-    // plus a sliver of the next, which Voronoi clipping then trims.
+    // If the label pixel itself is a wall (text happens to overlap a line),
+    // search outward for the nearest non-wall pixel. Room labels sit inside
+    // the room >99% of the time, so a few-pixel nudge is enough.
+    if (isWall(sy * RW + sx)) {
+      let found = false;
+      for (let r = 1; r < 20 && !found; r++) {
+        for (let dy = -r; dy <= r && !found; dy++) {
+          for (let dx = -r; dx <= r && !found; dx++) {
+            const nx = sx + dx, ny = sy + dy;
+            if (nx < 0 || nx >= RW || ny < 0 || ny >= RH) continue;
+            if (!isWall(ny * RW + nx)) {
+              sx = nx; sy = ny;
+              found = true;
+            }
+          }
+        }
+      }
+      if (!found) { out.push(null); continue; }
+    }
+
+    // Flood-fill (4-connected) from the label position. Hard cap on filled
+    // pixels (50% of raster) so a door leak can't run away with the whole
+    // house.
     const visited = new Uint8Array(RW * RH);
     const FILL_CAP = Math.floor(RW * RH * 0.5);
     let filled = 0;
     let minX = sx, maxX = sx, minY = sy, maxY = sy;
+    let sumX = 0, sumY = 0;
 
-    // Use a typed-array queue for speed on very large rooms
     const queue = new Int32Array(RW * RH);
     let qHead = 0, qTail = 0;
     queue[qTail++] = sy * RW + sx;
@@ -244,6 +325,8 @@ async function detectRoomBBoxesByFloodFill(
       filled++;
       const x = idx % RW;
       const y = (idx - x) / RW;
+      sumX += x;
+      sumY += y;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;
@@ -251,7 +334,6 @@ async function detectRoomBBoxesByFloodFill(
       const neighbors = [idx - 1, idx + 1, idx - RW, idx + RW];
       for (const n of neighbors) {
         if (n < 0 || n >= RW * RH) continue;
-        // Skip wraparound on row edges
         if (n === idx - 1 && x === 0) continue;
         if (n === idx + 1 && x === RW - 1) continue;
         if (visited[n]) continue;
@@ -260,18 +342,21 @@ async function detectRoomBBoxesByFloodFill(
       }
     }
 
-    // If the fill touched almost no pixels, label probably sits ON a wall —
-    // try a small search outward for a non-wall starting pixel
     if (filled < 25) {
       out.push(null);
       continue;
     }
 
     out.push({
-      x: pxToSvgX(minX),
-      y: pxToSvgY(minY),
-      width: pxToSvgX(maxX) - pxToSvgX(minX),
-      height: pxToSvgY(maxY) - pxToSvgY(minY),
+      bbox: {
+        x: pxToSvgX(minX),
+        y: pxToSvgY(minY),
+        width: pxToSvgX(maxX) - pxToSvgX(minX),
+        height: pxToSvgY(maxY) - pxToSvgY(minY),
+      },
+      cx: pxToSvgX(sumX / filled),
+      cy: pxToSvgY(sumY / filled),
+      area: filled * unitPerPx2,
     });
   }
 
@@ -488,44 +573,92 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
     deduped.push(r);
   }
 
-  // Enrich each detected room with an SVG bounding box.
+  // Enrich each detected room with an SVG bounding box. Three stages:
   //
-  // Two-stage detection:
-  //   1. Flood-fill the rasterized SVG from each label — pixel-perfect
-  //      walls/doors/windows boundary
-  //   2. Voronoi nearest-neighbor as a defensive clip — if a flood leaks
-  //      through a door opening into the next room, the Voronoi bbox
-  //      caps how far the room is allowed to extend
+  //   1. Resolve label positions via the browser's getBBox() — handles
+  //      Matterport's matrix() transforms that our translate()-only
+  //      walker can't.
+  //   2. Flood-fill from each resolved label — gets pixel-accurate
+  //      centroid (room's visual center) and interior area.
+  //   3. Build the final bbox at the room's real aspect ratio, sized
+  //      from a globally-estimated units-per-foot (median across rooms,
+  //      robust to one bad flood).
   //
-  // If flood fails (rasterization blocked, label on a wall, etc.), we fall
-  // back to Voronoi alone.
+  // End result: every room's bbox has the right aspect, correct scale
+  // relative to the SVG, and is centered on the room's actual interior
+  // (not a label that might sit near the wall).
   if (deduped.length > 0) {
-    const labelPositions = deduped.map(r => ({
-      label: r.rawText,
-      x: (r.bbox.x0 + r.bbox.x1) / 2,
-      y: (r.bbox.y0 + r.bbox.y1) / 2,
-      widthFt: r.widthFt,
-      lengthFt: r.lengthFt,
-    }));
-    const voronoi = computeRoomBBoxes(svgText, labelPositions);
-    let flood: (SvgBBox | null)[] = [];
+    // Resolve label positions via DOM (handles matrix() transforms)
+    const resolved = resolveLabelPositions(svgText, deduped.map(r => r.rawText));
+    const labelPositions = deduped.map(r => {
+      const r0 = resolved.get(r.rawText);
+      return {
+        label: r.rawText,
+        // Prefer the DOM-resolved position; fall back to the hand-parsed one
+        x: r0?.x ?? (r.bbox.x0 + r.bbox.x1) / 2,
+        y: r0?.y ?? (r.bbox.y0 + r.bbox.y1) / 2,
+        widthFt: r.widthFt,
+        lengthFt: r.lengthFt,
+      };
+    });
+
+    let flood: (FloodFillResult | null)[] = [];
     try {
       flood = await detectRoomBBoxesByFloodFill(svgText, labelPositions);
     } catch {
       flood = labelPositions.map(() => null);
     }
 
+    // Estimate SVG units per foot as the median of sqrt(floodArea / roomSqft)
+    // across all successful floods. Median is robust to one or two bad
+    // fills that leaked through doors.
+    const upfCandidates: number[] = [];
+    for (let i = 0; i < deduped.length; i++) {
+      const f = flood[i];
+      const r = deduped[i];
+      if (!f || !r.widthFt || !r.lengthFt) continue;
+      const roomSqft = r.widthFt * r.lengthFt;
+      if (roomSqft <= 0) continue;
+      upfCandidates.push(Math.sqrt(f.area / roomSqft));
+    }
+    upfCandidates.sort((a, b) => a - b);
+    const medianUpf = upfCandidates.length > 0
+      ? upfCandidates[Math.floor(upfCandidates.length / 2)]
+      : null;
+
+    // Voronoi as a defensive cap — flood leaks can push the centroid a bit
+    // into the neighboring room; intersecting against Voronoi keeps it sane.
+    const voronoi = computeRoomBBoxes(svgText, labelPositions);
+
     for (let i = 0; i < deduped.length; i++) {
       const f = flood[i];
       const v = voronoi[i];
-      // Prefer flood ∩ voronoi when both available
-      let chosen: SvgBBox | null = null;
-      if (f && v) {
-        chosen = intersectBBox(f, v) ?? f;
-      } else {
-        chosen = f ?? v;
+      const r = deduped[i];
+
+      // Preferred: build bbox at room aspect, centered on flood centroid,
+      // sized by global units-per-foot. Guarantees correct aspect + scale.
+      if (f && medianUpf && r.widthFt && r.lengthFt) {
+        const w = r.widthFt * medianUpf;
+        const h = r.lengthFt * medianUpf;
+        const built: SvgBBox = {
+          x: f.cx - w / 2,
+          y: f.cy - h / 2,
+          width: w,
+          height: h,
+        };
+        // Clip to Voronoi if available so we don't extend into neighbors
+        deduped[i].svgBBox = v ? (intersectBBox(built, v) ?? built) : built;
+        continue;
       }
-      if (chosen) deduped[i].svgBBox = chosen;
+
+      // Fallback: flood bbox ∩ voronoi, or whichever is available
+      if (f && v) {
+        deduped[i].svgBBox = intersectBBox(f.bbox, v) ?? f.bbox;
+      } else if (f) {
+        deduped[i].svgBBox = f.bbox;
+      } else if (v) {
+        deduped[i].svgBBox = v;
+      }
     }
   }
 
