@@ -314,7 +314,7 @@ export default function ProjectDetailPage() {
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "design" && <DesignWorkspace project={project} onUpdate={reload} />}
           {tab === "renovation" && <RenovationHub project={project} onUpdate={reload} />}
-          {tab === "deliver" && <DeliverWorkspace project={project} projectId={projectId} />}
+          {tab === "deliver" && <DeliverWorkspace project={project} projectId={projectId} onUpdate={reload} />}
         </div>
       </main>
     </div>

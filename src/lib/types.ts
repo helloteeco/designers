@@ -189,11 +189,34 @@ export interface FurnitureItem {
   style: DesignStyle;
 }
 
+/**
+ * Procurement state for a SelectedFurniture row. Mirrors Teeco's masterlist
+ * color highlights:
+ *   specced   → designer picked it, client hasn't approved (default, neutral)
+ *   approved  → client signed off (green-ish)
+ *   ordered   → purchased, awaiting delivery (green)
+ *   delivered → received on site (green/done)
+ *   alt-pending → primary out of stock, alt being sourced (orange/red)
+ */
+export type FurnitureStatus = "specced" | "approved" | "ordered" | "delivered" | "alt-pending";
+
+export interface AltItem {
+  name: string;
+  vendor: string;
+  vendorUrl: string;
+  price: number;
+  notes: string;
+}
+
 export interface SelectedFurniture {
   item: FurnitureItem;
   quantity: number;
   roomId: string;
   notes: string;
+  /** Procurement state — defaults to "specced" if unset for backwards compat. */
+  status?: FurnitureStatus;
+  /** Backup pick when the primary is unavailable. */
+  altItem?: AltItem;
 }
 
 export interface RoomAnnotation {

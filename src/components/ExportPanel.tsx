@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import type { Project, ExportRow } from "@/lib/types";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import { logActivity } from "@/lib/store";
 import { getStudioSettings } from "@/lib/studio-settings";
+import { downloadMasterlistXlsx } from "@/lib/masterlist-export";
 
 interface Props {
   project: Project;
@@ -17,6 +19,17 @@ export default function ExportPanel({ project }: Props) {
   const totalCost = rows.reduce((s, r) => s + r.totalPrice, 0);
   const sleeping = getTotalSleeping(project.rooms);
   const settings = getStudioSettings();
+  const [generating, setGenerating] = useState(false);
+
+  async function downloadXlsx() {
+    setGenerating(true);
+    try {
+      await downloadMasterlistXlsx(project);
+      logActivity(project.id, "exported", "Exported Teeco masterlist xlsx");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   function downloadCSV() {
     const headers = [
@@ -360,16 +373,24 @@ export default function ExportPanel({ project }: Props) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <div className="card text-center border-amber/40 bg-amber/5">
           <div className="mb-3 text-3xl">⭐</div>
-          <h3 className="font-semibold text-brand-900">Teeco Masterlist</h3>
-          <p className="text-xs text-brand-600 mt-1 mb-4">
-            Matches your Google Sheet exactly. Room · Item · Detail · Source · Quantity · Status · Cost · T&amp;S · Final · Link.
+          <h3 className="font-semibold text-brand-900">Teeco Masterlist (Excel)</h3>
+          <p className="text-xs text-brand-600 mt-1 mb-3">
+            Multi-sheet xlsx: Action Plan · Common · Bedrooms · Kitchen · Baths · Exterior · Budget Tally.
+            Status column color-coded (green=ordered, amber=alt-pending). Send straight to client.
           </p>
           <button
+            onClick={downloadXlsx}
+            className="btn-primary btn-sm w-full mb-2"
+            disabled={generating || rows.length === 0}
+          >
+            {generating ? "Generating..." : "Download .xlsx"}
+          </button>
+          <button
             onClick={downloadTeecoMasterlist}
-            className="btn-primary btn-sm w-full"
+            className="text-[10px] text-brand-600 hover:text-amber-dark hover:underline"
             disabled={rows.length === 0 && (project.finishes?.length ?? 0) === 0 && (project.scope?.length ?? 0) === 0}
           >
-            Download Masterlist
+            or download CSV (single sheet)
           </button>
         </div>
 

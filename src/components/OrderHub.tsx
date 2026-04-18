@@ -8,6 +8,7 @@ import type { Project } from "@/lib/types";
 
 interface Props {
   project: Project;
+  onUpdate?: () => void;
 }
 
 type View = "masterlist" | "shopping" | "invoicing" | "guide";
@@ -17,7 +18,7 @@ type View = "masterlist" | "shopping" | "invoicing" | "guide";
  * Procurement + order management. Masterlist export, shopping list with
  * purchased tracking, proposals + invoices.
  */
-export default function OrderHub({ project }: Props) {
+export default function OrderHub({ project, onUpdate }: Props) {
   const [view, setView] = useState<View>("masterlist");
 
   const views: { id: View; label: string; hint: string }[] = [
@@ -52,7 +53,7 @@ export default function OrderHub({ project }: Props) {
 
       {view === "masterlist" && <ExportPanel project={project} />}
       {view === "guide" && <InstallGuideShortcut project={project} />}
-      {view === "shopping" && <ShoppingList project={project} />}
+      {view === "shopping" && <ShoppingList project={project} onUpdate={onUpdate} />}
       {view === "invoicing" && <InvoiceGenerator project={project} />}
     </div>
   );

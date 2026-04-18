@@ -9,6 +9,7 @@ import type { Project } from "@/lib/types";
 interface Props {
   project: Project;
   projectId: string;
+  onUpdate?: () => void;
 }
 
 type View = "review" | "order" | "install";
@@ -18,7 +19,7 @@ type View = "review" | "order" | "install";
  * one client-facing workspace. Three sub-views: review the design, order the
  * items, generate the install-guide PDF for handoff.
  */
-export default function DeliverWorkspace({ project, projectId }: Props) {
+export default function DeliverWorkspace({ project, projectId, onUpdate }: Props) {
   const [view, setView] = useState<View>("review");
 
   const totalCost = project.rooms.reduce(
@@ -65,7 +66,7 @@ export default function DeliverWorkspace({ project, projectId }: Props) {
       </div>
 
       {view === "review" && <ReviewHub project={project} />}
-      {view === "order" && <OrderHub project={project} />}
+      {view === "order" && <OrderHub project={project} onUpdate={onUpdate} />}
       {view === "install" && <InstallHub project={project} projectId={projectId} />}
     </div>
   );
