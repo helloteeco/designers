@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { useToast } from "./Toast";
+import AutoDetectRooms from "./AutoDetectRooms";
 import type { Project, Room, RoomType, FloorPlan, RoomAnnotation } from "@/lib/types";
 
 interface Props {
@@ -61,6 +62,7 @@ export default function FloorPlanAnnotator({ project, onUpdate, onClose, initial
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [formMode, setFormMode] = useState<FormMode>({ kind: "closed" });
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [showAutoDetect, setShowAutoDetect] = useState(false);
 
   const currentPlan = imagePlans.find(p => p.id === currentPlanId);
 
@@ -248,12 +250,22 @@ export default function FloorPlanAnnotator({ project, onUpdate, onClose, initial
 
         <div className="text-xs text-brand-600 flex-1 text-center hidden sm:block">
           {formMode.kind === "closed" && !drawState && (
-            <>Click &amp; drag to mark a room on the plan · {roomsOnPlan.length} annotated</>
+            <>Click &amp; drag to mark a room · {roomsOnPlan.length} annotated</>
           )}
           {drawState && <>Drawing rectangle — release to name the room</>}
           {formMode.kind === "new" && <>Fill in the room details below</>}
           {formMode.kind === "edit" && <>Editing room</>}
         </div>
+
+        {currentPlan && (
+          <button
+            onClick={() => setShowAutoDetect(true)}
+            className="btn-accent btn-sm"
+            title="Auto-read room labels + dimensions off this plan"
+          >
+            🤖 Auto-Detect
+          </button>
+        )}
 
         <button onClick={onClose} className="btn-secondary btn-sm">
           Done
@@ -373,6 +385,16 @@ export default function FloorPlanAnnotator({ project, onUpdate, onClose, initial
             else if (formMode.kind === "edit") updateRoom(formMode.roomId, data);
           }}
           onCancel={() => setFormMode({ kind: "closed" })}
+        />
+      )}
+
+      {/* Auto-detect modal (overlays the annotator) */}
+      {showAutoDetect && currentPlan && (
+        <AutoDetectRooms
+          project={project}
+          plan={currentPlan}
+          onUpdate={onUpdate}
+          onClose={() => setShowAutoDetect(false)}
         />
       )}
     </div>

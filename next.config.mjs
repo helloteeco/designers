@@ -18,11 +18,14 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              // 'unsafe-eval' needed for Tesseract.js WASM compilation
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://unpkg.com https://cdn.jsdelivr.net",
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com",
+              // Supabase + OpenAI + Tesseract language data CDN + Matterport/Polycam embed assets
+              "connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://api.openai.com https://unpkg.com https://cdn.jsdelivr.net https://tessdata.projectnaptha.com",
               "frame-src https://my.matterport.com https://poly.cam https://www.spoak.com https://*.spoak.com",
             ].join("; "),
           },

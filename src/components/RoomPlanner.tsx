@@ -4,6 +4,7 @@ import { useState } from "react";
 import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import FloorPlanReference from "./FloorPlanReference";
 import FloorPlanAnnotator from "./FloorPlanAnnotator";
+import AutoDetectRooms from "./AutoDetectRooms";
 import type { Project, Room, RoomType } from "@/lib/types";
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
@@ -43,7 +44,9 @@ interface Props {
 
 export default function RoomPlanner({ project, onUpdate }: Props) {
   const [showAnnotator, setShowAnnotator] = useState(false);
-  const hasImagePlans = (project.property?.floorPlans ?? []).some(p => p.type === "image");
+  const [showAutoDetect, setShowAutoDetect] = useState(false);
+  const imagePlans = (project.property?.floorPlans ?? []).filter(p => p.type === "image");
+  const hasImagePlans = imagePlans.length > 0;
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -294,11 +297,16 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
         </div>
         <div className="flex gap-2 flex-wrap">
           {hasImagePlans && (
-            <button onClick={() => setShowAnnotator(true)} className="btn-accent btn-sm">
-              📐 Annotate Floor Plan
-            </button>
+            <>
+              <button onClick={() => setShowAutoDetect(true)} className="btn-accent btn-sm">
+                🤖 Auto-Detect from Plan
+              </button>
+              <button onClick={() => setShowAnnotator(true)} className="btn-secondary btn-sm">
+                📐 Annotate Manually
+              </button>
+            </>
           )}
-          {project.rooms.length === 0 && (
+          {project.rooms.length === 0 && !hasImagePlans && (
             <button onClick={quickAddRooms} className="btn-secondary btn-sm">
               Quick Setup from Property
             </button>
@@ -315,6 +323,16 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           project={project}
           onUpdate={onUpdate}
           onClose={() => setShowAnnotator(false)}
+        />
+      )}
+
+      {/* Auto-detect modal — uses first image plan */}
+      {showAutoDetect && imagePlans[0] && (
+        <AutoDetectRooms
+          project={project}
+          plan={imagePlans[0]}
+          onUpdate={onUpdate}
+          onClose={() => setShowAutoDetect(false)}
         />
       )}
 
