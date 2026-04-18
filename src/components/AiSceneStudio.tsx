@@ -5,7 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { useToast } from "./Toast";
-import type { Project, Room, FurnitureItem } from "@/lib/types";
+import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
 
 interface HealthCheck {
   ok: boolean;
@@ -237,6 +237,22 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
   }
 
+  function clearScene() {
+    if (!confirm("Clear the AI scene and all draggable items on it? The room's furniture-list entries stay; only the scene background + overlay tiles get removed.")) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+    target.sceneBackgroundUrl = undefined;
+    target.sceneSnapshot = undefined;
+    target.sceneItems = [];
+    saveProject(fresh);
+    logActivity(project.id, "scene_cleared", `Cleared AI scene for ${target.name}`);
+    toast.info(`Scene cleared for ${target.name}`);
+    setSourcedItems(null);
+    onUpdate();
+  }
+
   function pickOption(itemIdx: number, optIdx: number | null) {
     setSourcedItems(prev => prev?.map((it, i) =>
       i === itemIdx ? { ...it, chosenIndex: optIdx } : it
@@ -250,11 +266,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     const target = fresh.rooms.find(r => r.id === room.id);
     if (!target) return;
 
+    if (!target.sceneItems) target.sceneItems = [];
+
     let added = 0;
-    for (const item of sourcedItems) {
-      if (item.chosenIndex === null) continue;
-      const opt = item.options[item.chosenIndex];
-      if (!opt) continue;
+    // Stagger SceneItem positions along the lower third of the canvas so
+    // they don't overlap. Designer then drags each into its real spot on
+    // the generated background.
+    const chosen = sourcedItems.filter(i => i.chosenIndex !== null);
+    chosen.forEach((item, idx) => {
+      const opt = item.options[item.chosenIndex!];
+      if (!opt) return;
 
       const customItem: FurnitureItem = {
         id: `ai-${generateId()}`,
@@ -272,13 +293,35 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         material: "",
         style: preset.designStyle,
       };
+      // 1) Add to furniture[] for the masterlist + Space Plan
       target.furniture.push(placeFurniture(target, customItem));
+
+      // 2) Add as a SceneItem so the designer can drag/resize/rotate it
+      //    over the generated background right in this tab
+      const cols = Math.ceil(Math.sqrt(chosen.length));
+      const row = Math.floor(idx / cols);
+      const col = idx % cols;
+      const scenePositionX = 10 + (col * 80) / Math.max(1, cols - 1 || 1);
+      const scenePositionY = 60 + row * 15;
+      const sceneWidth = Math.max(12, Math.min(28, (customItem.widthIn / 96) * 30));
+      const sceneHeight = Math.max(8, Math.min(28, (customItem.heightIn / 72) * 25));
+      const sceneItem: SceneItem = {
+        id: `scene-${generateId()}`,
+        itemId: customItem.id,
+        x: clamp(scenePositionX, 2, 100 - sceneWidth),
+        y: clamp(scenePositionY, 2, 100 - sceneHeight),
+        width: sceneWidth,
+        height: sceneHeight,
+        rotation: 0,
+        zIndex: (target.sceneItems!.length ?? 0) + idx + 1,
+      };
+      target.sceneItems!.push(sceneItem);
       added++;
-    }
+    });
 
     saveProject(fresh);
     logActivity(project.id, "ai_sourced", `AI-sourced ${added} items for ${target.name}`);
-    toast.success(`Added ${added} item${added === 1 ? "" : "s"} to ${target.name}`);
+    toast.success(`Added ${added} item${added === 1 ? "" : "s"} — drag them into place on the scene`);
     setShowSourceModal(false);
     setSourcedItems(null);
     onUpdate();
@@ -357,66 +400,132 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         </div>
       )}
 
-      {/* Style preset chips — horizontally scrollable */}
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        {STYLE_PRESETS.map(p => {
-          const active = p.id === styleId;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setStyleId(p.id)}
-              className={`shrink-0 rounded-lg border px-3 py-2 text-left transition ${
-                active
-                  ? "border-amber bg-amber/15 shadow-sm"
-                  : "border-brand-900/10 bg-white hover:border-amber/40"
-              }`}
-              title={p.description}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-base">{p.emoji}</span>
-                <span className={`text-xs font-semibold ${active ? "text-brand-900" : "text-brand-700"}`}>
-                  {p.label}
-                </span>
-              </div>
-              <div className="flex gap-0.5">
-                {p.palette.map((c, i) => (
-                  <div key={i} className="h-3 w-3 rounded-sm" style={{ backgroundColor: c }} />
-                ))}
-              </div>
-            </button>
-          );
-        })}
+      {/* 3-step progress so designers immediately see where they are */}
+      <div className="mt-3 flex items-center gap-2 text-[11px]">
+        <StepChip n={1} label="Pick style" done={true} active={!hasScene} />
+        <div className={`h-px w-6 ${hasScene ? "bg-emerald-500" : "bg-brand-900/10"}`} />
+        <StepChip n={2} label="Generate scene" done={hasScene} active={!hasScene && !generating} loading={generating} />
+        <div className={`h-px w-6 ${hasScene && room.furniture.length > 0 ? "bg-emerald-500" : "bg-brand-900/10"}`} />
+        <StepChip n={3} label="Source real products" done={false} active={hasScene} loading={sourcing} />
       </div>
 
-      <div className="mt-3 text-xs text-brand-700 italic">{preset.description}</div>
+      {/* STEP 1 — Style presets */}
+      <div className="mt-4">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+          1 · Pick a style
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {STYLE_PRESETS.map(p => {
+            const active = p.id === styleId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setStyleId(p.id)}
+                className={`shrink-0 rounded-lg border px-3 py-2 text-left transition ${
+                  active
+                    ? "border-amber bg-amber/15 shadow-sm"
+                    : "border-brand-900/10 bg-white hover:border-amber/40"
+                }`}
+                title={p.description}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-base">{p.emoji}</span>
+                  <span className={`text-xs font-semibold ${active ? "text-brand-900" : "text-brand-700"}`}>
+                    {p.label}
+                  </span>
+                </div>
+                <div className="flex gap-0.5">
+                  {p.palette.map((c, i) => (
+                    <div key={i} className="h-3 w-3 rounded-sm" style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-2 text-xs text-brand-700 italic">{preset.description}</div>
+      </div>
 
-      {/* Action buttons */}
-      <div className="mt-3 flex gap-2 flex-wrap">
+      {/* STEP 2 — Generate scene */}
+      <div className="mt-4 pt-4 border-t border-brand-900/5">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+              2 · Generate the scene
+            </div>
+            <div className="text-[11px] text-brand-600/80 mt-0.5">
+              Gemini draws a photorealistic {preset.label.toLowerCase()} {room.type.replace(/-/g, " ")} you can use as the room&apos;s design board.
+            </div>
+          </div>
+          {hasScene && (
+            <span className="text-[10px] text-emerald-700 font-semibold shrink-0">
+              ✓ Scene ready
+            </span>
+          )}
+        </div>
         <button
           onClick={generateScene}
           disabled={generating}
           className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {generating
-            ? "Generating scene..."
+            ? "Generating scene... (15–25s)"
             : hasScene
               ? `🎨 Re-generate in ${preset.label}`
               : `🎨 Generate ${preset.label} Scene`}
         </button>
-        {hasScene && (
+      </div>
+
+      {/* STEP 3 — Source real products — only unlocked after scene exists */}
+      <div className={`mt-4 pt-4 border-t border-brand-900/5 ${!hasScene ? "opacity-60" : ""}`}>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+              3 · Source real products from the scene
+            </div>
+            <div className="text-[11px] text-brand-600/80 mt-0.5">
+              {hasScene
+                ? <>Gemini scans the image, lists every item (sofa, lamp, rug…), and pulls <strong>3 real buyable options</strong> from Wayfair / West Elm / CB2 / Article / Target / etc. per piece. You pick the best fit — they land in the masterlist and Space Plan.</>
+                : <>Generate a scene first, then this step unlocks.</>
+              }
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={sourceItems}
-            disabled={sourcing}
-            className="rounded-lg border border-amber/50 px-4 py-2 text-sm font-medium text-amber-dark hover:bg-amber/10 disabled:opacity-60"
+            disabled={!hasScene || sourcing}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {sourcing ? "Sourcing..." : "🛒 Source Real Products"}
+            {sourcing
+              ? "Finding products... (30–60s)"
+              : !hasScene
+                ? "🛒 Source Real Products (disabled)"
+                : "🛒 Find 3 Real Products per Item"}
           </button>
+          {hasScene && (
+            <button
+              onClick={clearScene}
+              className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+              title="Remove the AI scene + all draggable overlay tiles. Your masterlist items stay put."
+            >
+              ↶ Clear Scene
+            </button>
+          )}
+        </div>
+
+        {hasScene && (
+          <div className="mt-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-[11px] text-blue-900">
+            <strong>Step 4 (after sourcing):</strong> Each confirmed product drops onto the scene as a draggable tile.
+            Drag to position · corner handles to resize · blue dot to rotate · Delete key to remove.
+            Rearrange them to match the layout you want for the client render.
+          </div>
         )}
       </div>
 
       {budgetTotal > 0 && (
-        <div className="mt-3 text-[10px] text-brand-600">
-          Budget: ${approvedSpend.toLocaleString()} approved · ${remainingBudget.toLocaleString()} remaining of ${budgetTotal.toLocaleString()}
+        <div className="mt-4 pt-3 border-t border-brand-900/5 text-[11px] text-brand-600">
+          <strong>Budget:</strong> ${approvedSpend.toLocaleString()} approved · ${remainingBudget.toLocaleString()} remaining of ${budgetTotal.toLocaleString()}
         </div>
       )}
 
@@ -575,7 +684,45 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   );
 }
 
+// ── Step chip for the 3-step header ────────────────────────────────────
+
+function StepChip({
+  n,
+  label,
+  done,
+  active,
+  loading,
+}: {
+  n: number;
+  label: string;
+  done: boolean;
+  active: boolean;
+  loading?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-1.5 ${
+      done ? "text-emerald-700"
+      : active ? "text-brand-900 font-semibold"
+      : "text-brand-600/60"
+    }`}>
+      <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold shrink-0 ${
+        done ? "bg-emerald-500 text-white"
+        : loading ? "bg-amber text-white animate-pulse"
+        : active ? "bg-amber text-white"
+        : "bg-brand-900/10 text-brand-600/60"
+      }`}>
+        {done ? "✓" : n}
+      </span>
+      <span className="text-[11px]">{label}</span>
+    </div>
+  );
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
 
 function matchStyleFromDesignStyle(ds: string): string {
   const map: Record<string, string> = {

@@ -159,9 +159,9 @@ export async function POST(request: Request) {
           `"${item.searchQuery}".`,
           item.estimatedSize ? `Approximate size: ${item.estimatedSize}.` : "",
           `Prefer: Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel, Article, Anthropologie, AllModern, Rejuvenation.`,
-          `For each, return: exact product name, vendor, current price in USD, direct product URL, dimensions.`,
+          `For each, return: exact product name, vendor, current price in USD, direct product URL, dimensions, AND the primary product photo URL (imageUrl — the img src shown on the listing or in Google Shopping results).`,
           perItemBudgetHint,
-          `Return strictly as JSON: [{"name": "...", "vendor": "...", "price": 0, "url": "...", "dimensions": "..."}] with exactly 3 entries. No prose.`,
+          `Return strictly as JSON: [{"name": "...", "vendor": "...", "price": 0, "url": "...", "dimensions": "...", "imageUrl": "..."}] with exactly 3 entries. No prose.`,
         ].filter(Boolean).join(" ");
 
         const sourceResponse = await ai.models.generateContent({
