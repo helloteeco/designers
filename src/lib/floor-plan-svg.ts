@@ -297,7 +297,23 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
   return deduped;
 }
 
+// Matterport schematic SVGs include overlay text that isn't a room (page
+// totals, the floor banner, the "GROSS INTERNAL AREA" callout, the
+// "EXCLUDED AREA" disclaimer). Reject these before they get matched as
+// rooms.
+function isOverlayLabel(text: string): boolean {
+  const upper = text.toUpperCase();
+  if (upper.includes("EXCLUDED AREA")) return true;
+  if (upper.includes("GROSS INTERNAL")) return true;
+  if (upper.includes("TOTAL:")) return true;
+  if (/\bSQ\s*FT\b/.test(upper)) return true;
+  if (/^FLOOR\s+\d+\s*$/.test(upper.trim())) return true;
+  if (/^FLOOR\s+\d+\s*:/.test(upper.trim())) return true;
+  return false;
+}
+
 function matchLabel(text: string): { label: string; type: import("./types").RoomType; override?: string } | null {
+  if (isOverlayLabel(text)) return null;
   const lower = text.toLowerCase();
   for (const entry of ROOM_KEYWORDS) {
     for (const kw of entry.keywords) {

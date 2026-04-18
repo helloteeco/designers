@@ -28,6 +28,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
   const [matches, setMatches] = useState<RoomMatch[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [sourceKind, setSourceKind] = useState<"svg" | "ocr">("ocr");
+  const [replaceAll, setReplaceAll] = useState(false);
 
   async function runDetection() {
     if (plan.type !== "image") {
@@ -109,14 +110,26 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
       }
     }
 
+    // Replace-all wipes existing rooms before creating any. Forces every
+    // detected match to "create" so we don't try to update a room we just
+    // deleted. This is the path Jeff uses when starting from a template
+    // project that came pre-populated with template rooms.
+    let removed = 0;
+    if (replaceAll) {
+      removed = fresh.rooms.length;
+      fresh.rooms = [];
+    }
+
     let created = 0;
     let updated = 0;
 
     for (const m of matches) {
       if (m.action === "skip") continue;
       const svgBBox = (m.detected as SvgDetectedRoom).svgBBox;
+      // After replaceAll, no existing room can be a target — coerce to create.
+      const action = replaceAll ? "create" : m.action;
 
-      if (m.action === "update" && m.existingRoomId) {
+      if (action === "update" && m.existingRoomId) {
         const room = fresh.rooms.find(r => r.id === m.existingRoomId);
         if (!room) continue;
         room.widthFt = m.detected.widthFt;
@@ -127,7 +140,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
           // Leave existing type; OCR type is just a guess
         }
         updated++;
-      } else if (m.action === "create") {
+      } else if (action === "create") {
         const newRoom: Room = {
           id: generateId(),
           name: m.detected.label,
@@ -149,12 +162,26 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
     }
 
     saveProject(fresh);
-    logActivity(project.id, "ocr_applied", `Auto-detect: ${created} created, ${updated} updated from plan`);
+    logActivity(project.id, "ocr_applied", `Auto-detect: ${created} created, ${updated} updated, ${removed} removed from plan`);
     toast.success(
-      `Applied: ${created} new room${created === 1 ? "" : "s"}, ${updated} updated`
+      replaceAll
+        ? `Replaced ${removed} old room${removed === 1 ? "" : "s"} with ${created} from the floor plan`
+        : `Applied: ${created} new room${created === 1 ? "" : "s"}, ${updated} updated`
     );
     onUpdate();
     onClose();
+  }
+
+  /**
+   * One-click "use this SVG as the source of truth": flip every match to
+   * Create, turn on Replace All, then apply. Skips the per-row review step
+   * because SVG text is exact (no recognition uncertainty).
+   */
+  function applyAsSourceOfTruth() {
+    setReplaceAll(true);
+    setMatches(prev => prev.map(m => ({ ...m, action: "create", existingRoomId: null })));
+    // Defer apply to the next tick so the state changes flush first.
+    setTimeout(() => applyChanges(), 0);
   }
 
   // ── Render ──
@@ -297,6 +324,22 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
                 ))}
               </div>
 
+              {/* Replace-all option — wipes existing rooms before applying */}
+              <label className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900 mb-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={replaceAll}
+                  onChange={e => setReplaceAll(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <div className="font-semibold">Replace all existing rooms</div>
+                  <div className="text-[11px] text-red-800 mt-0.5">
+                    Deletes the {project.rooms.length} room{project.rooms.length === 1 ? "" : "s"} currently in this project (including any leftover template rooms) and creates fresh ones from the floor plan. Furniture in deleted rooms is also removed.
+                  </div>
+                </div>
+              </label>
+
               <div className="rounded-lg bg-amber/10 border border-amber/30 px-3 py-2 text-xs text-brand-700 mb-4">
                 <strong>Didn&apos;t find a room?</strong> Close this dialog and use the manual{" "}
                 <strong>📐 Annotate Floor Plan</strong> tool to click-drag rooms onto the plan.
@@ -308,16 +351,33 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
 
         {/* Footer */}
         {phase === "review" && (
-          <div className="px-6 py-4 border-t border-brand-900/10 flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-brand-900/10 flex items-center justify-between flex-wrap gap-2">
             <div className="text-xs text-brand-600">
-              {matches.filter(m => m.action === "create").length} to create ·{" "}
-              {matches.filter(m => m.action === "update").length} to update ·{" "}
-              {matches.filter(m => m.action === "skip").length} to skip
+              {replaceAll ? (
+                <span className="text-red-700 font-semibold">
+                  ⚠ Will delete {project.rooms.length} existing room{project.rooms.length === 1 ? "" : "s"}, then create {matches.filter(m => m.action !== "skip").length}
+                </span>
+              ) : (
+                <>
+                  {matches.filter(m => m.action === "create").length} to create ·{" "}
+                  {matches.filter(m => m.action === "update").length} to update ·{" "}
+                  {matches.filter(m => m.action === "skip").length} to skip
+                </>
+              )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {sourceKind === "svg" && project.rooms.length > 0 && !replaceAll && (
+                <button
+                  onClick={applyAsSourceOfTruth}
+                  className="text-xs text-amber-dark hover:underline font-medium"
+                  title="Wipe existing rooms and use this SVG as the single source of truth"
+                >
+                  ⚡ Use SVG as source of truth
+                </button>
+              )}
               <button onClick={onClose} className="btn-secondary btn-sm">Cancel</button>
-              <button onClick={applyChanges} className="btn-primary btn-sm">
-                Apply Changes
+              <button onClick={applyChanges} className={replaceAll ? "btn-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded font-medium" : "btn-primary btn-sm"}>
+                {replaceAll ? "Replace All Rooms" : "Apply Changes"}
               </button>
             </div>
           </div>
