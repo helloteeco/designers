@@ -73,6 +73,19 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   //   ready     — final state (approved + sourced if applicable)
   const [phase, setPhase] = useState<"idle" | "generating" | "preview" | "sourcing" | "ready">("idle");
   const [refineNotes, setRefineNotes] = useState("");
+
+  // Click-to-edit on the preview image: when designer clicks a specific
+  // item in the rendered scene, a popover opens with swap/source/remove
+  // actions targeting just that item.
+  const [clickEdit, setClickEdit] = useState<{
+    xPct: number;
+    yPct: number;
+    state: "menu" | "swapping" | "removing" | "sourcing" | "options";
+    swapInput?: string;
+    identified?: string;
+    options?: { name: string; vendor: string; price: number | null; url: string; imageUrl?: string; dimensions?: string }[];
+    error?: string;
+  } | null>(null);
   // Two render modes:
   //   "realistic" — fully furnished photorealistic render (designer/client hero
   //                 image, no cutout sourcing — what you actually see is what you get)
@@ -284,6 +297,161 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     } else {
       void sourceProducts();
     }
+  }
+
+  // ── Click-to-edit handlers ───────────────────────────────────────────
+
+  function onSceneClick(e: React.MouseEvent<HTMLImageElement>) {
+    if (phase !== "preview" && phase !== "ready") return;
+    if (clickEdit) return; // already have a popover open
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+    setClickEdit({ xPct, yPct, state: "menu" });
+  }
+
+  function closeClickEdit() {
+    setClickEdit(null);
+  }
+
+  async function performSwap() {
+    if (!clickEdit || !room.sceneBackgroundUrl) return;
+    const swapTo = (clickEdit.swapInput ?? "").trim();
+    if (!swapTo) return;
+    setClickEdit({ ...clickEdit, state: "swapping", error: undefined });
+    try {
+      const res = await fetch("/api/edit-scene-region", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: room.sceneBackgroundUrl,
+          clickXPct: clickEdit.xPct,
+          clickYPct: clickEdit.yPct,
+          action: "swap",
+          swapTo,
+        }),
+      });
+      const raw = await res.text();
+      let payload: { imageDataUrl?: string; identified?: string; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch { /* keep raw */ }
+
+      if (!res.ok || !payload.imageDataUrl) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
+      }
+      // Persist the new edited image
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) return;
+      const t = fresh.rooms.find(r => r.id === room.id);
+      if (!t) return;
+      t.sceneBackgroundUrl = payload.imageDataUrl;
+      t.sceneSnapshot = payload.imageDataUrl;
+      saveProject(fresh);
+      onUpdate();
+      toast.success(`Swapped "${payload.identified ?? "item"}" → ${swapTo}`);
+      closeClickEdit();
+    } catch (err) {
+      setClickEdit(prev => prev ? { ...prev, state: "menu", error: err instanceof Error ? err.message : String(err) } : prev);
+    }
+  }
+
+  async function performRemove() {
+    if (!clickEdit || !room.sceneBackgroundUrl) return;
+    setClickEdit({ ...clickEdit, state: "removing", error: undefined });
+    try {
+      const res = await fetch("/api/edit-scene-region", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: room.sceneBackgroundUrl,
+          clickXPct: clickEdit.xPct,
+          clickYPct: clickEdit.yPct,
+          action: "remove",
+        }),
+      });
+      const raw = await res.text();
+      let payload: { imageDataUrl?: string; identified?: string; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch { /* keep raw */ }
+
+      if (!res.ok || !payload.imageDataUrl) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
+      }
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) return;
+      const t = fresh.rooms.find(r => r.id === room.id);
+      if (!t) return;
+      t.sceneBackgroundUrl = payload.imageDataUrl;
+      t.sceneSnapshot = payload.imageDataUrl;
+      saveProject(fresh);
+      onUpdate();
+      toast.success(`Removed "${payload.identified ?? "item"}" from scene`);
+      closeClickEdit();
+    } catch (err) {
+      setClickEdit(prev => prev ? { ...prev, state: "menu", error: err instanceof Error ? err.message : String(err) } : prev);
+    }
+  }
+
+  async function performSourceJustHere() {
+    if (!clickEdit || !room.sceneBackgroundUrl) return;
+    setClickEdit({ ...clickEdit, state: "sourcing", error: undefined });
+    try {
+      const res = await fetch("/api/source-region", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: room.sceneBackgroundUrl,
+          clickXPct: clickEdit.xPct,
+          clickYPct: clickEdit.yPct,
+          styleHint: preset.id,
+          budget: remainingBudget || undefined,
+        }),
+      });
+      const raw = await res.text();
+      let payload: { identified?: string; options?: typeof clickEdit.options; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch { /* keep raw */ }
+
+      if (!res.ok) {
+        throw new Error(payload.error || `HTTP ${res.status}`);
+      }
+      setClickEdit(prev => prev ? {
+        ...prev,
+        state: "options",
+        identified: payload.identified,
+        options: payload.options ?? [],
+      } : prev);
+    } catch (err) {
+      setClickEdit(prev => prev ? { ...prev, state: "menu", error: err instanceof Error ? err.message : String(err) } : prev);
+    }
+  }
+
+  function commitSourcedRegionPick(opt: { name: string; vendor: string; price: number | null; url: string; imageUrl?: string; dimensions?: string }) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+    const customItem: FurnitureItem = {
+      id: `ai-${generateId()}`,
+      name: opt.name,
+      category: mapCategory(clickEdit?.identified ?? ""),
+      subcategory: clickEdit?.identified ?? "Item",
+      widthIn: parseFirstDim(opt.dimensions) ?? 36,
+      depthIn: parseSecondDim(opt.dimensions) ?? 36,
+      heightIn: parseThirdDim(opt.dimensions) ?? 30,
+      price: opt.price ?? 0,
+      vendor: opt.vendor,
+      vendorUrl: opt.url,
+      imageUrl: opt.imageUrl ?? "",
+      color: "",
+      material: "",
+      style: preset.designStyle,
+    };
+    const placed = placeFurniture(target, customItem);
+    placed.status = "approved";
+    target.furniture.push(placed);
+    saveProject(fresh);
+    logActivity(project.id, "click_sourced", `Click-sourced ${opt.name} for ${target.name}`);
+    toast.success(`${opt.name} added to ${target.name} masterlist`);
+    onUpdate();
+    closeClickEdit();
   }
 
   async function prefetchCutouts(
@@ -730,9 +898,44 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             <img
               src={room.sceneBackgroundUrl}
               alt={`${room.name} render`}
-              className="w-full h-auto max-h-[520px] object-contain"
+              className={`w-full h-auto max-h-[520px] object-contain ${
+                (phase === "preview" || phase === "ready") && !clickEdit ? "cursor-crosshair" : ""
+              }`}
+              onClick={onSceneClick}
             />
+
+            {/* Click marker — shows where the designer clicked */}
+            {clickEdit && (
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${clickEdit.xPct}%`,
+                  top: `${clickEdit.yPct}%`,
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <div className="h-4 w-4 rounded-full border-2 border-amber bg-amber/40 shadow-lg animate-pulse" />
+              </div>
+            )}
+
+            {/* Action popover */}
+            {clickEdit && (
+              <ClickEditPopover
+                clickEdit={clickEdit}
+                onClose={closeClickEdit}
+                onSwapInputChange={v => setClickEdit({ ...clickEdit, swapInput: v })}
+                onSwap={performSwap}
+                onRemove={performRemove}
+                onSourceJustHere={performSourceJustHere}
+                onPickOption={commitSourcedRegionPick}
+              />
+            )}
           </div>
+          {(phase === "preview" || phase === "ready") && !clickEdit && (
+            <div className="mt-1 text-[10px] text-brand-600/70">
+              💡 Click any item in the image to swap, source 3 alternatives, or remove it.
+            </div>
+          )}
 
           {/* Approval gate — shown only in preview phase. The full review panel
               for sourced items appears below if/when sourcing finishes. */}
@@ -851,6 +1054,181 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Click-to-edit popover ────────────────────────────────────────────
+
+interface ClickEditState {
+  xPct: number;
+  yPct: number;
+  state: "menu" | "swapping" | "removing" | "sourcing" | "options";
+  swapInput?: string;
+  identified?: string;
+  options?: { name: string; vendor: string; price: number | null; url: string; imageUrl?: string; dimensions?: string }[];
+  error?: string;
+}
+
+function ClickEditPopover({
+  clickEdit,
+  onClose,
+  onSwapInputChange,
+  onSwap,
+  onRemove,
+  onSourceJustHere,
+  onPickOption,
+}: {
+  clickEdit: ClickEditState;
+  onClose: () => void;
+  onSwapInputChange: (v: string) => void;
+  onSwap: () => void;
+  onRemove: () => void;
+  onSourceJustHere: () => void;
+  onPickOption: (opt: NonNullable<ClickEditState["options"]>[number]) => void;
+}) {
+  // Position the popover near the click; flip to opposite side if it would
+  // overflow the right or bottom edge of the image.
+  const placeRight = clickEdit.xPct < 60;
+  const placeDown = clickEdit.yPct < 60;
+  const style: React.CSSProperties = {
+    position: "absolute",
+    left: placeRight ? `calc(${clickEdit.xPct}% + 16px)` : undefined,
+    right: !placeRight ? `calc(${100 - clickEdit.xPct}% + 16px)` : undefined,
+    top: placeDown ? `calc(${clickEdit.yPct}% + 16px)` : undefined,
+    bottom: !placeDown ? `calc(${100 - clickEdit.yPct}% + 16px)` : undefined,
+    maxWidth: "min(360px, 80%)",
+    zIndex: 30,
+  };
+
+  const isBusy = clickEdit.state === "swapping" || clickEdit.state === "removing" || clickEdit.state === "sourcing";
+
+  return (
+    <div
+      style={style}
+      className="rounded-lg bg-white border border-brand-900/15 shadow-xl p-3"
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+          {clickEdit.identified ? `What's here: ${clickEdit.identified}` : "Edit this item"}
+        </div>
+        <button
+          onClick={onClose}
+          className="text-brand-600 hover:text-brand-900 text-base leading-none"
+          disabled={isBusy}
+        >
+          ×
+        </button>
+      </div>
+
+      {clickEdit.error && (
+        <div className="mb-2 rounded bg-red-50 border border-red-200 px-2 py-1 text-[10px] text-red-900 break-words">
+          {clickEdit.error}
+        </div>
+      )}
+
+      {clickEdit.state === "menu" && (
+        <div className="space-y-2">
+          <button
+            onClick={onSourceJustHere}
+            className="w-full text-left rounded border border-brand-900/10 px-2.5 py-2 text-xs hover:border-amber/40 hover:bg-amber/5"
+          >
+            <div className="font-semibold text-brand-900">🛒 Source 3 real alternatives</div>
+            <div className="text-[10px] text-brand-600 mt-0.5">
+              AI identifies what's here, then finds 3 buyable products.
+            </div>
+          </button>
+
+          <div className="rounded border border-brand-900/10 px-2.5 py-2">
+            <div className="text-xs font-semibold text-brand-900 mb-1">🔄 Swap with…</div>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                placeholder='e.g. "curved velvet sectional"'
+                value={clickEdit.swapInput ?? ""}
+                onChange={e => onSwapInputChange(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && (clickEdit.swapInput ?? "").trim()) {
+                    e.preventDefault();
+                    onSwap();
+                  }
+                }}
+                className="input flex-1 text-xs py-1"
+              />
+              <button
+                onClick={onSwap}
+                disabled={!(clickEdit.swapInput ?? "").trim()}
+                className="rounded bg-brand-900 text-white text-xs px-2 py-1 disabled:opacity-40"
+              >
+                Swap
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={onRemove}
+            className="w-full text-left rounded border border-red-200 px-2.5 py-2 text-xs hover:bg-red-50"
+          >
+            <div className="font-semibold text-red-700">✗ Remove from scene</div>
+            <div className="text-[10px] text-red-600/80 mt-0.5">
+              AI inpaints the area behind it.
+            </div>
+          </button>
+        </div>
+      )}
+
+      {isBusy && (
+        <div className="text-center py-3">
+          <div className="text-xs font-medium text-brand-900">
+            {clickEdit.state === "swapping" && "Swapping... (~25s)"}
+            {clickEdit.state === "removing" && "Removing... (~25s)"}
+            {clickEdit.state === "sourcing" && "Identifying + searching... (~20s)"}
+          </div>
+        </div>
+      )}
+
+      {clickEdit.state === "options" && (
+        <div>
+          {clickEdit.options && clickEdit.options.length > 0 ? (
+            <div className="space-y-2">
+              {clickEdit.options.map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => onPickOption(opt)}
+                  className="w-full text-left rounded border border-brand-900/10 p-2 hover:border-amber/40 hover:bg-amber/5"
+                >
+                  <div className="flex items-start gap-2">
+                    {opt.imageUrl && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={opt.imageUrl}
+                        alt=""
+                        className="h-12 w-12 rounded border border-brand-900/10 object-cover shrink-0"
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold text-brand-900 line-clamp-2">{opt.name}</div>
+                      <div className="text-[10px] text-brand-600">{opt.vendor}</div>
+                      <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
+                        {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+              <div className="text-[10px] text-brand-600 italic">
+                Click one to add it to the masterlist.
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-brand-600 text-center py-3">
+              No matches found. Try clicking more precisely on a piece, or use Swap with a custom description.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
