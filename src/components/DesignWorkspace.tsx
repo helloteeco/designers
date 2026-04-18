@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { saveProject, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import { autoDesignRoom } from "@/lib/auto-design";
 import SpacePlanner from "./SpacePlanner";
-import SceneDesigner from "./SceneDesigner";
+import RoomDesigner from "./RoomDesigner";
 import { useToast } from "./Toast";
 import type { Project, Room } from "@/lib/types";
 
@@ -16,18 +16,11 @@ interface Props {
 type View = "by-room" | "whole-plan";
 
 /**
- * Design Workspace — two cognitive modes, two sub-views.
+ * Design Workspace — per-room AI design is the default path.
  *
- * Designers work in two mental modes:
- *   1. Per-room creative — style, vibe, what's in this specific room,
- *      what does it look like. That's "By Room" (Scene Designer).
- *   2. Whole-house spatial — does the layout make sense across rooms,
- *      is anything missing, where's the total at. That's "Whole Plan"
- *      (Space Planner on the full Matterport SVG).
- *
- * Items (catalog browse) and Sleep (bed config) used to be separate
- * sub-tabs; both are accessible inline inside Scene as the designer's
- * per-room sidebar, so they're not separate destinations anymore.
+ * "By Room" = pick room → drop photo → pick style → ⚡ → approve items
+ *             (AI Scene Studio does the work, designer reviews)
+ * "Whole Plan" = top-down floor plan for spatial validation after approvals
  */
 export default function DesignWorkspace({ project, onUpdate }: Props) {
   const toast = useToast();
@@ -74,7 +67,7 @@ export default function DesignWorkspace({ project, onUpdate }: Props) {
           <h2 className="text-lg font-semibold">Design</h2>
           <p className="text-sm text-brand-600">
             {view === "by-room"
-              ? "Pick a room, set the style, render it, pick the items."
+              ? "Pick a room · drop a photo · pick a style · ⚡ Design · approve."
               : "Whole-house top-down: every room, every item, real positions."}
           </p>
         </div>
@@ -108,7 +101,7 @@ export default function DesignWorkspace({ project, onUpdate }: Props) {
       </div>
 
       <div className="animate-in">
-        {view === "by-room" && <SceneDesigner project={project} onUpdate={onUpdate} />}
+        {view === "by-room" && <RoomDesigner project={project} onUpdate={onUpdate} />}
         {view === "whole-plan" && <SpacePlanner project={project} onUpdate={onUpdate} />}
       </div>
     </div>

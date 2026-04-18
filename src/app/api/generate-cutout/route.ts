@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI, Modality } from "@google/genai";
+import { cacheKey, getCachedCutoutUrl, putCutout } from "@/lib/cutout-cache";
 
 export const runtime = "nodejs";
 export const maxDuration = 45;
@@ -54,6 +55,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "description is required" }, { status: 400 });
   }
 
+  // Check the Supabase-backed cache first. Hits return instantly with a
+  // stable public URL — no Gemini call, no billing. Misses fall through to
+  // the generation path below and the result gets written back on success.
+  const key = cacheKey({ vendor, name: description, sourceUrl: imageUrl });
+  const cachedUrl = await getCachedCutoutUrl(key);
+  if (cachedUrl) {
+    return NextResponse.json({ imageUrl: cachedUrl, cached: true });
+  }
+
   const vendorHint = vendor ? ` by ${vendor}` : "";
   const ai = new GoogleGenAI({ apiKey });
 
@@ -83,10 +93,14 @@ export async function POST(request: Request) {
             const parts = response.candidates?.[0]?.content?.parts ?? [];
             const out = parts.find(p => p.inlineData?.data);
             if (out?.inlineData?.data) {
+              const dataUrl = `data:${out.inlineData.mimeType || "image/png"};base64,${out.inlineData.data}`;
+              const publicUrl = await putCutout(key, dataUrl);
               return NextResponse.json({
-                imageDataUrl: `data:${out.inlineData.mimeType || "image/png"};base64,${out.inlineData.data}`,
+                imageUrl: publicUrl ?? undefined,
+                imageDataUrl: publicUrl ? undefined : dataUrl,
                 mode: "bg-removed",
                 modelUsed: model,
+                cached: false,
               });
             }
           } catch (err) {
@@ -113,10 +127,14 @@ export async function POST(request: Request) {
       const parts = response.candidates?.[0]?.content?.parts ?? [];
       const out = parts.find(p => p.inlineData?.data);
       if (out?.inlineData?.data) {
+        const dataUrl = `data:${out.inlineData.mimeType || "image/png"};base64,${out.inlineData.data}`;
+        const publicUrl = await putCutout(key, dataUrl);
         return NextResponse.json({
-          imageDataUrl: `data:${out.inlineData.mimeType || "image/png"};base64,${out.inlineData.data}`,
+          imageUrl: publicUrl ?? undefined,
+          imageDataUrl: publicUrl ? undefined : dataUrl,
           mode: "generated",
           modelUsed: model,
+          cached: false,
         });
       }
     } catch (err) {

@@ -209,16 +209,6 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       items.map(async (it, idx) => {
         const opt = it.options[0];
         if (!opt) return;
-        const cacheKey = `cutout:${opt.vendor}:${opt.name}`.slice(0, 200);
-        try {
-          const cached = localStorage.getItem(cacheKey);
-          if (cached) {
-            setSourcedItems(prev =>
-              prev ? prev.map((s, i) => (i === idx ? { ...s, cutoutUrl: cached } : s)) : prev
-            );
-            return;
-          }
-        } catch {}
         try {
           const res = await fetch("/api/generate-cutout", {
             method: "POST",
@@ -230,11 +220,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             }),
           });
           if (!res.ok) return;
-          const { imageDataUrl } = (await res.json()) as { imageDataUrl?: string };
-          if (!imageDataUrl) return;
-          try { localStorage.setItem(cacheKey, imageDataUrl); } catch {}
+          const json = (await res.json()) as { imageUrl?: string; imageDataUrl?: string };
+          const url = json.imageUrl ?? json.imageDataUrl;
+          if (!url) return;
           setSourcedItems(prev =>
-            prev ? prev.map((s, i) => (i === idx ? { ...s, cutoutUrl: imageDataUrl } : s)) : prev
+            prev ? prev.map((s, i) => (i === idx ? { ...s, cutoutUrl: url } : s)) : prev
           );
         } catch {}
       })
@@ -260,34 +250,25 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     const opt = item.options[item.chosenIndex];
     if (!opt) return;
 
-    // Make sure we have a cutout — generate on-demand if not prefetched yet
+    // Make sure we have a cutout — generate on-demand if not prefetched yet.
+    // The server handles caching via Supabase storage, so we just call the API.
     let cutoutUrl = item.cutoutUrl;
     if (!cutoutUrl) {
-      const cacheKey = `cutout:${opt.vendor}:${opt.name}`.slice(0, 200);
       try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) cutoutUrl = cached;
+        const res = await fetch("/api/generate-cutout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: `${item.description} (${item.category})`,
+            imageUrl: opt.imageUrl || undefined,
+            vendor: opt.vendor || undefined,
+          }),
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { imageUrl?: string; imageDataUrl?: string };
+          cutoutUrl = json.imageUrl ?? json.imageDataUrl;
+        }
       } catch {}
-      if (!cutoutUrl) {
-        try {
-          const res = await fetch("/api/generate-cutout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              description: `${item.description} (${item.category})`,
-              imageUrl: opt.imageUrl || undefined,
-              vendor: opt.vendor || undefined,
-            }),
-          });
-          if (res.ok) {
-            const { imageDataUrl } = (await res.json()) as { imageDataUrl?: string };
-            if (imageDataUrl) {
-              cutoutUrl = imageDataUrl;
-              try { localStorage.setItem(cacheKey, imageDataUrl); } catch {}
-            }
-          }
-        } catch {}
-      }
     }
 
     const fresh = getProjectFromStore(project.id);
@@ -562,6 +543,23 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         </div>
       )}
 
+      {/* Rendered scene preview */}
+      {hasScene && room.sceneBackgroundUrl && (
+        <div className="mt-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+            Rendered scene
+          </div>
+          <div className="relative rounded-lg overflow-hidden border border-brand-900/10 bg-brand-900/5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={room.sceneBackgroundUrl}
+              alt={`${room.name} render`}
+              className="w-full h-auto max-h-[520px] object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       {/* 4 · Review panel — inline, below the scene (no modal) */}
       {sourcedItems && sourcedItems.length > 0 && (
         <div className="mt-4 pt-4 border-t border-brand-900/10">
@@ -587,7 +585,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             ))}
           </div>
           <div className="mt-3 text-[11px] text-brand-600 italic">
-            Approved items drop onto the scene below (drag to reposition) and appear in the Deliver tab&apos;s masterlist as approved line items.
+            Approved items flow straight into the Deliver tab&apos;s masterlist as approved line items. Re-design if the picks miss the brief.
           </div>
         </div>
       )}
@@ -606,7 +604,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               • <strong>Matterport auto-pull</strong> available on the Brief tab — faster than walking the model but you miss the spatial familiarity.
             </div>
             <div>
-              • <strong>Manual catalog browse</strong> is in the Items section of the Scene canvas below. For when AI picks miss the mark.
+              • <strong>Manual catalog browse</strong> lives on the <strong>Items</strong> tab if the AI picks miss the mark.
             </div>
             <div>
               • <strong>Cutouts cache</strong> across projects — same product won&apos;t re-bill Gemini.
