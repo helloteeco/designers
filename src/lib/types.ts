@@ -149,6 +149,10 @@ export interface Property {
    *  once at the property level and cropped per-room via Room.svgBBox in
    *  the Space Planner backdrop. */
   floorPlanSvgContent?: string;
+  /** Matterport Model ID (the "m=..." string from a Matterport share URL).
+   *  When set + MATTERPORT_TOKEN_ID+SECRET env vars present, the Design
+   *  tab can auto-pull panoramas per room as AI reference photos. */
+  matterportModelId?: string;
 }
 
 export interface BedItem {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getProject, saveProject } from "@/lib/store";
 import ProjectChecklist from "./ProjectChecklist";
 import FloorPlansPanel from "./FloorPlansPanel";
+import MatterportLink from "./MatterportLink";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -77,6 +78,11 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
             <FloorPlansPanel project={project} onUpdate={onUpdate} />
           </div>
         </div>
+      </div>
+
+      {/* Matterport Model ID — unlocks auto-pulling panoramas per room */}
+      <div className="lg:col-span-2">
+        <MatterportLink project={project} onUpdate={onUpdate} />
       </div>
 
       {/* Property */}
