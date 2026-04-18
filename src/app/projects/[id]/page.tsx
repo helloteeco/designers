@@ -173,6 +173,23 @@ export default function ProjectDetailPage() {
   // Filter tabs based on project type
   const visibleTabs = ALL_TABS.filter(t => !t.visible || t.visible(project));
 
+  // Per-tab "done" heuristic — drives the progress chain's checkmarks. Cheap,
+  // forgiving rules; designer can always click back to revisit a "done" step.
+  const isTabDone: Record<Tab, boolean> = {
+    brief: !!project.client.name && (project.property.floorPlans ?? []).length > 0,
+    concept: project.moodBoards.some(b => b.isLockedConcept),
+    rooms: project.rooms.length > 0,
+    sleep: project.rooms.some(r => !!r.selectedBedConfig),
+    design: project.rooms.some(r => r.furniture.length > 0),
+    scene: project.rooms.some(r => (r.sceneItems?.length ?? 0) > 0 || !!r.sceneSnapshot),
+    items: totalItems > 0,
+    renovation: (project.scope?.length ?? 0) > 0,
+    review: project.status === "review" || project.status === "delivered",
+    order: project.status === "delivered",
+    install: project.status === "delivered",
+  };
+  const currentIdx = visibleTabs.findIndex(t => t.id === tab);
+
   return (
     <div className="min-h-screen bg-cream">
       <Navbar />
@@ -264,21 +281,51 @@ export default function ProjectDetailPage() {
           </select>
         </div>
 
-        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-2 overflow-x-auto hidden md:block">
-          <div className="flex gap-1 min-w-max items-center">
+        {/* Desktop: numbered progress chain. Each step shows its state
+            (done ✓ / current / upcoming) plus the connector lines between
+            so it reads as a sequence, not a flat tab strip. */}
+        <div className="mb-6 rounded-xl bg-white border border-brand-900/10 p-3 overflow-x-auto hidden md:block">
+          <div className="flex items-center min-w-max">
             {visibleTabs.map((t, idx) => {
-              const prevWeek = idx > 0 ? visibleTabs[idx - 1].week : null;
-              const weekChanged = prevWeek !== null && prevWeek !== t.week;
+              const isCurrent = tab === t.id;
+              const isDone = isTabDone[t.id];
+              const isPast = idx < currentIdx;
+              const isFirst = idx === 0;
+
               return (
                 <div key={t.id} className="flex items-center shrink-0">
-                  {weekChanged && <div className="w-px h-5 bg-brand-900/10 mx-2 shrink-0" />}
+                  {/* Connector line (skip before first step) */}
+                  {!isFirst && (
+                    <div className={`h-px w-6 mx-1 ${
+                      isPast || isCurrent ? "bg-amber/60" : "bg-brand-900/10"
+                    }`} />
+                  )}
+
                   <button
                     onClick={() => setTab(t.id)}
-                    className={tab === t.id ? "tab-active" : "tab"}
-                    title={`${t.week}`}
+                    className={`group flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition ${
+                      isCurrent
+                        ? "bg-brand-900 text-white"
+                        : isDone
+                          ? "text-brand-900 hover:bg-brand-900/5"
+                          : "text-brand-600 hover:bg-brand-900/5"
+                    }`}
+                    title={t.week}
                   >
-                    <span className="hidden xl:inline text-[9px] uppercase tracking-wider opacity-50 mr-1.5">{t.week}</span>
-                    {t.label}
+                    {/* Step indicator: number, current dot, or done check */}
+                    <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold shrink-0 ${
+                      isCurrent
+                        ? "bg-amber text-white"
+                        : isDone
+                          ? "bg-emerald-500 text-white"
+                          : "bg-brand-900/10 text-brand-600 group-hover:bg-brand-900/15"
+                    }`}>
+                      {isDone && !isCurrent ? "✓" : idx + 1}
+                    </span>
+                    <span className="text-sm font-medium whitespace-nowrap">{t.label}</span>
+                    {!isCurrent && (
+                      <span className="hidden xl:inline text-[9px] uppercase tracking-wider opacity-50">{t.week}</span>
+                    )}
                   </button>
                 </div>
               );
