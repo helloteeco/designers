@@ -134,6 +134,10 @@ export interface Property {
   polycamLink: string;
   spoakLink: string;
   floorPlans?: FloorPlan[];
+  /** Hero image (property exterior or best interior shot) used on Install Guide cover */
+  heroImageUrl?: string;
+  /** Room-level notes designer writes for install guide tips */
+  installNotes?: string;
 }
 
 export interface BedItem {
@@ -221,6 +225,11 @@ export interface Room {
   annotation?: RoomAnnotation;  // Optional spatial anchor on a floor plan image
   sceneBackgroundUrl?: string;  // optional image: room photo, Matterport snap, white/blank
   sceneItems?: SceneItem[];     // Spoak-style visual scene composition
+  /** Install-guide per-room tips (shown on room's install guide page) */
+  installTips?: string;
+  /** Snapshot of the rendered scene as base64 image, for use in install guide
+   *  without needing to re-render. Regenerated when designer clicks "Snapshot Scene". */
+  sceneSnapshot?: string;
 }
 
 export interface MoodBoard {

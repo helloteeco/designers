@@ -141,6 +141,11 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
         <div className="mt-4 pt-4 border-t border-brand-900/5">
           <FloorPlansPanel project={project} onUpdate={onUpdate} />
         </div>
+
+        {/* Hero image (for Install Guide cover) */}
+        <div className="mt-4 pt-4 border-t border-brand-900/5">
+          <HeroImageUploader project={project} onUpdate={onUpdate} />
+        </div>
       </div>
 
       {/* Client */}
@@ -227,6 +232,76 @@ function Field({ label, value }: { label: string; value: string | number }) {
     <div>
       <dt className="text-[10px] uppercase tracking-wider text-brand-600">{label}</dt>
       <dd className="font-medium text-brand-900 capitalize">{value || "—"}</dd>
+    </div>
+  );
+}
+
+function HeroImageUploader({ project, onUpdate }: { project: Project; onUpdate: () => void }) {
+  const [urlInput, setUrlInput] = useState(project.property.heroImageUrl ?? "");
+  const fileRef = useState<HTMLInputElement | null>(null);
+
+  function saveUrl(url: string) {
+    const fresh = getProject(project.id);
+    if (!fresh) return;
+    fresh.property.heroImageUrl = url;
+    saveProject(fresh);
+    onUpdate();
+  }
+
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Hero image too large (>2MB). Use a URL instead for large photos.");
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setUrlInput(dataUrl);
+      saveUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+          Hero Image (Install Guide cover)
+        </div>
+      </div>
+      {project.property.heroImageUrl ? (
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={project.property.heroImageUrl} alt="" className="h-16 w-24 object-cover rounded border border-brand-900/10" />
+          <div className="flex-1">
+            <div className="text-[10px] text-brand-600">Used on the Install Guide cover page.</div>
+            <button
+              onClick={() => saveUrl("")}
+              className="text-[10px] text-red-400 hover:text-red-600 mt-1"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            className="input flex-1 text-xs"
+            placeholder="Paste image URL or click Upload..."
+            value={urlInput}
+            onChange={e => setUrlInput(e.target.value)}
+            onBlur={() => urlInput.trim() && saveUrl(urlInput.trim())}
+          />
+          <label className="btn-secondary btn-sm cursor-pointer whitespace-nowrap">
+            Upload
+            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          </label>
+        </div>
+      )}
     </div>
   );
 }
