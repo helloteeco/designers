@@ -184,6 +184,14 @@ export interface SelectedFurniture {
   notes: string;
 }
 
+export interface RoomAnnotation {
+  floorPlanId: string;  // which FloorPlan this is anchored to
+  x: number;            // 0-100 (% of plan width)
+  y: number;            // 0-100 (% of plan height)
+  width: number;        // 0-100 (% of plan width)
+  height: number;       // 0-100 (% of plan height)
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -197,6 +205,7 @@ export interface Room {
   furniture: SelectedFurniture[];
   accentWall: AccentWall | null;
   notes: string;
+  annotation?: RoomAnnotation;  // Optional spatial anchor on a floor plan image
 }
 
 export interface MoodBoard {

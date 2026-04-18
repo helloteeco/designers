@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import FloorPlanReference from "./FloorPlanReference";
+import FloorPlanAnnotator from "./FloorPlanAnnotator";
 import type { Project, Room, RoomType } from "@/lib/types";
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
@@ -41,6 +42,8 @@ interface Props {
 }
 
 export default function RoomPlanner({ project, onUpdate }: Props) {
+  const [showAnnotator, setShowAnnotator] = useState(false);
+  const hasImagePlans = (project.property?.floorPlans ?? []).some(p => p.type === "image");
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -289,7 +292,12 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
             Define rooms with dimensions for sleeping optimization.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {hasImagePlans && (
+            <button onClick={() => setShowAnnotator(true)} className="btn-accent btn-sm">
+              📐 Annotate Floor Plan
+            </button>
+          )}
           {project.rooms.length === 0 && (
             <button onClick={quickAddRooms} className="btn-secondary btn-sm">
               Quick Setup from Property
@@ -300,6 +308,15 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Annotator modal */}
+      {showAnnotator && (
+        <FloorPlanAnnotator
+          project={project}
+          onUpdate={onUpdate}
+          onClose={() => setShowAnnotator(false)}
+        />
+      )}
 
       {/* Room List */}
       {project.rooms.length === 0 ? (
