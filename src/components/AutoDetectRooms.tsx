@@ -27,6 +27,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
   const [detected, setDetected] = useState<DetectedRoom[]>([]);
   const [matches, setMatches] = useState<RoomMatch[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
+  const [sourceKind, setSourceKind] = useState<"svg" | "ocr">("ocr");
 
   async function runDetection() {
     if (plan.type !== "image") {
@@ -41,6 +42,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
       // Matterport schematic SVG: parse text nodes directly — no OCR needed.
       // Way faster + exact, since SVG text isn't recognized, it's literal.
       const isSvg = isSvgSource(plan.url);
+      setSourceKind(isSvg ? "svg" : "ocr");
       let rooms: DetectedRoom[];
       if (isSvg) {
         setProgress({ pct: 30, status: "Reading SVG text + dimensions..." });
@@ -231,16 +233,41 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
             </div>
           )}
 
-          {phase === "review" && (
+          {phase === "review" && (() => {
+            // Sniff for the classic OCR failure mode where every detected room
+            // has the same dimensions — usually means OCR lifted one stamped
+            // dimension from the page and stuck it on every label.
+            const dimKeys = detected.map(d => `${Math.round(d.widthFt * 10)}-${Math.round(d.lengthFt * 10)}`);
+            const allSame = detected.length > 1 && dimKeys.every(k => k === dimKeys[0]);
+            return (
             <div>
               <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3">
-                <div className="font-semibold text-emerald-900 text-sm mb-0.5">
-                  Found {detected.length} room{detected.length === 1 ? "" : "s"}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="font-semibold text-emerald-900 text-sm">
+                    Found {detected.length} room{detected.length === 1 ? "" : "s"}
+                  </div>
+                  <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
+                    sourceKind === "svg" ? "bg-emerald-600 text-white" : "bg-amber-200 text-amber-900"
+                  }`}>
+                    {sourceKind === "svg" ? "⚡ SVG · exact" : "🔍 OCR · approximate"}
+                  </span>
                 </div>
                 <p className="text-xs text-emerald-800">
-                  Review each below. Toggle Update/Create/Skip. Edit the label or dimensions if OCR got them wrong.
+                  Review each below. Toggle Update/Create/Skip. Edit the label or dimensions if {sourceKind === "svg" ? "anything looks wrong" : "OCR got them wrong"}.
                 </p>
               </div>
+
+              {allSame && sourceKind === "ocr" && (
+                <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+                  <div className="font-semibold text-red-900 text-sm mb-1">⚠ Every room has the same dimensions</div>
+                  <p className="text-xs text-red-800">
+                    OCR likely picked up one stamped dimension on the page and pasted it onto every label.
+                    The fix: in Matterport, click <strong>Export → Schematic Floor Plan → SVG</strong>, then upload
+                    the .svg file. SVG text is parsed directly with no recognition errors. You can also fix the
+                    dimensions inline below before applying.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2 mb-4">
                 {matches.map((m, idx) => (
@@ -263,7 +290,8 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
                 <strong>📐 Annotate Floor Plan</strong> tool to click-drag rooms onto the plan.
               </div>
             </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Footer */}

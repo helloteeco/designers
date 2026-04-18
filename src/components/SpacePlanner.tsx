@@ -34,7 +34,10 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
   // Drag state — tracked outside React to keep mousemove cheap.
   // dragLive holds the in-flight position so we can re-render at 60fps without
   // touching localStorage; commit happens on mouseup.
+  // dragPosRef mirrors dragLive so the window-level mouseup handler always
+  // sees the latest position, not a stale React closure value.
   const dragRef = useRef<{ id: string; offsetXPct: number; offsetYPct: number } | null>(null);
+  const dragPosRef = useRef<{ id: string; x: number; y: number } | null>(null);
   const [dragLive, setDragLive] = useState<{ id: string; x: number; y: number } | null>(null);
   // Local-only install-tips draft (persisted on blur).
   const [tipsDraft, setTipsDraft] = useState("");
@@ -129,18 +132,18 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
       offsetXPct: cursorXPct - (placed.x ?? 50),
       offsetYPct: cursorYPct - (placed.y ?? 50),
     };
+    const initial = { id: f.item.id, x: placed.x ?? 50, y: placed.y ?? 50 };
+    dragPosRef.current = initial;
     setSelectedItemId(f.item.id);
-    setDragLive({ id: f.item.id, x: placed.x ?? 50, y: placed.y ?? 50 });
+    setDragLive(initial);
   }
 
-  function commitDrag(xPct: number, yPct: number) {
-    const drag = dragRef.current;
-    if (!drag) return;
+  function commitDragImmediate(itemId: string, xPct: number, yPct: number) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const r = fresh.rooms.find(r => r.id === selectedRoom);
     if (!r) return;
-    const f = r.furniture.find(f => f.item.id === drag.id) as PlacedItem | undefined;
+    const f = r.furniture.find(f => f.item.id === itemId) as PlacedItem | undefined;
     if (!f) return;
     f.x = xPct;
     f.y = yPct;
@@ -150,6 +153,8 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
 
   // Window-level mousemove/mouseup so dragging continues even if the cursor
   // briefly leaves the canvas. We always clamp to the canvas bounds.
+  // Listeners are registered ONCE (empty deps) so the closure can't go stale.
+  // Latest position is read from dragPosRef which onMove updates on every frame.
   useEffect(() => {
     function onMove(e: MouseEvent) {
       const drag = dragRef.current;
@@ -159,14 +164,18 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
       const cursorYPct = ((e.clientY - cRect.top) / cRect.height) * 100;
       const xPct = Math.max(0, Math.min(100, cursorXPct - drag.offsetXPct));
       const yPct = Math.max(0, Math.min(100, cursorYPct - drag.offsetYPct));
-      setDragLive({ id: drag.id, x: xPct, y: yPct });
+      const next = { id: drag.id, x: xPct, y: yPct };
+      dragPosRef.current = next;
+      setDragLive(next);
     }
     function onUp() {
       const drag = dragRef.current;
-      if (drag && dragLive) {
-        commitDrag(dragLive.x, dragLive.y);
+      const pos = dragPosRef.current;
+      if (drag && pos && pos.id === drag.id) {
+        commitDragImmediate(drag.id, pos.x, pos.y);
       }
       dragRef.current = null;
+      dragPosRef.current = null;
       setDragLive(null);
     }
     window.addEventListener("mousemove", onMove);
@@ -176,7 +185,7 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
       window.removeEventListener("mouseup", onUp);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dragLive?.id, selectedRoom]);
+  }, [selectedRoom]);
 
   function removeFromRoom(itemId: string) {
     const fresh = getProjectFromStore(project.id);
@@ -208,13 +217,53 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     if (!r) return;
 
     const items = suggestFurniture(r, fresh.style);
+    let skipped = 0;
     for (const item of items) {
       if (r.furniture.find(f => f.item.id === item.id)) continue;
+      // Skip items that physically can't fit in the room (sofa wider than the
+      // room, king bed in a 6-foot bedroom, etc.). User can still add via
+      // the catalog if they really want.
+      const itemWFt = item.widthIn / 12;
+      const itemDFt = item.depthIn / 12;
+      const fitsAsIs = itemWFt <= r.widthFt && itemDFt <= r.lengthFt;
+      const fitsRotated = itemDFt <= r.widthFt && itemWFt <= r.lengthFt;
+      if (!fitsAsIs && !fitsRotated) {
+        skipped++;
+        continue;
+      }
       r.furniture.push(placeFurniture(r, item));
     }
 
     saveProject(fresh);
-    logActivity(project.id, "auto_furnish", `Auto-furnished ${r.name}`);
+    logActivity(project.id, "auto_furnish", `Auto-furnished ${r.name}${skipped ? ` (skipped ${skipped} oversized)` : ""}`);
+    onUpdate();
+  }
+
+  function cleanupGarbageRooms(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!confirm(`Remove ${ids.length} unused room${ids.length === 1 ? "" : "s"}? They have no furniture and look like duplicate or garbage detections.`)) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    fresh.rooms = fresh.rooms.filter(r => !ids.includes(r.id));
+    saveProject(fresh);
+    if (ids.includes(selectedRoom)) {
+      setSelectedRoom(fresh.rooms[0]?.id ?? "");
+    }
+    logActivity(project.id, "rooms_cleaned", `Removed ${ids.length} garbage rooms`);
+    onUpdate();
+  }
+
+  function clearRoomFurniture() {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const r = fresh.rooms.find(r => r.id === selectedRoom);
+    if (!r) return;
+    if (r.furniture.length === 0) return;
+    if (!confirm(`Remove all ${r.furniture.length} items from ${r.name}? This can't be undone.`)) return;
+    r.furniture = [];
+    saveProject(fresh);
+    setSelectedItemId(null);
+    logActivity(project.id, "room_cleared", `Cleared furniture in ${r.name}`);
     onUpdate();
   }
 
@@ -261,19 +310,36 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
         </div>
       </div>
 
-      {/* Room Tabs */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {project.rooms.map(r => (
-          <button
-            key={r.id}
-            onClick={() => { setSelectedRoom(r.id); setSelectedItemId(null); }}
-            className={selectedRoom === r.id ? "tab-active" : "tab"}
-          >
-            {r.name}
-            <span className="ml-1 text-[10px] opacity-60">{r.furniture.length}</span>
-          </button>
-        ))}
-      </div>
+      {/* Room Tabs — only "real" rooms by default; hide garbage detections
+          (e.g. "Excluded Area Porch 58 SQ FT D", "- Entry -") and exact-name
+          duplicates that came from re-running auto-detect. */}
+      {(() => {
+        const garbage = project.rooms.filter(r => isGarbageRoom(r, project.rooms));
+        const visible = project.rooms.filter(r => !isGarbageRoom(r, project.rooms));
+        return (
+          <div className="flex flex-wrap gap-2 mb-4 items-center">
+            {visible.map(r => (
+              <button
+                key={r.id}
+                onClick={() => { setSelectedRoom(r.id); setSelectedItemId(null); }}
+                className={selectedRoom === r.id ? "tab-active" : "tab"}
+              >
+                {r.name}
+                <span className="ml-1 text-[10px] opacity-60">{r.furniture.length}</span>
+              </button>
+            ))}
+            {garbage.length > 0 && (
+              <button
+                onClick={() => cleanupGarbageRooms(garbage.map(r => r.id))}
+                className="text-[10px] text-red-500 hover:underline ml-2"
+                title={`Remove: ${garbage.map(r => r.name).join(", ")}`}
+              >
+                🧹 Clean up {garbage.length} unused room{garbage.length === 1 ? "" : "s"}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Scan Links */}
       {(project.property.matterportLink || project.property.polycamLink) && (
@@ -349,10 +415,19 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
                 <button
                   onClick={autoFillRoom}
                   className="text-xs text-amber-dark hover:underline font-medium ml-3"
-                  title={room.furniture.length > 0 ? "Adds more suggested items without replacing existing ones" : "One-click fill with style-matched pieces"}
+                  title={room.furniture.length > 0 ? "Adds more suggested items without replacing existing ones" : "One-click fill with style-matched pieces (oversized items skipped)"}
                 >
                   {room.furniture.length === 0 ? "Auto-Furnish" : "+ Add Suggestions"}
                 </button>
+                {room.furniture.length > 0 && (
+                  <button
+                    onClick={clearRoomFurniture}
+                    className="text-xs text-red-500 hover:underline ml-2"
+                    title="Remove all furniture from this room"
+                  >
+                    Clear Room
+                  </button>
+                )}
               </div>
             </div>
 
@@ -656,6 +731,29 @@ function StatCard({ label, value, sub, warn }: { label: string; value: string; s
       <div className="text-[10px] text-brand-600/60">{sub}</div>
     </div>
   );
+}
+
+// Hide rooms that look like junk from auto-detect (or duplicates from
+// re-running it). Designer can still see the underlying room via the Rooms
+// tab; this just keeps the Space Planner tab strip readable.
+//
+// A room is "garbage" if it has zero furniture AND any of:
+//   1. Name has telltale OCR/parser noise: "Excluded Area", "SQ FT", "- Foo -"
+//   2. Name is wrapped in dashes ("- Entry -") or starts with a digit
+//   3. An exact-name duplicate of another room that already has furniture
+function isGarbageRoom(room: Room, allRooms: Room[]): boolean {
+  if (room.furniture.length > 0) return false;
+  const name = (room.name || "").trim();
+  if (!name) return true;
+  if (/excluded|sq\s*ft/i.test(name)) return true;
+  if (/^[-–—]\s*.+\s*[-–—]$/.test(name)) return true;
+  if (/^\d/.test(name)) return true;
+  const lower = name.toLowerCase();
+  const dupHasFurniture = allRooms.some(
+    r => r.id !== room.id && r.name.trim().toLowerCase() === lower && r.furniture.length > 0
+  );
+  if (dupHasFurniture) return true;
+  return false;
 }
 
 // Items that don't sit on the floor (wall-mount, on-counter accessories).
