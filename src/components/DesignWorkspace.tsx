@@ -5,8 +5,6 @@ import { saveProject, getProject as getProjectFromStore, logActivity } from "@/l
 import { autoDesignRoom } from "@/lib/auto-design";
 import SpacePlanner from "./SpacePlanner";
 import SceneDesigner from "./SceneDesigner";
-import FurniturePicker from "./FurniturePicker";
-import SleepOptimizer from "./SleepOptimizer";
 import { useToast } from "./Toast";
 import type { Project, Room } from "@/lib/types";
 
@@ -15,71 +13,32 @@ interface Props {
   onUpdate: () => void;
 }
 
-type View = "layout" | "scene" | "items" | "sleep";
-
-const SLEEPABLE_TYPES = new Set([
-  "primary-bedroom",
-  "bedroom",
-  "loft",
-  "bonus-room",
-]);
+type View = "by-room" | "whole-plan";
 
 /**
- * Design Workspace — single tab covering everything room-related.
+ * Design Workspace — two cognitive modes, two sub-views.
  *
- * Replaces 4 separate top-level tabs (Space Plan, Scene, Items, Sleep Plan)
- * with one canvas that picks a room, then offers Layout / Scene / Items /
- * Sleep sub-views. Designer stays on this tab for the bulk of their work.
+ * Designers work in two mental modes:
+ *   1. Per-room creative — style, vibe, what's in this specific room,
+ *      what does it look like. That's "By Room" (Scene Designer).
+ *   2. Whole-house spatial — does the layout make sense across rooms,
+ *      is anything missing, where's the total at. That's "Whole Plan"
+ *      (Space Planner on the full Matterport SVG).
  *
- * Includes the headline "🪄 Auto-Design Room" button — places style-aware
- * furniture in the selected room with rule-based positioning.
+ * Items (catalog browse) and Sleep (bed config) used to be separate
+ * sub-tabs; both are accessible inline inside Scene as the designer's
+ * per-room sidebar, so they're not separate destinations anymore.
  */
 export default function DesignWorkspace({ project, onUpdate }: Props) {
   const toast = useToast();
-  const [selectedRoomId, setSelectedRoomId] = useState<string>(
-    project.rooms[0]?.id ?? ""
-  );
-  const [view, setView] = useState<View>("layout");
-
-  const room = useMemo(
-    () => project.rooms.find(r => r.id === selectedRoomId) ?? project.rooms[0],
-    [project.rooms, selectedRoomId]
-  );
-
-  // Show Sleep sub-view only for sleepable room types
-  const showSleep = room && SLEEPABLE_TYPES.has(room.type);
-
-  // Per-room scoped subset for Items view so designer doesn't have to keep
-  // re-picking the room
-  const scopedProject = useMemo<Project>(() => {
-    if (!room) return project;
-    return project;
-  }, [room, project]);
-
-  function autoDesignSelectedRoom() {
-    if (!room) return;
-    const fresh = getProjectFromStore(project.id);
-    if (!fresh) return;
-    const target = fresh.rooms.find(r => r.id === room.id);
-    if (!target) return;
-    if (target.furniture.length > 0) {
-      if (!confirm(`${target.name} already has ${target.furniture.length} items. Replace them with auto-designed picks?`)) return;
-      target.furniture = [];
-    }
-    const placed = autoDesignRoom(fresh, target);
-    target.furniture.push(...placed);
-    saveProject(fresh);
-    logActivity(project.id, "auto_design", `Auto-designed ${target.name} with ${placed.length} items`);
-    toast.success(`Designed ${target.name}: ${placed.length} items placed`);
-    onUpdate();
-  }
+  const [view, setView] = useState<View>("by-room");
 
   function autoDesignAllRooms() {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const empty = fresh.rooms.filter(r => r.furniture.length === 0);
     if (empty.length === 0) {
-      toast.info("Every room already has furniture. Use 'Auto-Design Room' to redo a single room.");
+      toast.info("Every room already has furniture. Use 'Auto-Design' inside a room to redo just that one.");
       return;
     }
     if (!confirm(`Auto-design ${empty.length} empty room${empty.length === 1 ? "" : "s"}? Rooms with existing furniture stay as-is.`)) return;
@@ -108,106 +67,49 @@ export default function DesignWorkspace({ project, onUpdate }: Props) {
     );
   }
 
-  if (!room) return null;
-
   return (
     <div>
-      {/* Header — title + auto-design buttons */}
       <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-semibold">Design</h2>
           <p className="text-sm text-brand-600">
-            Pick a room, then lay it out, render it, or browse items.
-            Use <strong>🪄 Auto-Design</strong> to fill a room in one click.
+            {view === "by-room"
+              ? "Pick a room, set the style, render it, pick the items."
+              : "Whole-house top-down: every room, every item, real positions."}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={autoDesignSelectedRoom}
-            className="rounded-lg bg-amber px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-dark"
-            title={`Pick style-aware furniture for ${room.name} and place it with rules (bed against wall, nightstands flanking, rug under bed, etc.)`}
-          >
-            🪄 Auto-Design {room.name}
-          </button>
+
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={autoDesignAllRooms}
             className="rounded-lg border border-amber/40 px-3 py-1.5 text-xs font-medium text-amber-dark hover:bg-amber/10"
-            title="Auto-design every empty room in one click"
+            title="Fill every empty room with style-matched furniture in one click"
           >
-            🪄 Auto-Design All Empty
+            🪄 Auto-Design All Empty Rooms
           </button>
+
+          <div className="flex gap-1 rounded-xl bg-white border border-brand-900/10 p-1">
+            <button
+              onClick={() => setView("by-room")}
+              className={view === "by-room" ? "tab-active" : "tab"}
+              title="Per-room creative work: style, scene, items, sleep"
+            >
+              🎨 By Room
+            </button>
+            <button
+              onClick={() => setView("whole-plan")}
+              className={view === "whole-plan" ? "tab-active" : "tab"}
+              title="Whole-house floor plan with all furniture"
+            >
+              📐 Whole Plan
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Room picker — visual strip with all rooms */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {project.rooms.map(r => {
-          const isSelected = r.id === room.id;
-          const hasFurniture = r.furniture.length > 0;
-          return (
-            <button
-              key={r.id}
-              onClick={() => setSelectedRoomId(r.id)}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition ${
-                isSelected
-                  ? "border-amber bg-amber/10 text-brand-900 font-semibold"
-                  : "border-brand-900/10 bg-white text-brand-700 hover:border-amber/40"
-              }`}
-            >
-              <span>{r.name}</span>
-              <span className="text-[10px] opacity-60">
-                {r.widthFt}&apos;×{r.lengthFt}&apos;
-              </span>
-              {hasFurniture && (
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
-                  {r.furniture.length}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Sub-view tabs — Layout / Scene / Items / Sleep */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-white border border-brand-900/10 p-1 inline-flex">
-        <button
-          onClick={() => setView("layout")}
-          className={view === "layout" ? "tab-active" : "tab"}
-          title="Top-down floor plan with measurements + clearance"
-        >
-          📐 Layout
-        </button>
-        <button
-          onClick={() => setView("scene")}
-          className={view === "scene" ? "tab-active" : "tab"}
-          title="Spoak-style visual render with real product images"
-        >
-          🎨 Scene
-        </button>
-        <button
-          onClick={() => setView("items")}
-          className={view === "items" ? "tab-active" : "tab"}
-          title="Browse the catalog and add items"
-        >
-          🛋 Items
-        </button>
-        {showSleep && (
-          <button
-            onClick={() => setView("sleep")}
-            className={view === "sleep" ? "tab-active" : "tab"}
-            title="Pick a bed configuration for this bedroom"
-          >
-            🛏 Sleep
-          </button>
-        )}
-      </div>
-
-      {/* Active sub-view */}
       <div className="animate-in">
-        {view === "layout" && <SpacePlanner project={scopedProject} onUpdate={onUpdate} />}
-        {view === "scene" && <SceneDesigner project={scopedProject} onUpdate={onUpdate} />}
-        {view === "items" && <FurniturePicker project={scopedProject} onUpdate={onUpdate} />}
-        {view === "sleep" && showSleep && <SleepOptimizer project={scopedProject} onUpdate={onUpdate} />}
+        {view === "by-room" && <SceneDesigner project={project} onUpdate={onUpdate} />}
+        {view === "whole-plan" && <SpacePlanner project={project} onUpdate={onUpdate} />}
       </div>
     </div>
   );
