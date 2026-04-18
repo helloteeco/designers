@@ -7,6 +7,7 @@
 
 import type { Project, Room, DesignStyle, MoodBoard, RoomType } from "./types";
 import { suggestFurniture } from "./auto-suggest";
+import { placeFurniture } from "./space-planning";
 import { generateId } from "./store";
 
 // ── Workflow Steps ──
@@ -304,15 +305,8 @@ export function autoFurnishAllRooms(project: Project): void {
   for (const room of project.rooms) {
     if (room.furniture.length > 0) continue; // skip already furnished rooms
     const items = suggestFurniture(room, project.style);
-    let offsetY = 15;
     for (const item of items) {
-      room.furniture.push({
-        item,
-        quantity: 1,
-        roomId: room.id,
-        notes: "",
-      });
-      offsetY = (offsetY + 12) % 85;
+      room.furniture.push(placeFurniture(room, item));
     }
   }
 }

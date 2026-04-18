@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { saveProject, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import { CATALOG, searchCatalog } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
+import { placeFurniture } from "@/lib/space-planning";
 import FloorPlanReference from "./FloorPlanReference";
 import type { Project, Room, FurnitureItem, SelectedFurniture } from "@/lib/types";
 
@@ -99,37 +100,6 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     setSelectedItemId(null);
   }
 
-  // Find a free slot for a new item by scanning a 4×3 grid and picking
-  // the first cell that doesn't collide with existing items.
-  function findOpenSlot(r: Room, item: FurnitureItem): { x: number; y: number } {
-    const itemWPct = ((item.widthIn / 12) / r.widthFt) * 100;
-    const itemHPct = ((item.depthIn / 12) / r.lengthFt) * 100;
-    const cols = 4;
-    const rows = 3;
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        // grid centers from 15% to 85%
-        const x = 15 + (col * 70) / (cols - 1);
-        const y = 15 + (row * 70) / (rows - 1);
-        const collides = r.furniture.some(f => {
-          const p = f as PlacedItem;
-          const px = p.x ?? 50;
-          const py = p.y ?? 50;
-          const pw = ((f.item.widthIn / 12) / r.widthFt) * 100;
-          const ph = ((f.item.depthIn / 12) / r.lengthFt) * 100;
-          return (
-            Math.abs(px - x) < (pw + itemWPct) / 2 &&
-            Math.abs(py - y) < (ph + itemHPct) / 2
-          );
-        });
-        if (!collides) return { x, y };
-      }
-    }
-    // Fallback if room is packed: stagger the spawn.
-    const n = r.furniture.length;
-    return { x: 20 + ((n * 13) % 60), y: 20 + ((n * 17) % 60) };
-  }
-
   function addItemToRoom(item: FurnitureItem) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
@@ -138,17 +108,7 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
 
     if (r.furniture.find(f => f.item.id === item.id)) return;
 
-    const slot = findOpenSlot(r, item);
-    const placed: PlacedItem = {
-      item,
-      quantity: 1,
-      roomId: r.id,
-      notes: "",
-      x: slot.x,
-      y: slot.y,
-      rotation: 0,
-    };
-    r.furniture.push(placed);
+    r.furniture.push(placeFurniture(r, item));
     saveProject(fresh);
     logActivity(project.id, "furniture_placed", `Placed ${item.name} in ${r.name}`);
     onUpdate();
@@ -250,17 +210,7 @@ export default function SpacePlanner({ project, onUpdate }: Props) {
     const items = suggestFurniture(r, fresh.style);
     for (const item of items) {
       if (r.furniture.find(f => f.item.id === item.id)) continue;
-      const slot = findOpenSlot(r, item);
-      const placed: PlacedItem = {
-        item,
-        quantity: 1,
-        roomId: r.id,
-        notes: "",
-        x: slot.x,
-        y: slot.y,
-        rotation: 0,
-      };
-      r.furniture.push(placed);
+      r.furniture.push(placeFurniture(r, item));
     }
 
     saveProject(fresh);

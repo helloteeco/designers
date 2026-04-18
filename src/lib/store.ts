@@ -8,6 +8,7 @@ import {
   getCurrentProfile,
   dbLogActivity,
 } from "./supabase";
+import { backfillMissingPositions } from "./space-planning";
 
 const PROJECTS_KEY = "designStudio_projects";
 const USER_KEY = "designStudio_user";
@@ -426,6 +427,13 @@ export function createEmptyProject(overrides?: Partial<Project>): Project {
 
 /** Ensures existing projects from before the renovation update have new fields */
 export function migrateProject(project: Project): Project {
+  // Backfill x/y on any furniture missing it. Items added via the older
+  // FurniturePicker / ai-workflow paths landed without coords and ended up
+  // stacked at room center in the Space Planner.
+  for (const r of project.rooms ?? []) {
+    if (!r.furniture) r.furniture = [];
+    backfillMissingPositions(r);
+  }
   return {
     ...project,
     projectType: project.projectType ?? "furnish-only",

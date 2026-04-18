@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { getFullCatalog, searchCatalog } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
+import { placeFurniture } from "@/lib/space-planning";
 import { useToast } from "./Toast";
-import type { Project, Room, FurnitureItem, SceneItem, SelectedFurniture } from "@/lib/types";
+import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
 
 interface Props {
   project: Project;
@@ -175,13 +176,7 @@ export default function SceneDesigner({ project, onUpdate }: Props) {
     if (!r.furniture) r.furniture = [];
     const existing = r.furniture.find(f => f.item.id === item.id);
     if (!existing) {
-      const sel: SelectedFurniture = {
-        item,
-        quantity: 1,
-        roomId: r.id,
-        notes: "",
-      };
-      r.furniture.push(sel);
+      r.furniture.push(placeFurniture(r, item));
     }
 
     saveProject(fresh);

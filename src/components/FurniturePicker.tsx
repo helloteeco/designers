@@ -9,8 +9,9 @@ import {
   getFullCatalog,
 } from "@/lib/furniture-catalog";
 import { suggestFurniture } from "@/lib/auto-suggest";
+import { placeFurniture } from "@/lib/space-planning";
 import CustomItemCreator from "./CustomItemCreator";
-import type { Project, FurnitureItem, SelectedFurniture } from "@/lib/types";
+import type { Project, FurnitureItem } from "@/lib/types";
 
 interface Props {
   project: Project;
@@ -71,13 +72,9 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
     if (existing) {
       existing.quantity += 1;
     } else {
-      const selected: SelectedFurniture = {
-        item,
-        quantity: 1,
-        roomId: room.id,
-        notes: "",
-      };
-      room.furniture.push(selected);
+      // pick = place: drop at an open slot on the floor plan, sized by the item's
+      // real dimensions, so the Space Planner shows it immediately.
+      room.furniture.push(placeFurniture(room, item));
     }
     saveProject(freshProject);
     onUpdate();
@@ -120,12 +117,7 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
     for (const item of suggestions) {
       const existing = room.furniture.find((f) => f.item.id === item.id);
       if (!existing) {
-        room.furniture.push({
-          item,
-          quantity: 1,
-          roomId: room.id,
-          notes: "",
-        });
+        room.furniture.push(placeFurniture(room, item));
       }
     }
     saveProject(freshProject);
