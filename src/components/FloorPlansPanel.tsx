@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
-import { detectRoomsFromSvg, readSvgText, isSvgSource, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
+import { detectRoomsFromSvg, detectRoomsFromSvgDetailed, readSvgText, isSvgSource, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
 import AutoDetectRooms from "./AutoDetectRooms";
 import type { Project, FloorPlan, Room } from "@/lib/types";
@@ -154,17 +154,16 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
       onUpdate();
 
       // Auto-room-detection dispatch:
-      //  - Single SVG upload → parse + replace all rooms automatically
-      //    (SVG text is exact; no review needed)
+      //  - Any SVG uploads (one or many) → parse each, merge rooms, assign
+      //    floors from internal FLOOR banners or upload order
       //  - Single PNG/JPG upload → open the AutoDetect modal (OCR needs review)
-      //  - Multiple files → don't auto-trigger anything (probably an import)
-      const candidate = newlyAdded.find(p => p.type === "image");
-      if (candidate && newlyAdded.length === 1) {
-        if (isSvgSource(candidate.url)) {
-          await autoApplySvg(candidate);
-        } else {
-          setAutoDetectPlan(candidate);
-        }
+      //  - Multiple non-SVG images → don't auto-trigger anything (probably an import)
+      const svgPlans = newlyAdded.filter((p) => p.type === "image" && isSvgSource(p.url));
+      const imagePlan = newlyAdded.find((p) => p.type === "image" && !isSvgSource(p.url));
+      if (svgPlans.length > 0) {
+        await autoApplySvgs(svgPlans);
+      } else if (imagePlan && newlyAdded.length === 1) {
+        setAutoDetectPlan(imagePlan);
       }
     } catch (err) {
       toast.error("Upload failed: " + (err instanceof Error ? err.message : "unknown"));
@@ -235,28 +234,69 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
    * detection finds nothing (so the designer can see why).
    */
   async function autoApplySvg(plan: FloorPlan) {
-    let detected: SvgDetectedRoom[];
-    try {
-      detected = await detectRoomsFromSvg(plan.url);
-    } catch (err) {
-      toast.error("Couldn't read SVG: " + (err instanceof Error ? err.message : "unknown"));
-      return;
-    }
-    if (detected.length === 0) {
-      // Open the modal so the designer can see what (didn't) get found
-      setAutoDetectPlan(plan);
-      return;
-    }
+    await autoApplySvgs([plan]);
+  }
+
+  /**
+   * Multi-SVG variant: detect rooms across every uploaded SVG and merge into
+   * one room list. Each SVG's "FLOOR N" banners give per-room floor numbers;
+   * if a SVG has no banners, it gets a sequential floor offset based on upload
+   * order (first SVG = floor 1, second = floor 2, ...). Large houses with one
+   * SVG per floor Just Work.
+   */
+  async function autoApplySvgs(plans: FloorPlan[]) {
+    if (plans.length === 0) return;
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
-    try {
-      fresh.property.floorPlanSvgContent = await readSvgText(plan.url);
-    } catch {
-      // non-fatal — the room dimensions still get applied below
+
+    const allRooms: SvgDetectedRoom[] = [];
+    const allWarnings: string[] = [];
+    let primarySvgContent: string | null = null;
+    let nextFallbackFloor = 1;
+
+    for (const plan of plans) {
+      let result;
+      try {
+        result = await detectRoomsFromSvgDetailed(plan.url);
+      } catch (err) {
+        toast.error(`Couldn't read "${plan.name}": ${err instanceof Error ? err.message : "unknown"}`);
+        continue;
+      }
+      // If this SVG has no internal FLOOR banners, give every room the next
+      // unused floor number (so separate per-floor SVG uploads stack cleanly).
+      if (result.floorCount === 0 && plans.length > 1) {
+        for (const r of result.rooms) r.floor = nextFallbackFloor;
+        nextFallbackFloor += 1;
+      } else if (result.floorCount === 0) {
+        for (const r of result.rooms) r.floor = r.floor ?? 1;
+      } else {
+        // Banners detected — floor already assigned. Track max for fallback.
+        const maxSeen = Math.max(...result.rooms.map((r) => r.floor ?? 1), 0);
+        nextFallbackFloor = Math.max(nextFallbackFloor, maxSeen + 1);
+      }
+      allRooms.push(...result.rooms);
+      if (!primarySvgContent) {
+        try {
+          primarySvgContent = await readSvgText(plan.url);
+        } catch {
+          // non-fatal
+        }
+      }
+      for (const w of result.warnings) allWarnings.push(`${plan.name}: ${w.message}`);
+    }
+
+    if (allRooms.length === 0) {
+      // Open the modal so the designer can see why nothing matched
+      setAutoDetectPlan(plans[0]);
+      return;
+    }
+
+    if (primarySvgContent) {
+      fresh.property.floorPlanSvgContent = primarySvgContent;
     }
     const removed = fresh.rooms.length;
     fresh.rooms = [];
-    for (const r of detected) {
+    for (const r of allRooms) {
       const newRoom: Room = {
         id: generateId(),
         name: r.label,
@@ -264,7 +304,7 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
         widthFt: r.widthFt,
         lengthFt: r.lengthFt,
         ceilingHeightFt: 9,
-        floor: 1,
+        floor: r.floor ?? 1,
         features: [],
         selectedBedConfig: null,
         furniture: [],
@@ -275,12 +315,21 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
       fresh.rooms.push(newRoom);
     }
     saveProject(fresh);
-    logActivity(project.id, "svg_applied", `SVG auto-apply: removed ${removed}, created ${detected.length}`);
-    toast.success(
-      removed > 0
-        ? `Replaced ${removed} room${removed === 1 ? "" : "s"} with ${detected.length} from your floor plan`
-        : `Created ${detected.length} rooms from your floor plan`
+    const floorSet = new Set(allRooms.map((r) => r.floor ?? 1));
+    logActivity(
+      project.id,
+      "svg_applied",
+      `SVG auto-apply: ${plans.length} plan${plans.length === 1 ? "" : "s"} → ${allRooms.length} rooms across ${floorSet.size} floor${floorSet.size === 1 ? "" : "s"} (replaced ${removed})`
     );
+    const summary =
+      removed > 0
+        ? `Replaced ${removed} room${removed === 1 ? "" : "s"} with ${allRooms.length} across ${floorSet.size} floor${floorSet.size === 1 ? "" : "s"}`
+        : `Created ${allRooms.length} rooms across ${floorSet.size} floor${floorSet.size === 1 ? "" : "s"}`;
+    if (allWarnings.length > 0) {
+      toast.warning(`${summary} — ${allWarnings[0]}${allWarnings.length > 1 ? ` (+${allWarnings.length - 1} more)` : ""}`);
+    } else {
+      toast.success(summary);
+    }
     onUpdate();
   }
 

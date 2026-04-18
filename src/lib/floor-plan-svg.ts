@@ -27,6 +27,21 @@ export interface SvgBBox {
 
 export interface SvgDetectedRoom extends DetectedRoom {
   svgBBox?: SvgBBox;
+  /** Detected floor number (1-based) — inferred from "FLOOR N" labels in the SVG. */
+  floor?: number;
+}
+
+/** Warnings surfaced from detection so the UI can tell designers what was skipped. */
+export interface SvgDetectionWarning {
+  kind: "label-without-dimension" | "dimension-without-label" | "parser";
+  message: string;
+}
+
+export interface SvgDetectionResult {
+  rooms: SvgDetectedRoom[];
+  warnings: SvgDetectionWarning[];
+  /** Number of distinct "FLOOR N" banners found in the SVG. */
+  floorCount: number;
 }
 
 /** True if the data: URL or raw text appears to be SVG. */
@@ -498,8 +513,21 @@ function parseTranslate(transform: string): { x: number; y: number } {
  *  2. Otherwise pair each label-node with its nearest dimension-node
  */
 export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedRoom[]> {
+  const { rooms } = await detectRoomsFromSvgDetailed(svgInput);
+  return rooms;
+}
+
+/**
+ * Verbose variant of detectRoomsFromSvg that also returns diagnostic warnings
+ * (labels without dimensions, dimensions without labels, etc.) and the count
+ * of floors found. Callers that want to surface coverage info to the designer
+ * use this path.
+ */
+export async function detectRoomsFromSvgDetailed(svgInput: string): Promise<SvgDetectionResult> {
   const svgText = await readSvgText(svgInput);
   const nodes = extractTextNodes(svgText);
+  const warnings: SvgDetectionWarning[] = [];
+  const floorBanners = findFloorBanners(nodes);
 
   const detected: SvgDetectedRoom[] = [];
 
@@ -525,15 +553,17 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
   }
 
   // Pass 2: pair separate label and dimension nodes by proximity
-  if (detected.length === 0 || true) {
+  const unpairedLabels: string[] = [];
+  const unpairedDims: string[] = [];
+  {
     const labels: { idx: number; text: string; type: import("./types").RoomType; override?: string; x: number; y: number }[] = [];
-    const dims: { idx: number; widthFt: number; lengthFt: number; x: number; y: number }[] = [];
+    const dims: { idx: number; widthFt: number; lengthFt: number; x: number; y: number; raw: string }[] = [];
     for (let i = 0; i < nodes.length; i++) {
       if (consumed.has(i)) continue;
       const n = nodes[i];
       const dim = parseDimensionOnly(n.text);
       const lbl = matchLabel(n.text);
-      if (dim && !lbl) dims.push({ idx: i, widthFt: dim.widthFt, lengthFt: dim.lengthFt, x: n.x, y: n.y });
+      if (dim && !lbl) dims.push({ idx: i, widthFt: dim.widthFt, lengthFt: dim.lengthFt, x: n.x, y: n.y, raw: n.text });
       if (lbl && !dim) labels.push({ idx: i, text: lbl.label, type: lbl.type, override: lbl.override, x: n.x, y: n.y });
     }
 
@@ -559,15 +589,44 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
         });
         // Don't reuse the same dimension twice
         dims.splice(bestIdx, 1);
+      } else {
+        unpairedLabels.push(lab.text);
       }
+    }
+    // Any dimension nodes left = dimensions without a nearby recognized label
+    for (const d of dims) {
+      unpairedDims.push(d.raw);
     }
   }
 
-  // Dedupe identical labels with very similar dimensions
+  if (unpairedLabels.length > 0) {
+    warnings.push({
+      kind: "label-without-dimension",
+      message: `${unpairedLabels.length} label${unpairedLabels.length === 1 ? "" : "s"} had no dimension pair: ${unpairedLabels.slice(0, 5).join(", ")}${unpairedLabels.length > 5 ? "…" : ""}`,
+    });
+  }
+  if (unpairedDims.length > 0) {
+    warnings.push({
+      kind: "dimension-without-label",
+      message: `${unpairedDims.length} dimension${unpairedDims.length === 1 ? "" : "s"} had no label pair (possibly an unlabeled room)`,
+    });
+  }
+
+  // Dedupe: identical label, dimensions, AND position. Two bedrooms with
+  // slightly-different dimensions (10.3x11.8 vs 9.5x11.75 both round to 10x12)
+  // must NOT collide — that drops valid rooms on large plans.
   const deduped: SvgDetectedRoom[] = [];
   const seen = new Set<string>();
   for (const r of detected) {
-    const key = `${r.normalizedLabel}-${Math.round(r.widthFt)}-${Math.round(r.lengthFt)}`;
+    const cx = (r.bbox.x0 + r.bbox.x1) / 2;
+    const cy = (r.bbox.y0 + r.bbox.y1) / 2;
+    const key = [
+      r.normalizedLabel,
+      r.widthFt.toFixed(2),
+      r.lengthFt.toFixed(2),
+      Math.round(cx / 10),
+      Math.round(cy / 10),
+    ].join("|");
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(r);
@@ -662,7 +721,54 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
     }
   }
 
-  return deduped;
+  // Floor assignment: pick axis with the most spread across the banners, then
+  // assign each room to the nearest banner along that axis.
+  if (floorBanners.length > 0) {
+    assignFloors(deduped, floorBanners);
+  } else {
+    // No banners in this SVG — default everything to floor 1.
+    for (const r of deduped) r.floor = 1;
+  }
+
+  return {
+    rooms: deduped,
+    warnings,
+    floorCount: floorBanners.length,
+  };
+}
+
+/**
+ * Assign each detected room to the nearest "FLOOR N" banner. Picks axis
+ * (X vs Y) based on whichever has more variance across the banners — so a
+ * Matterport doc that puts FLOOR 1 on the left and FLOOR 2 on the right
+ * splits by X, and one that stacks them top/bottom splits by Y.
+ */
+function assignFloors(rooms: SvgDetectedRoom[], banners: FloorBanner[]): void {
+  if (banners.length === 0) return;
+  if (banners.length === 1) {
+    const onlyFloor = banners[0].n;
+    for (const r of rooms) r.floor = onlyFloor;
+    return;
+  }
+
+  // Variance of X and Y across banners — pick the axis with more spread.
+  const xs = banners.map((b) => b.x);
+  const ys = banners.map((b) => b.y);
+  const spreadX = Math.max(...xs) - Math.min(...xs);
+  const spreadY = Math.max(...ys) - Math.min(...ys);
+  const axis: "x" | "y" = spreadX >= spreadY ? "x" : "y";
+
+  for (const r of rooms) {
+    const cx = r.svgBBox ? r.svgBBox.x + r.svgBBox.width / 2 : (r.bbox.x0 + r.bbox.x1) / 2;
+    const cy = r.svgBBox ? r.svgBBox.y + r.svgBBox.height / 2 : (r.bbox.y0 + r.bbox.y1) / 2;
+    let bestN = banners[0].n;
+    let bestDist = Infinity;
+    for (const b of banners) {
+      const d = axis === "x" ? Math.abs(cx - b.x) : Math.abs(cy - b.y);
+      if (d < bestDist) { bestDist = d; bestN = b.n; }
+    }
+    r.floor = bestN;
+  }
 }
 
 // Matterport schematic SVGs include overlay text that isn't a room (page
@@ -675,9 +781,52 @@ function isOverlayLabel(text: string): boolean {
   if (upper.includes("GROSS INTERNAL")) return true;
   if (upper.includes("TOTAL:")) return true;
   if (/\bSQ\s*FT\b/.test(upper)) return true;
-  if (/^FLOOR\s+\d+\s*$/.test(upper.trim())) return true;
-  if (/^FLOOR\s+\d+\s*:/.test(upper.trim())) return true;
+  if (isFloorBanner(text)) return true;
   return false;
+}
+
+/** "FLOOR 1", "FLOOR 2:", "FLOOR 1 1547 sq ft" all match. */
+function isFloorBanner(text: string): boolean {
+  const upper = text.toUpperCase().trim();
+  return /^FLOOR\s+\d+\b/.test(upper);
+}
+
+/** Extract the N from "FLOOR N" / "FLOOR N:" / "FLOOR N 1547 sq ft". */
+function parseFloorNumber(text: string): number | null {
+  const m = text.toUpperCase().match(/FLOOR\s+(\d+)/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Find the positions of the "FLOOR N" banners inside the SVG so rooms can be
+ * assigned to the correct floor.
+ *
+ * Matterport renders each floor as a separate cluster with a "FLOOR N" banner
+ * near it (usually below or above the floor plan). Each banner's X (if floors
+ * are laid out horizontally) or Y (if vertically) splits the SVG into floor
+ * zones. We pick whichever axis has more spread across banners.
+ */
+interface FloorBanner {
+  n: number;
+  x: number;
+  y: number;
+}
+
+function findFloorBanners(nodes: SvgTextNode[]): FloorBanner[] {
+  const banners: FloorBanner[] = [];
+  const seen = new Set<number>();
+  for (const n of nodes) {
+    if (!isFloorBanner(n.text)) continue;
+    const num = parseFloorNumber(n.text);
+    if (num === null) continue;
+    if (seen.has(num)) continue;
+    seen.add(num);
+    banners.push({ n: num, x: n.x, y: n.y });
+  }
+  banners.sort((a, b) => a.n - b.n);
+  return banners;
 }
 
 function matchLabel(text: string): { label: string; type: import("./types").RoomType; override?: string } | null {

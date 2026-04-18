@@ -141,6 +141,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
         }
         updated++;
       } else if (action === "create") {
+        const detectedFloor = (m.detected as SvgDetectedRoom).floor;
         const newRoom: Room = {
           id: generateId(),
           name: m.detected.label,
@@ -148,7 +149,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
           widthFt: m.detected.widthFt,
           lengthFt: m.detected.lengthFt,
           ceilingHeightFt: 9,
-          floor: 1,
+          floor: detectedFloor && detectedFloor > 0 ? detectedFloor : 1,
           features: [],
           selectedBedConfig: null,
           furniture: [],
