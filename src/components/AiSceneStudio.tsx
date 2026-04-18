@@ -64,6 +64,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       : STYLE_PRESETS[0].id
   );
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [phase, setPhase] = useState<"idle" | "generating" | "sourcing" | "ready">("idle");
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
   const [health, setHealth] = useState<HealthCheck | null>(null);
@@ -108,6 +109,26 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       });
     return () => { cancelled = true; };
   }, []);
+
+  async function loadReferenceFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Not an image — drop a PNG/JPG screenshot");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image > 5MB — screenshot at lower resolution");
+      return;
+    }
+    const reader = new FileReader();
+    await new Promise<void>((resolve, reject) => {
+      reader.onload = () => {
+        setReferenceImage(reader.result as string);
+        resolve();
+      };
+      reader.onerror = () => reject(reader.error ?? new Error("FileReader error"));
+      reader.readAsDataURL(file);
+    });
+  }
 
   // ── Main one-click pipeline ──────────────────────────────────────────
 
@@ -415,7 +436,46 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
           1 · Room photo <span className="text-brand-600/60">(optional but better)</span>
         </div>
-        <div className="rounded-lg border border-dashed border-brand-900/15 bg-white p-2.5">
+        <div
+          className={`rounded-lg border-2 border-dashed bg-white p-2.5 transition ${
+            isDragOver ? "border-amber bg-amber/10" : "border-brand-900/15"
+          }`}
+          onDragEnter={e => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(true);
+          }}
+          onDragOver={e => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "copy";
+            if (!isDragOver) setIsDragOver(true);
+          }}
+          onDragLeave={e => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.currentTarget === e.target) setIsDragOver(false);
+          }}
+          onDrop={async e => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(false);
+            const file = e.dataTransfer.files?.[0];
+            if (!file) return;
+            await loadReferenceFile(file);
+          }}
+          onPaste={async e => {
+            const item = Array.from(e.clipboardData?.items ?? []).find(i =>
+              i.type.startsWith("image/")
+            );
+            if (!item) return;
+            const file = item.getAsFile();
+            if (!file) return;
+            e.preventDefault();
+            await loadReferenceFile(file);
+          }}
+          tabIndex={0}
+        >
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2.5 min-w-0">
               {referenceImage ? (
@@ -432,7 +492,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               )}
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-brand-900">
-                  {referenceImage ? "Reference photo loaded" : "Walk your Matterport, screenshot this room, drop here"}
+                  {referenceImage
+                    ? "Reference photo loaded"
+                    : isDragOver
+                      ? "Release to drop photo"
+                      : "Drop, paste, or upload a room screenshot"}
                 </div>
                 <div className="text-[10px] text-brand-600 mt-0.5">
                   {referenceImage
@@ -451,14 +515,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                   onChange={async e => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    if (file.size > 5 * 1024 * 1024) {
-                      toast.error("Image > 5MB — screenshot at lower resolution");
-                      e.target.value = "";
-                      return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = () => setReferenceImage(reader.result as string);
-                    reader.readAsDataURL(file);
+                    await loadReferenceFile(file);
                     e.target.value = "";
                   }}
                 />
