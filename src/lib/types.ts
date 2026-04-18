@@ -230,6 +230,10 @@ export interface MoodBoard {
   colorPalette: string[];
   inspirationNotes: string;
   imageUrls: string[];
+  /** "A" or "B" if this is a concept-board variant, undefined for standalone mood boards */
+  conceptVariant?: "A" | "B";
+  /** Whether client has locked in this concept as the chosen direction */
+  isLockedConcept?: boolean;
 }
 
 export interface TeamMember {

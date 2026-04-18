@@ -1,0 +1,57 @@
+"use client";
+
+import { useState } from "react";
+import ShoppingList from "./ShoppingList";
+import InvoiceGenerator from "./InvoiceGenerator";
+import ExportPanel from "./ExportPanel";
+import type { Project } from "@/lib/types";
+
+interface Props {
+  project: Project;
+}
+
+type View = "masterlist" | "shopping" | "invoicing";
+
+/**
+ * Order Hub — Weeks 5-6 of Teeco process.
+ * Procurement + order management. Masterlist export, shopping list with
+ * purchased tracking, proposals + invoices.
+ */
+export default function OrderHub({ project }: Props) {
+  const [view, setView] = useState<View>("masterlist");
+
+  const views: { id: View; label: string; hint: string }[] = [
+    { id: "masterlist", label: "Masterlist + Export", hint: "Teeco CSV format matching your Google Sheet" },
+    { id: "shopping", label: "Shopping + Track", hint: "Check items off as they arrive" },
+    { id: "invoicing", label: "Proposals & Invoices", hint: "Billing documents" },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-brand-900">Procurement &amp; Ordering</h2>
+          <p className="text-sm text-brand-600">
+            Weeks 5-6 · Export the masterlist, order items, track deliveries, send invoices.
+          </p>
+        </div>
+        <div className="flex gap-1 rounded-xl bg-white border border-brand-900/10 p-1 overflow-x-auto">
+          {views.map(v => (
+            <button
+              key={v.id}
+              onClick={() => setView(v.id)}
+              className={`shrink-0 ${view === v.id ? "tab-active" : "tab"}`}
+              title={v.hint}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === "masterlist" && <ExportPanel project={project} />}
+      {view === "shopping" && <ShoppingList project={project} />}
+      {view === "invoicing" && <InvoiceGenerator project={project} />}
+    </div>
+  );
+}
