@@ -31,6 +31,10 @@ export interface StudioSettings {
   showPricingToClient: boolean;
   showVendorLinksToClient: boolean;
   briefFooterNote: string;
+
+  // AI Render (Nano Banana / Gemini 2.5 Flash Image)
+  googleApiKey: string;
+  renderQuality: "draft" | "standard";
 }
 
 const SETTINGS_KEY = "designStudio_settings";
@@ -54,6 +58,8 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   showPricingToClient: true,
   showVendorLinksToClient: true,
   briefFooterNote: "Thank you for trusting us with your design. Questions? Reach out any time.",
+  googleApiKey: "",
+  renderQuality: "standard",
 };
 
 export function getStudioSettings(): StudioSettings {
