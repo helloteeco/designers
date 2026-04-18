@@ -239,6 +239,115 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
   }
 
+  /**
+   * One-click "Design Whole Room" — chains the full pipeline:
+   *   1. Generate install-guide-style background (empty room schematic)
+   *   2. Auto-source 6-10 items via Gemini Vision + web search
+   *   3. Auto-pick the first option per item (designer reviews after)
+   *   4. Generate cutouts for each
+   *   5. Auto-commit to the scene as draggable tiles
+   * Takes ~60-90 seconds total. Designer then reviews by dragging + rejecting.
+   */
+  async function designWholeRoom() {
+    if (generating || sourcing) return;
+    setLastError(null);
+
+    // 1. Generate the background (install-guide style, or use reference if present)
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/generate-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          styleId: preset.id,
+          room: {
+            name: room.name,
+            type: room.type,
+            widthFt: room.widthFt,
+            lengthFt: room.lengthFt,
+          },
+          referenceImageDataUrl: referenceImage ?? undefined,
+          mode: "install-guide-bg",
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({ error: "Unknown" }));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+      }
+      const { imageDataUrl } = await res.json() as { imageDataUrl?: string };
+      if (!imageDataUrl) throw new Error("No image returned from scene generation");
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project gone from localStorage");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room gone from project");
+      target.sceneBackgroundUrl = imageDataUrl;
+      target.sceneSnapshot = imageDataUrl;
+      saveProject(fresh);
+      onUpdate();
+      toast.info("Background done. Sourcing items now...");
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Unknown error");
+      toast.error("Auto-design failed at scene generation — see panel");
+      setGenerating(false);
+      return;
+    }
+    setGenerating(false);
+
+    // 2. Auto-source items from the just-generated scene
+    setSourcing(true);
+    try {
+      // Use a small delay + refetch so the latest sceneBackgroundUrl is read
+      await new Promise(r => setTimeout(r, 300));
+      const fresh = getProjectFromStore(project.id);
+      const bg = fresh?.rooms.find(r => r.id === room.id)?.sceneBackgroundUrl;
+      if (!bg) throw new Error("Scene didn't save");
+
+      const res = await fetch("/api/source-from-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: bg,
+          budget: remainingBudget || undefined,
+          styleHint: preset.id,
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({ error: "Unknown" }));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+      }
+      const { items } = await res.json() as {
+        items?: Array<{
+          description: string;
+          category: string;
+          searchQuery: string;
+          estimatedSize?: string;
+          options: SourcedOption[];
+        }>;
+      };
+      if (!items || items.length === 0) throw new Error("No items identified");
+
+      // Auto-pick the first option per item
+      const autoPicked: SourcedItem[] = items.map(i => ({
+        ...i,
+        chosenIndex: i.options.length > 0 ? 0 : null,
+      }));
+      setSourcedItems(autoPicked);
+      toast.info(`Picked ${autoPicked.filter(i => i.chosenIndex !== null).length} items. Generating cutouts...`);
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Unknown error");
+      toast.error("Auto-design failed at sourcing — see panel");
+      setSourcing(false);
+      return;
+    }
+    setSourcing(false);
+
+    // 3. Commit immediately (runs cutout generation in parallel, appends to scene)
+    // commitChosen reads sourcedItems from state — which is now populated
+    await new Promise(r => setTimeout(r, 100));
+    commitChosen();
+  }
+
   function clearScene() {
     if (!confirm("Clear the AI scene and all draggable items on it? The room's furniture-list entries stay; only the scene background + overlay tiles get removed.")) return;
     const fresh = getProjectFromStore(project.id);
@@ -581,17 +690,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           </div>
         </div>
 
-        <button
-          onClick={generateScene}
-          disabled={generating}
-          className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {generating
-            ? "Generating scene... (15–30s)"
-            : hasScene
-              ? `🎨 Re-generate in ${preset.label}${referenceImage ? " (using reference)" : ""}`
-              : `🎨 Generate ${preset.label} Scene${referenceImage ? " (using reference)" : ""}`}
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={generateScene}
+            disabled={generating || sourcing}
+            className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {generating
+              ? "Generating scene... (15–30s)"
+              : hasScene
+                ? `🎨 Re-generate in ${preset.label}${referenceImage ? " (using reference)" : ""}`
+                : `🎨 Generate ${preset.label} Scene${referenceImage ? " (using reference)" : ""}`}
+          </button>
+          <button
+            onClick={designWholeRoom}
+            disabled={generating || sourcing}
+            className="rounded-lg border-2 border-amber bg-white px-4 py-2 text-sm font-semibold text-amber-dark hover:bg-amber/10 disabled:opacity-60 disabled:cursor-not-allowed"
+            title="One-click: generate background → source items → auto-place cutouts on scene"
+          >
+            {generating || sourcing ? "Designing..." : "⚡ Design Whole Room (one-click)"}
+          </button>
+        </div>
+        {!generating && !sourcing && (
+          <div className="mt-2 text-[10px] text-brand-600/70">
+            <strong>Design Whole Room</strong> chains all 3 steps: generate background → source 6–10 items → drop as draggable cutouts. ~60–90 seconds total.
+          </div>
+        )}
       </div>
 
       {/* STEP 3 — Source real products — only unlocked after scene exists */}

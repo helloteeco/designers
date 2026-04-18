@@ -43,6 +43,7 @@ export async function POST(request: Request) {
     room,
     extraNotes,
     referenceImageDataUrl,
+    mode,
   } = (body ?? {}) as {
     styleId?: string;
     room?: { name?: string; type: string; widthFt: number; lengthFt: number };
@@ -55,6 +56,13 @@ export async function POST(request: Request) {
      * than pure text-to-image for real properties.
      */
     referenceImageDataUrl?: string;
+    /**
+     * "install-guide-bg" (default): empty-room schematic styled to match
+     * Teeco's install guide aesthetic — furniture cutouts get layered
+     * on top separately.
+     * "full-scene": photorealistic fully-furnished scene (old behavior).
+     */
+    mode?: "full-scene" | "install-guide-bg";
   };
 
   const preset = getPreset(styleId);
@@ -69,7 +77,8 @@ export async function POST(request: Request) {
   }
 
   const hasReference = !!referenceImageDataUrl && referenceImageDataUrl.startsWith("data:image/");
-  const basePrompt = buildScenePrompt(preset, room, extraNotes);
+  const effectiveMode = mode ?? "install-guide-bg";
+  const basePrompt = buildScenePrompt(preset, room, extraNotes, effectiveMode);
   const prompt = hasReference
     ? `Using this photo of the actual empty room as the base architecture, redesign it in a ${preset.label} style. Preserve the room's real walls, windows, door positions, ceiling height, and flooring layout — do not change the geometry. Add furniture, rugs, art, lighting, and decor in the ${preset.vibe} palette. Photorealistic, natural daylight, editorial magazine quality. Reference room: ${room.widthFt}' × ${room.lengthFt}'. ${extraNotes ?? ""}`
     : basePrompt;

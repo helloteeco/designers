@@ -136,15 +136,40 @@ export function getPreset(id: string | undefined): StylePreset | undefined {
 }
 
 /**
- * Build the text prompt for Gemini scene generation. Includes room context
- * (type + dimensions) so the scene scale is believable.
+ * Build the text prompt for Gemini scene generation.
+ *
+ * Mode: "full-scene" — photorealistic furnished room (old default, still
+ * available if the designer wants it).
+ * Mode: "install-guide-bg" (default) — clean install-guide style backdrop:
+ * empty room with just walls/floor/window/door drawn flatly, no furniture.
+ * Furniture cutouts get layered on top separately. This matches how Teeco's
+ * actual install guides look (see Bedroom / Kitchen / Bedroom 2 boards).
  */
 export function buildScenePrompt(
   preset: StylePreset,
   room: { type: string; widthFt: number; lengthFt: number; name?: string },
-  extraNotes?: string
+  extraNotes?: string,
+  mode: "full-scene" | "install-guide-bg" = "install-guide-bg"
 ): string {
   const roomKind = room.type.replace(/-/g, " ");
+
+  if (mode === "install-guide-bg") {
+    // The install-guide aesthetic: empty room BACKGROUND only. Clean walls,
+    // visible flooring, window with light, any door hardware — NO furniture.
+    // Straight-on or slight 3/4 angle. Flat, composite-ready.
+    const parts = [
+      `An empty ${roomKind} design-board background illustration, straight-on interior elevation view,`,
+      `clean empty room with ${preset.palette[0]} walls, ${preset.palette[1]} flooring,`,
+      `${preset.label} style architectural details only — a window with natural daylight,`,
+      `no furniture, no decor, no art, no plants, no rugs, no lamps — just the empty architectural shell,`,
+      `wide aspect ratio suitable for composite work, soft even lighting, ${preset.vibe.split(",").slice(0, 3).join(",")} mood hinted through wall color and material choices only,`,
+      `photographed as a design-board reference, 16:9 aspect ratio, minimal and uncluttered`,
+    ];
+    if (extraNotes) parts.push(extraNotes);
+    return parts.join(" ");
+  }
+
+  // Legacy: full furnished scene
   const parts = [
     `A photorealistic ${preset.label} ${roomKind}`,
     `styled in the ${preset.vibe}`,
