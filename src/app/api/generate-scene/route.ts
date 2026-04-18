@@ -61,39 +61,61 @@ export async function POST(request: Request) {
 
   const prompt = buildScenePrompt(preset, room, extraNotes);
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image-preview",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseModalities: [Modality.TEXT, Modality.IMAGE],
-      },
-    });
+  // Model ID is env-overridable so we can switch between Nano Banana / Nano
+  // Banana 2 / anything newer without a code change. Defaults to Nano Banana 2.
+  // Primary model tried first, then the fallback list in order.
+  const primaryModel = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview";
+  const fallbackModels = [
+    "gemini-3-pro-image-preview",      // Nano Banana 2 (current flagship)
+    "gemini-2.5-flash-image-preview",  // Nano Banana (fallback if 3 isn't available on the key)
+  ].filter(m => m !== primaryModel);
 
-    // Response shape: candidates[0].content.parts[].inlineData (image)
-    const parts = response.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find(p => p.inlineData?.data);
-    if (!imagePart?.inlineData?.data) {
-      return NextResponse.json(
-        { error: "Gemini returned no image", parts: parts.map(p => Object.keys(p)) },
-        { status: 502 }
-      );
+  const modelsToTry = [primaryModel, ...fallbackModels];
+  const ai = new GoogleGenAI({ apiKey });
+  const errors: { model: string; error: string }[] = [];
+
+  for (const model of modelsToTry) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.TEXT, Modality.IMAGE],
+        },
+      });
+
+      const parts = response.candidates?.[0]?.content?.parts ?? [];
+      const imagePart = parts.find(p => p.inlineData?.data);
+      if (!imagePart?.inlineData?.data) {
+        errors.push({ model, error: "No image in response" });
+        continue;
+      }
+
+      const mimeType = imagePart.inlineData.mimeType || "image/png";
+      const imageDataUrl = `data:${mimeType};base64,${imagePart.inlineData.data}`;
+
+      return NextResponse.json({
+        imageDataUrl,
+        promptUsed: prompt,
+        presetId: preset.id,
+        modelUsed: model,
+      });
+    } catch (err) {
+      errors.push({
+        model,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+      // Keep trying subsequent models
     }
-
-    const mimeType = imagePart.inlineData.mimeType || "image/png";
-    const imageDataUrl = `data:${mimeType};base64,${imagePart.inlineData.data}`;
-
-    return NextResponse.json({
-      imageDataUrl,
-      promptUsed: prompt,
-      presetId: preset.id,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json(
-      { error: `Gemini call failed: ${message}` },
-      { status: 502 }
-    );
   }
+
+  return NextResponse.json(
+    {
+      error:
+        `All image models failed. Last error: ${errors[errors.length - 1]?.error}. ` +
+        `Tried: ${errors.map(e => `${e.model} (${e.error.slice(0, 80)})`).join("; ")}`,
+      errors,
+    },
+    { status: 502 }
+  );
 }

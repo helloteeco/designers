@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { useToast } from "./Toast";
 import type { Project, Room, FurnitureItem } from "@/lib/types";
+
+interface HealthCheck {
+  ok: boolean;
+  code: "READY" | "NO_KEY" | "CALL_FAILED" | "UNKNOWN";
+  message?: string;
+  keyPrefix?: string;
+  modelReply?: string;
+}
 
 interface Props {
   project: Project;
@@ -60,6 +68,30 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [sourcing, setSourcing] = useState(false);
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
   const [showSourceModal, setShowSourceModal] = useState(false);
+  const [health, setHealth] = useState<HealthCheck | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+
+  // Health-check on mount so the designer sees up-front whether the API
+  // is actually wired up, instead of only finding out after a failed
+  // generate call.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/check-gemini")
+      .then(r => r.json())
+      .then((data: HealthCheck) => {
+        if (!cancelled) setHealth(data);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setHealth({
+            ok: false,
+            code: "UNKNOWN",
+            message: err instanceof Error ? err.message : "Health check failed",
+          });
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
   const hasScene = !!room.sceneBackgroundUrl;
@@ -79,6 +111,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
 
   async function generateScene() {
     setGenerating(true);
+    setLastError(null);
     try {
       const res = await fetch("/api/generate-scene", {
         method: "POST",
@@ -93,28 +126,57 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           },
         }),
       });
+      const rawText = await res.text();
+      let payload: unknown;
+      try { payload = JSON.parse(rawText); } catch { payload = { raw: rawText }; }
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const errorMsg = (payload as { error?: string })?.error
+          || `HTTP ${res.status} — ${rawText.slice(0, 200)}`;
+        throw new Error(errorMsg);
       }
-      const { imageDataUrl } = await res.json();
+
+      const { imageDataUrl, modelUsed } = payload as { imageDataUrl?: string; modelUsed?: string };
+      if (!imageDataUrl) {
+        throw new Error("API returned no image. Response: " + JSON.stringify(payload).slice(0, 300));
+      }
+      if (modelUsed) {
+        // eslint-disable-next-line no-console
+        console.log(`[AI Scene Studio] rendered with ${modelUsed}`);
+      }
 
       // Save as the room's scene background
       const fresh = getProjectFromStore(project.id);
-      if (!fresh) return;
+      if (!fresh) {
+        throw new Error("Couldn't load project from local storage to save the scene");
+      }
       const target = fresh.rooms.find(r => r.id === room.id);
-      if (!target) return;
+      if (!target) {
+        throw new Error(`Room ${room.id} not found in project`);
+      }
       target.sceneBackgroundUrl = imageDataUrl;
-      target.sceneSnapshot = imageDataUrl; // also use for install guide hero
-      saveProject(fresh);
+      target.sceneSnapshot = imageDataUrl;
+
+      try {
+        saveProject(fresh);
+      } catch (saveErr) {
+        const m = saveErr instanceof Error ? saveErr.message : String(saveErr);
+        throw new Error(
+          "Scene generated, but couldn't save to local storage. " +
+          "Your browser localStorage is probably full (scenes are ~1-2 MB each). " +
+          "Download a backup from Settings → Backup & Data, delete old projects, then try again. " +
+          `Details: ${m}`
+        );
+      }
+
       logActivity(project.id, "scene_generated", `AI-generated ${preset.label} scene for ${target.name}`);
       toast.success(`${preset.label} scene ready for ${target.name}`);
       onUpdate();
-      // Clear any previous sourcing results since scene changed
       setSourcedItems(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
-      toast.error("Scene generation failed: " + msg);
+      setLastError(msg);
+      toast.error("Scene generation failed — see panel for details");
     } finally {
       setGenerating(false);
     }
@@ -127,6 +189,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
     setSourcing(true);
     setShowSourceModal(true);
+    setLastError(null);
     try {
       const res = await fetch("/api/source-from-scene", {
         method: "POST",
@@ -137,12 +200,17 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           styleHint: preset.id,
         }),
       });
+      const rawText = await res.text();
+      let payload: unknown;
+      try { payload = JSON.parse(rawText); } catch { payload = { raw: rawText }; }
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const errorMsg = (payload as { error?: string })?.error
+          || `HTTP ${res.status} — ${rawText.slice(0, 200)}`;
+        throw new Error(errorMsg);
       }
-      const { items } = await res.json() as {
-        items: Array<{
+      const { items } = payload as {
+        items?: Array<{
           description: string;
           category: string;
           searchQuery: string;
@@ -150,6 +218,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           options: SourcedOption[];
         }>;
       };
+      if (!items) {
+        throw new Error("API returned no items array. Response: " + JSON.stringify(payload).slice(0, 300));
+      }
       setSourcedItems(
         items.map(i => ({
           ...i,
@@ -158,7 +229,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
-      toast.error("Sourcing failed: " + msg);
+      setLastError(msg);
+      toast.error("Sourcing failed — see panel for details");
       setShowSourceModal(false);
     } finally {
       setSourcing(false);
@@ -222,18 +294,68 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   return (
     <div className="card bg-gradient-to-br from-amber/5 to-amber/0 border-amber/30 mb-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h3 className="font-semibold text-brand-900 text-sm flex items-center gap-1.5">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-brand-900 text-sm flex items-center gap-1.5 flex-wrap">
             🪄 AI Scene Studio
-            <span className="text-[10px] font-normal text-brand-600/70 ml-1">
+            <span className="text-[10px] font-normal text-brand-600/70">
               powered by Gemini
             </span>
+            {health && (
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                  health.ok
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+                title={health.message ?? ""}
+              >
+                {health.ok ? `● API ready` : `● ${health.code}`}
+              </span>
+            )}
+            {!health && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-brand-900/10 text-brand-600">
+                ● checking API…
+              </span>
+            )}
           </h3>
           <p className="text-xs text-brand-600 mt-1">
             Pick a style, generate a photorealistic scene, then source real products from it.
           </p>
         </div>
       </div>
+
+      {/* API-not-ready banner — shown only when the health check failed */}
+      {health && !health.ok && (
+        <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900">
+          <div className="font-semibold mb-0.5">
+            {health.code === "NO_KEY" ? "Gemini API key not set" : "Gemini API not responding"}
+          </div>
+          <div>{health.message}</div>
+          {health.code === "NO_KEY" && (
+            <div className="mt-1.5 text-[11px]">
+              After setting the env var in Vercel, trigger a redeploy — env changes don&apos;t take effect on existing deployments.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Last-error banner — sticky, visible, not a fleeting toast */}
+      {lastError && (
+        <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="font-semibold mb-0.5">Last call failed</div>
+              <div className="break-words whitespace-pre-wrap">{lastError}</div>
+            </div>
+            <button
+              onClick={() => setLastError(null)}
+              className="text-red-600 hover:text-red-900 text-sm leading-none shrink-0"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Style preset chips — horizontally scrollable */}
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
