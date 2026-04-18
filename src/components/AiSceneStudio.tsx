@@ -70,6 +70,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [showSourceModal, setShowSourceModal] = useState(false);
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
 
   // Health-check on mount so the designer sees up-front whether the API
   // is actually wired up, instead of only finding out after a failed
@@ -124,6 +125,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             widthFt: room.widthFt,
             lengthFt: room.lengthFt,
           },
+          referenceImageDataUrl: referenceImage ?? undefined,
         }),
       });
       const rawText = await res.text();
@@ -259,8 +261,55 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     ) ?? null);
   }
 
-  function commitChosen() {
+  async function commitChosen() {
     if (!sourcedItems) return;
+    const chosen = sourcedItems.filter(i => i.chosenIndex !== null);
+    if (chosen.length === 0) return;
+
+    // Close modal immediately and show a toast so the long cutout-generation
+    // pass doesn't block the designer in a stuck state.
+    setShowSourceModal(false);
+    toast.info(`Generating ${chosen.length} product cutouts — keep working, they'll drop onto the scene shortly`);
+
+    // Phase 1: generate cutouts in parallel with a small concurrency limit.
+    // Each item either background-removes its source image or text-to-images
+    // from scratch. Cached in localStorage so reruns are free.
+    const cutoutMap = new Map<string, string>(); // itemIdx → cutout data URL
+    await Promise.all(
+      chosen.map(async (item) => {
+        const opt = item.options[item.chosenIndex!];
+        if (!opt) return;
+        const cacheKey = `cutout:${opt.vendor}:${opt.name}`.slice(0, 200);
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            cutoutMap.set(String(sourcedItems!.indexOf(item)), cached);
+            return;
+          }
+        } catch { /* localStorage can throw on quota/private mode */ }
+
+        try {
+          const res = await fetch("/api/generate-cutout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: `${item.description} (${item.category})`,
+              imageUrl: opt.imageUrl || undefined,
+              vendor: opt.vendor || undefined,
+            }),
+          });
+          if (!res.ok) return;
+          const { imageDataUrl } = await res.json() as { imageDataUrl?: string };
+          if (!imageDataUrl) return;
+          cutoutMap.set(String(sourcedItems!.indexOf(item)), imageDataUrl);
+          try { localStorage.setItem(cacheKey, imageDataUrl); } catch { /* quota */ }
+        } catch {
+          // Silent fallback to original imageUrl
+        }
+      })
+    );
+
+    // Phase 2: now write everything to the project in one localStorage write
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const target = fresh.rooms.find(r => r.id === room.id);
@@ -269,13 +318,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     if (!target.sceneItems) target.sceneItems = [];
 
     let added = 0;
-    // Stagger SceneItem positions along the lower third of the canvas so
-    // they don't overlap. Designer then drags each into its real spot on
-    // the generated background.
-    const chosen = sourcedItems.filter(i => i.chosenIndex !== null);
+    const cols = Math.ceil(Math.sqrt(chosen.length));
+
     chosen.forEach((item, idx) => {
       const opt = item.options[item.chosenIndex!];
       if (!opt) return;
+      const chosenIdx = String(sourcedItems!.indexOf(item));
+      // Prefer the freshly generated cutout, fall back to original search imageUrl
+      const effectiveImage = cutoutMap.get(chosenIdx) || opt.imageUrl || "";
 
       const customItem: FurnitureItem = {
         id: `ai-${generateId()}`,
@@ -288,17 +338,13 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         price: opt.price ?? 0,
         vendor: opt.vendor,
         vendorUrl: opt.url,
-        imageUrl: opt.imageUrl ?? "",
+        imageUrl: effectiveImage,
         color: "",
         material: "",
         style: preset.designStyle,
       };
-      // 1) Add to furniture[] for the masterlist + Space Plan
       target.furniture.push(placeFurniture(target, customItem));
 
-      // 2) Add as a SceneItem so the designer can drag/resize/rotate it
-      //    over the generated background right in this tab
-      const cols = Math.ceil(Math.sqrt(chosen.length));
       const row = Math.floor(idx / cols);
       const col = idx % cols;
       const scenePositionX = 10 + (col * 80) / Math.max(1, cols - 1 || 1);
@@ -319,10 +365,17 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       added++;
     });
 
-    saveProject(fresh);
-    logActivity(project.id, "ai_sourced", `AI-sourced ${added} items for ${target.name}`);
-    toast.success(`Added ${added} item${added === 1 ? "" : "s"} — drag them into place on the scene`);
-    setShowSourceModal(false);
+    try {
+      saveProject(fresh);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      toast.error(`Saved ${added} items to masterlist but scene overlays couldn't save (localStorage full): ${m.slice(0, 100)}`);
+      onUpdate();
+      setSourcedItems(null);
+      return;
+    }
+    logActivity(project.id, "ai_sourced", `AI-sourced ${added} items for ${target.name} with cutouts`);
+    toast.success(`${added} cutouts dropped onto the scene — drag them into position`);
     setSourcedItems(null);
     onUpdate();
   }
@@ -454,7 +507,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               2 · Generate the scene
             </div>
             <div className="text-[11px] text-brand-600/80 mt-0.5">
-              Gemini draws a photorealistic {preset.label.toLowerCase()} {room.type.replace(/-/g, " ")} you can use as the room&apos;s design board.
+              {referenceImage
+                ? <>Using your reference photo — Gemini will keep the actual walls, windows, and door positions, just restyle the room in <strong>{preset.label}</strong>.</>
+                : <>Gemini draws a photorealistic {preset.label.toLowerCase()} {room.type.replace(/-/g, " ")} from scratch. <strong>Upload a Matterport screenshot below</strong> for a more accurate scene that matches your actual room.</>
+              }
             </div>
           </div>
           {hasScene && (
@@ -463,16 +519,78 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </span>
           )}
         </div>
+
+        {/* Reference photo drop — optional but high-leverage */}
+        <div className="mb-3 rounded-lg border border-dashed border-brand-900/15 bg-white p-2.5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {referenceImage ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={referenceImage}
+                  alt="Reference"
+                  className="h-12 w-16 object-cover rounded border border-brand-900/10"
+                />
+              ) : (
+                <div className="h-12 w-16 rounded border border-dashed border-brand-900/20 bg-brand-900/5 flex items-center justify-center text-lg">
+                  🏠
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-brand-900">
+                  {referenceImage ? "Reference photo loaded" : "Optional: drop a real photo of the empty room"}
+                </div>
+                <div className="text-[10px] text-brand-600 mt-0.5">
+                  In Matterport → navigate to this room → top-right menu → <strong>Share → Screenshot</strong> → drop here.
+                  Preserves actual walls / windows / doors in the generated scene.
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <label className="cursor-pointer text-xs rounded-lg border border-brand-900/15 px-2.5 py-1.5 hover:border-amber/40 hover:bg-amber/5">
+                {referenceImage ? "Replace" : "Upload"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast.error("Image > 5MB — please screenshot at lower resolution");
+                      e.target.value = "";
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => setReferenceImage(reader.result as string);
+                    reader.readAsDataURL(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {referenceImage && (
+                <button
+                  onClick={() => setReferenceImage(null)}
+                  className="text-xs text-red-500 hover:underline px-1"
+                  title="Remove reference photo"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <button
           onClick={generateScene}
           disabled={generating}
           className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {generating
-            ? "Generating scene... (15–25s)"
+            ? "Generating scene... (15–30s)"
             : hasScene
-              ? `🎨 Re-generate in ${preset.label}`
-              : `🎨 Generate ${preset.label} Scene`}
+              ? `🎨 Re-generate in ${preset.label}${referenceImage ? " (using reference)" : ""}`
+              : `🎨 Generate ${preset.label} Scene${referenceImage ? " (using reference)" : ""}`}
         </button>
       </div>
 

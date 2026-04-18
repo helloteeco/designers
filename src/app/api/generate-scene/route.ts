@@ -42,10 +42,19 @@ export async function POST(request: Request) {
     styleId,
     room,
     extraNotes,
+    referenceImageDataUrl,
   } = (body ?? {}) as {
     styleId?: string;
     room?: { name?: string; type: string; widthFt: number; lengthFt: number };
     extraNotes?: string;
+    /**
+     * Optional existing photo of the empty room (e.g. a Matterport screenshot).
+     * When provided, Gemini does image-to-image restyling — the walls,
+     * windows, door positions, and ceiling of the original are preserved,
+     * just styled and furnished in the chosen preset. Much more accurate
+     * than pure text-to-image for real properties.
+     */
+    referenceImageDataUrl?: string;
   };
 
   const preset = getPreset(styleId);
@@ -59,7 +68,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const prompt = buildScenePrompt(preset, room, extraNotes);
+  const hasReference = !!referenceImageDataUrl && referenceImageDataUrl.startsWith("data:image/");
+  const basePrompt = buildScenePrompt(preset, room, extraNotes);
+  const prompt = hasReference
+    ? `Using this photo of the actual empty room as the base architecture, redesign it in a ${preset.label} style. Preserve the room's real walls, windows, door positions, ceiling height, and flooring layout — do not change the geometry. Add furniture, rugs, art, lighting, and decor in the ${preset.vibe} palette. Photorealistic, natural daylight, editorial magazine quality. Reference room: ${room.widthFt}' × ${room.lengthFt}'. ${extraNotes ?? ""}`
+    : basePrompt;
+
+  // Build message parts — include the reference photo inline when present
+  const userParts: Array<{ text?: string } | { inlineData: { data: string; mimeType: string } }> = [{ text: prompt }];
+  if (hasReference && referenceImageDataUrl) {
+    const [meta, data] = referenceImageDataUrl.split(",");
+    const mimeType = meta.replace(/^data:/, "").replace(/;base64$/, "");
+    if (data) {
+      userParts.push({ inlineData: { data, mimeType: mimeType || "image/png" } });
+    }
+  }
 
   // Model fallback chain covering every current Google image-gen surface.
   // Order: Nano Banana family (via generateContent) → Imagen family (via
@@ -95,7 +118,8 @@ export async function POST(request: Request) {
     try {
       const response = await ai.models.generateContent({
         model,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        contents: [{ role: "user", parts: userParts as any }],
         config: {
           responseModalities: [Modality.TEXT, Modality.IMAGE],
         },
