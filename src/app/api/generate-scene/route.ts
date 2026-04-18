@@ -61,20 +61,37 @@ export async function POST(request: Request) {
 
   const prompt = buildScenePrompt(preset, room, extraNotes);
 
-  // Model ID is env-overridable so we can switch between Nano Banana / Nano
-  // Banana 2 / anything newer without a code change. Defaults to Nano Banana 2.
-  // Primary model tried first, then the fallback list in order.
-  const primaryModel = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview";
-  const fallbackModels = [
-    "gemini-3-pro-image-preview",      // Nano Banana 2 (current flagship)
-    "gemini-2.5-flash-image-preview",  // Nano Banana (fallback if 3 isn't available on the key)
-  ].filter(m => m !== primaryModel);
+  // Model fallback chain covering every current Google image-gen surface.
+  // Order: Nano Banana family (via generateContent) → Imagen family (via
+  // generateImages). The API method differs between the two, handled below.
+  //
+  // env override: GEMINI_IMAGE_MODEL can force a specific primary model.
+  const primary = process.env.GEMINI_IMAGE_MODEL;
+  const geminiImageModels = [
+    "gemini-3-pro-image",          // Nano Banana 2 (stable)
+    "gemini-3-pro-image-preview",  // Nano Banana 2 preview
+    "gemini-2.5-flash-image",      // Nano Banana 1 (stable, -preview suffix was dropped)
+    "gemini-2.5-flash-image-preview",
+  ];
+  const imagenModels = [
+    "imagen-4.0-generate-001",     // Imagen 4
+    "imagen-3.0-generate-002",     // Imagen 3
+    "imagen-3.0-generate-001",
+  ];
 
-  const modelsToTry = [primaryModel, ...fallbackModels];
+  // If user forced a primary, try it first; otherwise use the full chain.
+  const orderedGemini = primary && geminiImageModels.includes(primary)
+    ? [primary, ...geminiImageModels.filter(m => m !== primary)]
+    : geminiImageModels;
+  const orderedImagen = primary && imagenModels.includes(primary)
+    ? [primary, ...imagenModels.filter(m => m !== primary)]
+    : imagenModels;
+
   const ai = new GoogleGenAI({ apiKey });
   const errors: { model: string; error: string }[] = [];
 
-  for (const model of modelsToTry) {
+  // ── Attempt 1: Gemini image-via-chat models ──
+  for (const model of orderedGemini) {
     try {
       const response = await ai.models.generateContent({
         model,
@@ -105,15 +122,50 @@ export async function POST(request: Request) {
         model,
         error: err instanceof Error ? err.message : "Unknown error",
       });
-      // Keep trying subsequent models
     }
   }
 
+  // ── Attempt 2: Imagen models (different API method) ──
+  for (const model of orderedImagen) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await (ai.models as any).generateImages({
+        model,
+        prompt,
+        config: { numberOfImages: 1, aspectRatio: "16:9" },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const gen = (response as any).generatedImages?.[0];
+      const bytes = gen?.image?.imageBytes;
+      if (!bytes) {
+        errors.push({ model, error: "No imageBytes in Imagen response" });
+        continue;
+      }
+      const imageDataUrl = `data:image/png;base64,${bytes}`;
+      return NextResponse.json({
+        imageDataUrl,
+        promptUsed: prompt,
+        presetId: preset.id,
+        modelUsed: model,
+      });
+    } catch (err) {
+      errors.push({
+        model,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  }
+
+  // Helpful hint for the common case: quota exceeded across the board means
+  // the key needs billing enabled on the linked Google Cloud project.
+  const anyQuota = errors.some(e => /429|quota|billing/i.test(e.error));
+  const hint = anyQuota
+    ? " HINT: At least one model returned a quota/billing error. Image generation typically requires billing enabled on the Google Cloud project behind your Gemini API key. Go to https://console.cloud.google.com/billing, enable billing on the project, then try again."
+    : "";
+
   return NextResponse.json(
     {
-      error:
-        `All image models failed. Last error: ${errors[errors.length - 1]?.error}. ` +
-        `Tried: ${errors.map(e => `${e.model} (${e.error.slice(0, 80)})`).join("; ")}`,
+      error: `All image models failed.${hint} Details per model: ${errors.map(e => `[${e.model}] ${e.error.slice(0, 120)}`).join(" | ")}`,
       errors,
     },
     { status: 502 }
