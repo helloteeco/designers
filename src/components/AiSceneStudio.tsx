@@ -66,6 +66,12 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [phase, setPhase] = useState<"idle" | "generating" | "sourcing" | "ready">("idle");
+  // Two render modes:
+  //   "realistic" — fully furnished photorealistic render (designer/client hero
+  //                 image, no cutout sourcing — what you actually see is what you get)
+  //   "cutout-bg" — empty-room schematic for layering sourced product cutouts
+  //                 on top (the install-guide composite workflow)
+  const [renderMode, setRenderMode] = useState<"realistic" | "cutout-bg">("realistic");
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -136,8 +142,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     if (phase !== "idle" && phase !== "ready") return;
     setLastError(null);
 
-    // Phase 1: Generate background (install-guide-style empty-room or
-    // image-to-image from reference photo)
+    // Phase 1: Generate the scene image — realistic OR empty-room-bg
+    // depending on renderMode. Reference photo (Matterport screenshot)
+    // gets passed either way and triggers image-to-image when present.
     setPhase("generating");
     let backgroundUrl: string;
     try {
@@ -153,7 +160,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             lengthFt: room.lengthFt,
           },
           referenceImageDataUrl: referenceImage ?? undefined,
-          mode: "install-guide-bg",
+          mode: renderMode === "realistic" ? "full-scene" : "install-guide-bg",
         }),
       });
       if (!res.ok) {
@@ -161,10 +168,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const { imageDataUrl } = await res.json();
-      if (!imageDataUrl) throw new Error("No background returned");
+      if (!imageDataUrl) throw new Error("No image returned");
       backgroundUrl = imageDataUrl;
 
-      // Save immediately so the background shows even while sourcing runs
+      // Save immediately so the result shows even while sourcing runs
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const t = fresh.rooms.find(r => r.id === room.id);
@@ -174,11 +181,20 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       saveProject(fresh);
       onUpdate();
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "Background generation failed");
+      setLastError(err instanceof Error ? err.message : "Image generation failed");
       setPhase("idle");
       return;
     }
 
+    // Realistic mode is one-shot: the image IS the deliverable. Skip sourcing
+    // — the whole point is "press button, see beautiful render."
+    if (renderMode === "realistic") {
+      setPhase("ready");
+      toast.success(`Realistic ${preset.label} render ready`);
+      return;
+    }
+
+    // Cutout-bg mode: continue to source real products to layer on the empty bg
     // Phase 2: Source 3 options per identified item
     setPhase("sourcing");
     try {
@@ -570,7 +586,53 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         <div className="mt-1.5 text-xs text-brand-700 italic">{preset.description}</div>
       </div>
 
-      {/* 3 · The single CTA */}
+      {/* 3 · Pick output mode */}
+      <div className="mb-3">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+          3 · What do you want?
+        </div>
+        <div className="grid sm:grid-cols-2 gap-2">
+          <button
+            onClick={() => setRenderMode("realistic")}
+            disabled={phase === "generating" || phase === "sourcing"}
+            className={`text-left rounded-lg border-2 p-3 transition ${
+              renderMode === "realistic"
+                ? "border-amber bg-amber/10 shadow-sm"
+                : "border-brand-900/10 bg-white hover:border-amber/40"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">📸</span>
+              <span className="text-sm font-semibold text-brand-900">Realistic Render</span>
+              {renderMode === "realistic" && <span className="text-xs text-amber-dark ml-auto">●</span>}
+            </div>
+            <div className="text-[11px] text-brand-600 leading-snug">
+              Photorealistic furnished room you can show the client. One image, ~25s. Save as the install-guide hero.
+            </div>
+          </button>
+
+          <button
+            onClick={() => setRenderMode("cutout-bg")}
+            disabled={phase === "generating" || phase === "sourcing"}
+            className={`text-left rounded-lg border-2 p-3 transition ${
+              renderMode === "cutout-bg"
+                ? "border-amber bg-amber/10 shadow-sm"
+                : "border-brand-900/10 bg-white hover:border-amber/40"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">🛒</span>
+              <span className="text-sm font-semibold text-brand-900">Design + Source Real Products</span>
+              {renderMode === "cutout-bg" && <span className="text-xs text-amber-dark ml-auto">●</span>}
+            </div>
+            <div className="text-[11px] text-brand-600 leading-snug">
+              Empty-room schematic + 3 real products per piece (Wayfair/CB2/etc). Approve each → masterlist. ~60-90s.
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* 4 · CTA */}
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={designThisRoom}
@@ -578,12 +640,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           className="rounded-lg bg-amber px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {phase === "generating"
-            ? "⚡ Generating background..."
+            ? renderMode === "realistic"
+              ? "📸 Rendering... (~25s)"
+              : "⚡ Generating background..."
             : phase === "sourcing"
               ? "⚡ Sourcing 3 options per item..."
-              : hasScene && sourcedItems
-                ? `⚡ Re-Design This Room (${preset.label})`
-                : `⚡ Design This Room (${preset.label})`}
+              : hasScene
+                ? renderMode === "realistic"
+                  ? `📸 Re-Render (${preset.label})`
+                  : `⚡ Re-Design This Room (${preset.label})`
+                : renderMode === "realistic"
+                  ? `📸 Generate ${preset.label} Render`
+                  : `⚡ Design + Source (${preset.label})`}
         </button>
         {(hasScene || sourcedItems) && (
           <button
@@ -594,11 +662,6 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           </button>
         )}
       </div>
-      {phase === "idle" && !sourcedItems && (
-        <div className="mt-2 text-[10px] text-brand-600/70">
-          Chains: generate background → source 6-10 real products with 3 options each → pre-generate cutouts. ~60-90s.
-        </div>
-      )}
 
       {/* Rendered scene preview */}
       {hasScene && room.sceneBackgroundUrl && (

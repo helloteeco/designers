@@ -169,14 +169,22 @@ export function buildScenePrompt(
     return parts.join(" ");
   }
 
-  // Legacy: full furnished scene
+  // Realistic furnished scene — the "show me what it'll look like" mode.
+  // This is what designers and clients actually want to see: a beautiful,
+  // photoreal render of the FULLY FURNISHED room. Treated as a hero image
+  // for the install guide cover and per-room pages.
   const parts = [
-    `A photorealistic ${preset.label} ${roomKind}`,
-    `styled in the ${preset.vibe}`,
-    `with a color palette of ${preset.palette.slice(0, 3).join(", ")}`,
-    `featuring ${preset.signaturePieces.slice(0, 3).join(", ")}`,
-    `${room.widthFt}' by ${room.lengthFt}' space, wide-angle interior photography, natural daylight, editorial magazine quality, sharp focus`,
+    `Award-winning interior design photography of a fully furnished ${roomKind}`,
+    `in authentic ${preset.label} style — ${preset.vibe}`,
+    `Color palette anchors on ${preset.palette.slice(0, 3).join(", ")}, with subtle accents from ${preset.palette.slice(3).join(" and ")}`,
+    `Hero pieces visible: ${preset.signaturePieces.slice(0, 5).join(", ")}`,
+    `Architectural context: ${room.widthFt}' × ${room.lengthFt}' room with proper proportions, natural ceiling height, a window letting in soft daylight`,
+    `Camera: 24mm wide-angle interior lens at eye level, slight 3/4 perspective showing 3 walls, depth of field set to keep entire room sharp`,
+    `Lighting: golden hour natural light pouring through window, supplemented by warm interior lamps for editorial mood, no harsh shadows`,
+    `Styling: layered textures, intentional negative space, magazine-quality composition (think Architectural Digest, Dwell, Apartment Therapy)`,
+    `Render: photorealistic — NOT illustration, NOT painting, NOT 3D render, NOT cartoon. Looks like a real photograph from a luxury interior shoot.`,
+    `16:9 aspect ratio, sharp focus throughout`,
   ];
   if (extraNotes) parts.push(extraNotes);
-  return parts.join(", ");
+  return parts.join(". ");
 }
