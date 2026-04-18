@@ -308,6 +308,28 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
                 </div>
               )}
 
+              {/* Big primary action when SVG path AND project has existing rooms.
+                  Designer overwhelmingly wants "wipe template, use SVG". Make
+                  that a one-click action they can't miss. */}
+              {sourceKind === "svg" && project.rooms.length > 0 && !replaceAll && (
+                <div className="mb-4 rounded-lg bg-amber/15 border-2 border-amber px-4 py-3">
+                  <div className="font-semibold text-brand-900 text-sm mb-1">
+                    💡 Make this SVG the source of truth
+                  </div>
+                  <p className="text-xs text-brand-700 mb-3">
+                    This project already has {project.rooms.length} room{project.rooms.length === 1 ? "" : "s"} from
+                    a template. Replace them all with the {detected.length} room{detected.length === 1 ? "" : "s"}
+                    {" "}from your SVG in one click — no per-row review needed since SVG text is exact.
+                  </p>
+                  <button
+                    onClick={applyAsSourceOfTruth}
+                    className="w-full rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-dark"
+                  >
+                    ⚡ Replace all rooms with this SVG
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-2 mb-4">
                 {matches.map((m, idx) => (
                   <RoomMatchCard

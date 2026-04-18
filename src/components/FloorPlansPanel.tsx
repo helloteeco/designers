@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
+import { detectRoomsFromSvg, readSvgText, isSvgSource, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
 import AutoDetectRooms from "./AutoDetectRooms";
-import type { Project, FloorPlan } from "@/lib/types";
+import type { Project, FloorPlan, Room } from "@/lib/types";
 
 interface Props {
   project: Project;
@@ -120,6 +121,13 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
         const dataUrl = await fileToDataUrl(file);
         const type: FloorPlan["type"] = file.type === "application/pdf" ? "pdf" : "image";
         const defaultName = file.name.replace(/\.[^.]+$/, "");
+        const isSvg = file.type === "image/svg+xml";
+        // SVG always trumps PNG/PDF as primary — vector text is exact, OCR is
+        // a fallback. Otherwise the first-ever uploaded image becomes primary.
+        const shouldBePrimary = isSvg || (!hadPlansBefore && i === 0 && type === "image");
+        if (shouldBePrimary) {
+          for (const existing of fresh.property.floorPlans) existing.isPrimary = undefined;
+        }
         const plan: FloorPlan = {
           id: generateId(),
           name: useCustomLabel ? form.name.trim() : defaultName,
@@ -128,9 +136,7 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
           uploadedAt: new Date().toISOString(),
           notes: form.notes,
           sizeBytes: file.size,
-          // First-ever plan is auto-primary so the Install Guide cover and
-          // Space Planner reference have something to lock onto.
-          isPrimary: !hadPlansBefore && i === 0 && type === "image" ? true : undefined,
+          isPrimary: shouldBePrimary ? true : undefined,
         };
         fresh.property.floorPlans.push(plan);
         newlyAdded.push(plan);
@@ -147,12 +153,18 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
       setForm({ name: "", url: "", notes: "" });
       onUpdate();
 
-      // Auto-trigger room detection on a fresh image plan. Skips PDFs (OCR
-      // requires an image) and skips when many plans were uploaded at once
-      // (the designer is probably importing a set, not a single primary plan).
+      // Auto-room-detection dispatch:
+      //  - Single SVG upload → parse + replace all rooms automatically
+      //    (SVG text is exact; no review needed)
+      //  - Single PNG/JPG upload → open the AutoDetect modal (OCR needs review)
+      //  - Multiple files → don't auto-trigger anything (probably an import)
       const candidate = newlyAdded.find(p => p.type === "image");
       if (candidate && newlyAdded.length === 1) {
-        setAutoDetectPlan(candidate);
+        if (isSvgSource(candidate.url)) {
+          await autoApplySvg(candidate);
+        } else {
+          setAutoDetectPlan(candidate);
+        }
       }
     } catch (err) {
       toast.error("Upload failed: " + (err instanceof Error ? err.message : "unknown"));
@@ -213,6 +225,62 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
     if (!p) return;
     p.name = name;
     saveProject(fresh);
+    onUpdate();
+  }
+
+  /**
+   * Parse a Matterport SVG and replace every room in the project with what
+   * the SVG describes. No modal, no review — SVG text is exact, the only
+   * confirmation comes after via toast. Falls back to opening the modal if
+   * detection finds nothing (so the designer can see why).
+   */
+  async function autoApplySvg(plan: FloorPlan) {
+    let detected: SvgDetectedRoom[];
+    try {
+      detected = await detectRoomsFromSvg(plan.url);
+    } catch (err) {
+      toast.error("Couldn't read SVG: " + (err instanceof Error ? err.message : "unknown"));
+      return;
+    }
+    if (detected.length === 0) {
+      // Open the modal so the designer can see what (didn't) get found
+      setAutoDetectPlan(plan);
+      return;
+    }
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    try {
+      fresh.property.floorPlanSvgContent = await readSvgText(plan.url);
+    } catch {
+      // non-fatal — the room dimensions still get applied below
+    }
+    const removed = fresh.rooms.length;
+    fresh.rooms = [];
+    for (const r of detected) {
+      const newRoom: Room = {
+        id: generateId(),
+        name: r.label,
+        type: r.guessedType,
+        widthFt: r.widthFt,
+        lengthFt: r.lengthFt,
+        ceilingHeightFt: 9,
+        floor: 1,
+        features: [],
+        selectedBedConfig: null,
+        furniture: [],
+        accentWall: null,
+        notes: "",
+        ...(r.svgBBox ? { svgBBox: r.svgBBox } : {}),
+      };
+      fresh.rooms.push(newRoom);
+    }
+    saveProject(fresh);
+    logActivity(project.id, "svg_applied", `SVG auto-apply: removed ${removed}, created ${detected.length}`);
+    toast.success(
+      removed > 0
+        ? `Replaced ${removed} room${removed === 1 ? "" : "s"} with ${detected.length} from your floor plan`
+        : `Created ${detected.length} rooms from your floor plan`
+    );
     onUpdate();
   }
 
@@ -308,7 +376,9 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
               onRename={(n) => renamePlan(primaryPlan.id, n)}
               onRemove={() => removePlan(primaryPlan.id)}
               onSetPrimary={() => {}}
-              onAutoDetect={primaryPlan.type === "image" ? () => setAutoDetectPlan(primaryPlan) : undefined}
+              onAutoDetect={primaryPlan.type === "image"
+                ? () => isSvgSource(primaryPlan.url) ? autoApplySvg(primaryPlan) : setAutoDetectPlan(primaryPlan)
+                : undefined}
             />
           )}
 
@@ -334,7 +404,9 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
                       onRename={(n) => renamePlan(plan.id, n)}
                       onRemove={() => removePlan(plan.id)}
                       onSetPrimary={() => setPrimaryPlan(plan.id)}
-                      onAutoDetect={plan.type === "image" ? () => setAutoDetectPlan(plan) : undefined}
+                      onAutoDetect={plan.type === "image"
+                        ? () => isSvgSource(plan.url) ? autoApplySvg(plan) : setAutoDetectPlan(plan)
+                        : undefined}
                     />
                   ))}
                 </div>
