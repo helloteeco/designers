@@ -102,6 +102,195 @@ function extractTextNodes(svgText: string): SvgTextNode[] {
 }
 
 /**
+ * Pixel-perfect bbox detection by rasterizing the SVG and flood-filling
+ * outward from each room's label position.
+ *
+ * Why this works:
+ *   - Matterport schematic SVGs render with white interiors and dark walls
+ *   - A flood fill from a room label spreads through the room's interior
+ *     and stops at the walls — boundary pixels of the fill = the room's
+ *     exact polygon
+ *   - The bbox of the filled pixels IS the room's bounding rectangle, with
+ *     wall accuracy down to a single pixel of resolution
+ *
+ * Caveat: doors in Matterport are drawn as wall cutouts (the wall has a
+ * white gap with an arc showing the swing). Flood fill will leak through
+ * that gap into the next room. Defense: we INTERSECT the flood-fill bbox
+ * with the nearest-neighbor Voronoi bbox so a leak can't blow up the
+ * room's bbox to the whole house.
+ *
+ * Returns null entries if rasterization fails (e.g., browser blocks the
+ * SVG-as-image load); caller falls back to nearest-neighbor bbox alone.
+ */
+async function detectRoomBBoxesByFloodFill(
+  svgText: string,
+  labelPositions: { label: string; x: number; y: number }[]
+): Promise<(SvgBBox | null)[]> {
+  if (typeof document === "undefined" || labelPositions.length === 0) {
+    return labelPositions.map(() => null);
+  }
+
+  // Render at this resolution. 1600 keeps each room ~50-200 px wide for the
+  // Seneca-sized house, which is enough for stable flood fills, and the
+  // total raster (1600² × 4 = ~10 MB) fits comfortably in memory.
+  const RASTER = 1600;
+
+  // Parse SVG to grab viewBox so we can map svg coords → pixel coords
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgText, "image/svg+xml");
+  const svgEl = doc.querySelector("svg");
+  if (!svgEl) return labelPositions.map(() => null);
+
+  let vb: { x: number; y: number; width: number; height: number };
+  const vbAttr = svgEl.getAttribute("viewBox");
+  if (vbAttr) {
+    const parts = vbAttr.split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts.every(n => Number.isFinite(n))) {
+      vb = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
+    } else return labelPositions.map(() => null);
+  } else {
+    const w = parseFloat(svgEl.getAttribute("width") ?? "0");
+    const h = parseFloat(svgEl.getAttribute("height") ?? "0");
+    if (!w || !h) return labelPositions.map(() => null);
+    vb = { x: 0, y: 0, width: w, height: h };
+    svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  }
+
+  // Make sure it'll rasterize at our target resolution
+  const aspect = vb.width / vb.height;
+  const RW = aspect >= 1 ? RASTER : Math.round(RASTER * aspect);
+  const RH = aspect >= 1 ? Math.round(RASTER / aspect) : RASTER;
+
+  // Force a white background so the fill has somewhere to spread (Matterport
+  // SVGs sometimes have transparent backgrounds, which kills the heuristic)
+  if (!svgEl.getAttribute("style")?.includes("background")) {
+    svgEl.setAttribute("style", `background:#fff; ${svgEl.getAttribute("style") ?? ""}`);
+  }
+  const wrappedSvg = new XMLSerializer().serializeToString(svgEl);
+
+  const blob = new Blob([wrappedSvg], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  let pixels: Uint8ClampedArray;
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("SVG image load failed"));
+      img.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = RW;
+    canvas.height = RH;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return labelPositions.map(() => null);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, RW, RH);
+    ctx.drawImage(img, 0, 0, RW, RH);
+    pixels = ctx.getImageData(0, 0, RW, RH).data;
+  } catch {
+    return labelPositions.map(() => null);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+
+  // Map SVG coords → raster pixel coords
+  function svgToPx(sx: number, sy: number): [number, number] {
+    return [
+      Math.round(((sx - vb.x) / vb.width) * RW),
+      Math.round(((sy - vb.y) / vb.height) * RH),
+    ];
+  }
+  function pxToSvgX(px: number): number { return (px / RW) * vb.width + vb.x; }
+  function pxToSvgY(py: number): number { return (py / RH) * vb.height + vb.y; }
+
+  // Threshold: anything darker than this is treated as a wall/boundary.
+  // Matterport draws walls solid black; text is also dark but small enough
+  // that the fill goes around it without being meaningfully blocked.
+  const DARK = 200;
+  function isWall(idx: number): boolean {
+    const p = idx * 4;
+    return (pixels[p] + pixels[p + 1] + pixels[p + 2]) / 3 < DARK;
+  }
+
+  const out: (SvgBBox | null)[] = [];
+  for (const lp of labelPositions) {
+    const [sx, sy] = svgToPx(lp.x, lp.y);
+    if (sx < 0 || sx >= RW || sy < 0 || sy >= RH) {
+      out.push(null);
+      continue;
+    }
+
+    // Flood-fill (4-connected) from the label position. We have a hard cap
+    // on filled pixels (50% of total) so a door leak can't run away with
+    // the whole house — the resulting bbox will at worst include the room
+    // plus a sliver of the next, which Voronoi clipping then trims.
+    const visited = new Uint8Array(RW * RH);
+    const FILL_CAP = Math.floor(RW * RH * 0.5);
+    let filled = 0;
+    let minX = sx, maxX = sx, minY = sy, maxY = sy;
+
+    // Use a typed-array queue for speed on very large rooms
+    const queue = new Int32Array(RW * RH);
+    let qHead = 0, qTail = 0;
+    queue[qTail++] = sy * RW + sx;
+    visited[sy * RW + sx] = 1;
+
+    while (qHead < qTail && filled < FILL_CAP) {
+      const idx = queue[qHead++];
+      if (isWall(idx)) continue;
+      filled++;
+      const x = idx % RW;
+      const y = (idx - x) / RW;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      const neighbors = [idx - 1, idx + 1, idx - RW, idx + RW];
+      for (const n of neighbors) {
+        if (n < 0 || n >= RW * RH) continue;
+        // Skip wraparound on row edges
+        if (n === idx - 1 && x === 0) continue;
+        if (n === idx + 1 && x === RW - 1) continue;
+        if (visited[n]) continue;
+        visited[n] = 1;
+        queue[qTail++] = n;
+      }
+    }
+
+    // If the fill touched almost no pixels, label probably sits ON a wall —
+    // try a small search outward for a non-wall starting pixel
+    if (filled < 25) {
+      out.push(null);
+      continue;
+    }
+
+    out.push({
+      x: pxToSvgX(minX),
+      y: pxToSvgY(minY),
+      width: pxToSvgX(maxX) - pxToSvgX(minX),
+      height: pxToSvgY(maxY) - pxToSvgY(minY),
+    });
+  }
+
+  return out;
+}
+
+/**
+ * Intersect two bboxes — returns the overlap, or null if they don't overlap.
+ */
+function intersectBBox(a: SvgBBox, b: SvgBBox): SvgBBox | null {
+  const x1 = Math.max(a.x, b.x);
+  const y1 = Math.max(a.y, b.y);
+  const x2 = Math.min(a.x + a.width, b.x + b.width);
+  const y2 = Math.min(a.y + a.height, b.y + b.height);
+  if (x2 <= x1 || y2 <= y1) return null;
+  return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+}
+
+/**
  * Compute per-room bounding boxes from the SVG.
  *
  * Matterport's schematic SVGs are flat (every room is a sibling, not nested
@@ -299,9 +488,17 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
     deduped.push(r);
   }
 
-  // Enrich each detected room with an SVG bounding box. We pass the known
-  // dimensions (widthFt, lengthFt) so the bbox heuristic uses the right
-  // aspect ratio — landscape rooms get landscape bboxes, not squares.
+  // Enrich each detected room with an SVG bounding box.
+  //
+  // Two-stage detection:
+  //   1. Flood-fill the rasterized SVG from each label — pixel-perfect
+  //      walls/doors/windows boundary
+  //   2. Voronoi nearest-neighbor as a defensive clip — if a flood leaks
+  //      through a door opening into the next room, the Voronoi bbox
+  //      caps how far the room is allowed to extend
+  //
+  // If flood fails (rasterization blocked, label on a wall, etc.), we fall
+  // back to Voronoi alone.
   if (deduped.length > 0) {
     const labelPositions = deduped.map(r => ({
       label: r.rawText,
@@ -310,12 +507,25 @@ export async function detectRoomsFromSvg(svgInput: string): Promise<SvgDetectedR
       widthFt: r.widthFt,
       lengthFt: r.lengthFt,
     }));
-    const bboxes = computeRoomBBoxes(svgText, labelPositions);
+    const voronoi = computeRoomBBoxes(svgText, labelPositions);
+    let flood: (SvgBBox | null)[] = [];
+    try {
+      flood = await detectRoomBBoxesByFloodFill(svgText, labelPositions);
+    } catch {
+      flood = labelPositions.map(() => null);
+    }
+
     for (let i = 0; i < deduped.length; i++) {
-      const bb = bboxes[i];
-      if (bb) {
-        deduped[i].svgBBox = bb;
+      const f = flood[i];
+      const v = voronoi[i];
+      // Prefer flood ∩ voronoi when both available
+      let chosen: SvgBBox | null = null;
+      if (f && v) {
+        chosen = intersectBBox(f, v) ?? f;
+      } else {
+        chosen = f ?? v;
       }
+      if (chosen) deduped[i].svgBBox = chosen;
     }
   }
 
