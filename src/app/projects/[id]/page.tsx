@@ -6,14 +6,9 @@ import Navbar from "@/components/Navbar";
 import BriefHub from "@/components/BriefHub";
 import ConceptHub from "@/components/ConceptHub";
 import RoomPlanner from "@/components/RoomPlanner";
-import SleepOptimizer from "@/components/SleepOptimizer";
-import DesignHub from "@/components/DesignHub";
-import SceneDesigner from "@/components/SceneDesigner";
-import ItemsHub from "@/components/ItemsHub";
+import DesignWorkspace from "@/components/DesignWorkspace";
 import RenovationHub from "@/components/RenovationHub";
-import ReviewHub from "@/components/ReviewHub";
-import OrderHub from "@/components/OrderHub";
-import InstallHub from "@/components/InstallHub";
+import DeliverWorkspace from "@/components/DeliverWorkspace";
 import ShareLinkButton from "@/components/ShareLinkButton";
 import { SaveIndicator, useToast } from "@/components/Toast";
 import {
@@ -31,14 +26,9 @@ type Tab =
   | "brief"
   | "concept"
   | "rooms"
-  | "sleep"
   | "design"
-  | "scene"
-  | "items"
   | "renovation"
-  | "review"
-  | "order"
-  | "install";
+  | "deliver";
 
 interface TabDef {
   id: Tab;
@@ -59,26 +49,15 @@ interface TabDef {
 const ALL_TABS: TabDef[] = [
   { id: "brief", label: "Brief", week: "Wk 1" },
   { id: "concept", label: "Concept", week: "Wk 1" },
-  { id: "rooms", label: "Rooms", week: "Wk 2-3" },
-  {
-    id: "sleep",
-    label: "Sleep Plan",
-    week: "Wk 2-3",
-    // Only STR / furnish-only projects need sleep optimization
-    visible: (p) => p.projectType === "furnish-only" || p.projectType === "full-redesign",
-  },
-  { id: "design", label: "Space Plan", week: "Wk 2-3" },
-  { id: "scene", label: "Scene", week: "Wk 2-3" },
-  { id: "items", label: "Items", week: "Wk 2-3" },
+  { id: "rooms", label: "Rooms", week: "Wk 2" },
+  { id: "design", label: "Design", week: "Wk 2-3" },
   {
     id: "renovation",
     label: "Renovation",
     week: "Wk 2-3",
     visible: (p) => p.projectType === "renovation" || p.projectType === "full-redesign" || p.projectType === "new-construction",
   },
-  { id: "review", label: "Review", week: "Wk 4" },
-  { id: "order", label: "Order", week: "Wk 5-6" },
-  { id: "install", label: "Install", week: "Wk 7" },
+  { id: "deliver", label: "Deliver", week: "Wk 4-7" },
 ];
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -179,14 +158,9 @@ export default function ProjectDetailPage() {
     brief: !!project.client.name && (project.property.floorPlans ?? []).length > 0,
     concept: project.moodBoards.some(b => b.isLockedConcept),
     rooms: project.rooms.length > 0,
-    sleep: project.rooms.some(r => !!r.selectedBedConfig),
     design: project.rooms.some(r => r.furniture.length > 0),
-    scene: project.rooms.some(r => (r.sceneItems?.length ?? 0) > 0 || !!r.sceneSnapshot),
-    items: totalItems > 0,
     renovation: (project.scope?.length ?? 0) > 0,
-    review: project.status === "review" || project.status === "delivered",
-    order: project.status === "delivered",
-    install: project.status === "delivered",
+    deliver: project.status === "delivered",
   };
   const currentIdx = visibleTabs.findIndex(t => t.id === tab);
 
@@ -338,14 +312,9 @@ export default function ProjectDetailPage() {
           {tab === "brief" && <BriefHub project={project} onUpdate={reload} />}
           {tab === "concept" && <ConceptHub project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
-          {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
-          {tab === "design" && <DesignHub project={project} onUpdate={reload} />}
-          {tab === "scene" && <SceneDesigner project={project} onUpdate={reload} />}
-          {tab === "items" && <ItemsHub project={project} onUpdate={reload} />}
+          {tab === "design" && <DesignWorkspace project={project} onUpdate={reload} />}
           {tab === "renovation" && <RenovationHub project={project} onUpdate={reload} />}
-          {tab === "review" && <ReviewHub project={project} />}
-          {tab === "order" && <OrderHub project={project} />}
-          {tab === "install" && <InstallHub project={project} projectId={projectId} />}
+          {tab === "deliver" && <DeliverWorkspace project={project} projectId={projectId} />}
         </div>
       </main>
     </div>
