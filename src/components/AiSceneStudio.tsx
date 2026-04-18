@@ -299,6 +299,60 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
   }
 
+  /**
+   * Take the AI-rendered furnished scene and ask Gemini to strip everything
+   * back to the empty architectural shell — same room, same walls, same
+   * flooring, no furniture. The empty result becomes the new
+   * sceneBackgroundUrl, then we kick off product sourcing so the designer
+   * can layer real-product cutouts back on top.
+   *
+   * Net: turns a realistic render into a Teeco install-guide style composite
+   * board (empty room + cutouts). Designer keeps the look they liked, but
+   * gets a clean canvas + accurate masterlist.
+   */
+  async function stripToBackground() {
+    if (phase === "generating" || phase === "sourcing") return;
+    if (!room.sceneBackgroundUrl) {
+      setLastError("No scene to strip — generate one first.");
+      return;
+    }
+    setLastError(null);
+    setPhase("generating");
+    try {
+      const res = await fetch("/api/strip-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: room.sceneBackgroundUrl }),
+      });
+      const raw = await res.text();
+      let payload: { imageDataUrl?: string; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch { /* keep raw */ }
+      if (!res.ok || !payload.imageDataUrl) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 400)}`);
+      }
+      // Persist the stripped background
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const t = fresh.rooms.find(r => r.id === room.id);
+      if (!t) throw new Error("Room missing");
+      t.sceneBackgroundUrl = payload.imageDataUrl;
+      t.sceneSnapshot = payload.imageDataUrl;
+      // Wipe any existing scene cutouts since the underlying image changed
+      t.sceneItems = [];
+      saveProject(fresh);
+      onUpdate();
+      toast.success("Stripped to empty backdrop. Now sourcing products to layer on...");
+      // Switch to cutout-bg flow and immediately source so the designer
+      // gets the composite-ready experience without extra clicks
+      setRenderMode("cutout-bg");
+      await sourceProducts();
+    } catch (err) {
+      const msg = err instanceof Error && err.message ? err.message : "Strip failed";
+      setLastError(msg);
+      setPhase("preview");
+    }
+  }
+
   // ── Click-to-edit handlers ───────────────────────────────────────────
 
   function onSceneClick(e: React.MouseEvent<HTMLImageElement>) {
@@ -950,6 +1004,15 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     ? "✓ Use this render (save as hero)"
                     : "✓ Approve style → source 3 products per item"}
                 </button>
+                {renderMode === "realistic" && (
+                  <button
+                    onClick={() => void stripToBackground()}
+                    className="rounded-lg border-2 border-emerald-500 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                    title="Remove all furniture, keep walls/floor/windows. Then source real products to layer on top — produces a Teeco install-guide style composite."
+                  >
+                    🪟 Strip to empty backdrop + source cutouts
+                  </button>
+                )}
                 <button
                   onClick={() => generateScene("")}
                   className="rounded-lg border border-amber px-3 py-2 text-xs font-medium text-amber-dark hover:bg-amber/10"
@@ -965,6 +1028,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                   🎨 Try a different style
                 </button>
               </div>
+              {renderMode === "realistic" && (
+                <div className="text-[11px] text-brand-600/80 italic">
+                  💡 <strong>Tip:</strong> &ldquo;Strip to empty backdrop&rdquo; turns this realistic render into a clean empty room with the SAME walls/flooring/windows — then layers real-product cutouts on top. That&apos;s how to produce the Teeco install-guide composite look (Living Room board style).
+                </div>
+              )}
 
               {/* Refine box — designer asks for changes in plain English */}
               <div>
