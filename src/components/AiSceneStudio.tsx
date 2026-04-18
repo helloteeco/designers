@@ -11,8 +11,6 @@ interface HealthCheck {
   ok: boolean;
   code: "READY" | "NO_KEY" | "CALL_FAILED" | "UNKNOWN";
   message?: string;
-  keyPrefix?: string;
-  modelReply?: string;
 }
 
 interface Props {
@@ -36,45 +34,62 @@ interface SourcedItem {
   searchQuery: string;
   estimatedSize?: string;
   options: SourcedOption[];
-  /** Index of chosen option, or null for rejected/pending */
   chosenIndex: number | null;
+  /** Cutout image data URL (set after Gemini generates it) */
+  cutoutUrl?: string;
+  /** Whether this item has been committed to the room's masterlist + scene */
+  committed?: boolean;
 }
 
 /**
- * AI Scene Studio — the 80→20 engine for per-room design.
+ * AI Scene Studio — the linear per-room workflow.
  *
- * Flow:
- *   1. Designer picks a style preset (Japandi, Groovy, etc.)
- *   2. Click "Generate Scene" → Gemini 2.5 Flash Image creates a
- *      photorealistic interior in that style for the room type
- *   3. Generated image becomes the Scene Designer background
- *   4. Click "Source Items" → Gemini Vision identifies items in the
- *      scene + Google Search grounding finds 3 real products per piece
- *   5. Designer confirms 1 of 3 per item (or rejects) — confirmed items
- *      drop into the masterlist as custom FurnitureItems and flow to
- *      the Space Planner + Install Guide
+ * Designer's flow (top-to-bottom):
+ *   1. Drop a Matterport screenshot (optional but strongly recommended —
+ *      walking the model = familiarity with the space)
+ *   2. Pick a style chip
+ *   3. Click ⚡ Design This Room
+ *   4. Review each item inline: Approve / Reject / Get 3 alternatives
+ *   5. Approved items auto-flow into the masterlist + Scene canvas
  *
- * Budget-aware: total-of-picks vs remaining budget shown as a bar; if
- * picks exceed remaining, the Confirm button turns red.
+ * No sub-steps, no modals, no "generate" / "source" as separate buttons.
+ * One CTA drives the whole pipeline. Advanced options (manual catalog,
+ * regenerate-only, etc.) live in a collapsed accordion at the bottom.
  */
 export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const toast = useToast();
-  const [styleId, setStyleId] = useState<string>(
+  const [styleId, setStyleId] = useState<string>(() =>
     project.moodBoards.find(b => b.isLockedConcept)?.style
       ? matchStyleFromDesignStyle(project.moodBoards.find(b => b.isLockedConcept)!.style)
       : STYLE_PRESETS[0].id
   );
-  const [generating, setGenerating] = useState(false);
-  const [sourcing, setSourcing] = useState(false);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "generating" | "sourcing" | "ready">("idle");
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
-  const [showSourceModal, setShowSourceModal] = useState(false);
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Health-check on mount so the designer sees up-front whether the API
-  // is actually wired up, instead of only finding out after a failed
-  // generate call.
+  const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
+  const hasScene = !!room.sceneBackgroundUrl;
+
+  // Budget math
+  const budgetTotal = project.budget || 0;
+  const approvedSpend = project.rooms.reduce(
+    (s, r) =>
+      s +
+      r.furniture.reduce((fs, f) => {
+        const st = f.status ?? "specced";
+        if (st === "approved" || st === "ordered" || st === "delivered") {
+          return fs + f.item.price * f.quantity;
+        }
+        return fs;
+      }, 0),
+    0
+  );
+  const remainingBudget = Math.max(0, budgetTotal - approvedSpend);
+
+  // Health-check on mount
   useEffect(() => {
     let cancelled = false;
     fetch("/api/check-gemini")
@@ -94,166 +109,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
-  const hasScene = !!room.sceneBackgroundUrl;
+  // ── Main one-click pipeline ──────────────────────────────────────────
 
-  // Budget math: approved-only vs total budget
-  const budgetTotal = project.budget || 0;
-  const approvedSpend = project.rooms.reduce((s, r) =>
-    s + r.furniture.reduce((fs, f) => {
-      const st = f.status ?? "specced";
-      if (st === "approved" || st === "ordered" || st === "delivered") {
-        return fs + f.item.price * f.quantity;
-      }
-      return fs;
-    }, 0),
-  0);
-  const remainingBudget = Math.max(0, budgetTotal - approvedSpend);
-
-  async function generateScene() {
-    setGenerating(true);
-    setLastError(null);
-    try {
-      const res = await fetch("/api/generate-scene", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          styleId: preset.id,
-          room: {
-            name: room.name,
-            type: room.type,
-            widthFt: room.widthFt,
-            lengthFt: room.lengthFt,
-          },
-          referenceImageDataUrl: referenceImage ?? undefined,
-        }),
-      });
-      const rawText = await res.text();
-      let payload: unknown;
-      try { payload = JSON.parse(rawText); } catch { payload = { raw: rawText }; }
-
-      if (!res.ok) {
-        const errorMsg = (payload as { error?: string })?.error
-          || `HTTP ${res.status} — ${rawText.slice(0, 200)}`;
-        throw new Error(errorMsg);
-      }
-
-      const { imageDataUrl, modelUsed } = payload as { imageDataUrl?: string; modelUsed?: string };
-      if (!imageDataUrl) {
-        throw new Error("API returned no image. Response: " + JSON.stringify(payload).slice(0, 300));
-      }
-      if (modelUsed) {
-        // eslint-disable-next-line no-console
-        console.log(`[AI Scene Studio] rendered with ${modelUsed}`);
-      }
-
-      // Save as the room's scene background
-      const fresh = getProjectFromStore(project.id);
-      if (!fresh) {
-        throw new Error("Couldn't load project from local storage to save the scene");
-      }
-      const target = fresh.rooms.find(r => r.id === room.id);
-      if (!target) {
-        throw new Error(`Room ${room.id} not found in project`);
-      }
-      target.sceneBackgroundUrl = imageDataUrl;
-      target.sceneSnapshot = imageDataUrl;
-
-      try {
-        saveProject(fresh);
-      } catch (saveErr) {
-        const m = saveErr instanceof Error ? saveErr.message : String(saveErr);
-        throw new Error(
-          "Scene generated, but couldn't save to local storage. " +
-          "Your browser localStorage is probably full (scenes are ~1-2 MB each). " +
-          "Download a backup from Settings → Backup & Data, delete old projects, then try again. " +
-          `Details: ${m}`
-        );
-      }
-
-      logActivity(project.id, "scene_generated", `AI-generated ${preset.label} scene for ${target.name}`);
-      toast.success(`${preset.label} scene ready for ${target.name}`);
-      onUpdate();
-      setSourcedItems(null);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      setLastError(msg);
-      toast.error("Scene generation failed — see panel for details");
-    } finally {
-      setGenerating(false);
-    }
-  }
-
-  async function sourceItems() {
-    if (!room.sceneBackgroundUrl) {
-      toast.error("Generate a scene first, then I can source items from it.");
-      return;
-    }
-    setSourcing(true);
-    setShowSourceModal(true);
-    setLastError(null);
-    try {
-      const res = await fetch("/api/source-from-scene", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageDataUrl: room.sceneBackgroundUrl,
-          budget: remainingBudget || undefined,
-          styleHint: preset.id,
-        }),
-      });
-      const rawText = await res.text();
-      let payload: unknown;
-      try { payload = JSON.parse(rawText); } catch { payload = { raw: rawText }; }
-
-      if (!res.ok) {
-        const errorMsg = (payload as { error?: string })?.error
-          || `HTTP ${res.status} — ${rawText.slice(0, 200)}`;
-        throw new Error(errorMsg);
-      }
-      const { items } = payload as {
-        items?: Array<{
-          description: string;
-          category: string;
-          searchQuery: string;
-          estimatedSize?: string;
-          options: SourcedOption[];
-        }>;
-      };
-      if (!items) {
-        throw new Error("API returned no items array. Response: " + JSON.stringify(payload).slice(0, 300));
-      }
-      setSourcedItems(
-        items.map(i => ({
-          ...i,
-          chosenIndex: i.options.length > 0 ? 0 : null,
-        }))
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      setLastError(msg);
-      toast.error("Sourcing failed — see panel for details");
-      setShowSourceModal(false);
-    } finally {
-      setSourcing(false);
-    }
-  }
-
-  /**
-   * One-click "Design Whole Room" — chains the full pipeline:
-   *   1. Generate install-guide-style background (empty room schematic)
-   *   2. Auto-source 6-10 items via Gemini Vision + web search
-   *   3. Auto-pick the first option per item (designer reviews after)
-   *   4. Generate cutouts for each
-   *   5. Auto-commit to the scene as draggable tiles
-   * Takes ~60-90 seconds total. Designer then reviews by dragging + rejecting.
-   */
-  async function designWholeRoom() {
-    if (generating || sourcing) return;
+  async function designThisRoom() {
+    if (phase !== "idle" && phase !== "ready") return;
     setLastError(null);
 
-    // 1. Generate the background (install-guide style, or use reference if present)
-    setGenerating(true);
+    // Phase 1: Generate background (install-guide-style empty-room or
+    // image-to-image from reference photo)
+    setPhase("generating");
+    let backgroundUrl: string;
     try {
       const res = await fetch("/api/generate-scene", {
         method: "POST",
@@ -271,52 +136,45 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         }),
       });
       if (!res.ok) {
-        const payload = await res.json().catch(() => ({ error: "Unknown" }));
-        throw new Error(payload.error || `HTTP ${res.status}`);
+        const err = await res.json().catch(() => ({ error: "Unknown" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
       }
-      const { imageDataUrl } = await res.json() as { imageDataUrl?: string };
-      if (!imageDataUrl) throw new Error("No image returned from scene generation");
+      const { imageDataUrl } = await res.json();
+      if (!imageDataUrl) throw new Error("No background returned");
+      backgroundUrl = imageDataUrl;
 
+      // Save immediately so the background shows even while sourcing runs
       const fresh = getProjectFromStore(project.id);
-      if (!fresh) throw new Error("Project gone from localStorage");
-      const target = fresh.rooms.find(r => r.id === room.id);
-      if (!target) throw new Error("Room gone from project");
-      target.sceneBackgroundUrl = imageDataUrl;
-      target.sceneSnapshot = imageDataUrl;
+      if (!fresh) throw new Error("Project missing");
+      const t = fresh.rooms.find(r => r.id === room.id);
+      if (!t) throw new Error("Room missing");
+      t.sceneBackgroundUrl = backgroundUrl;
+      t.sceneSnapshot = backgroundUrl;
       saveProject(fresh);
       onUpdate();
-      toast.info("Background done. Sourcing items now...");
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "Unknown error");
-      toast.error("Auto-design failed at scene generation — see panel");
-      setGenerating(false);
+      setLastError(err instanceof Error ? err.message : "Background generation failed");
+      setPhase("idle");
       return;
     }
-    setGenerating(false);
 
-    // 2. Auto-source items from the just-generated scene
-    setSourcing(true);
+    // Phase 2: Source 3 options per identified item
+    setPhase("sourcing");
     try {
-      // Use a small delay + refetch so the latest sceneBackgroundUrl is read
-      await new Promise(r => setTimeout(r, 300));
-      const fresh = getProjectFromStore(project.id);
-      const bg = fresh?.rooms.find(r => r.id === room.id)?.sceneBackgroundUrl;
-      if (!bg) throw new Error("Scene didn't save");
-
       const res = await fetch("/api/source-from-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageDataUrl: bg,
+          imageDataUrl: backgroundUrl,
           budget: remainingBudget || undefined,
           styleHint: preset.id,
         }),
       });
       if (!res.ok) {
-        const payload = await res.json().catch(() => ({ error: "Unknown" }));
-        throw new Error(payload.error || `HTTP ${res.status}`);
+        const err = await res.json().catch(() => ({ error: "Unknown" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
       }
-      const { items } = await res.json() as {
+      const { items } = (await res.json()) as {
         items?: Array<{
           description: string;
           category: string;
@@ -325,78 +183,92 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           options: SourcedOption[];
         }>;
       };
-      if (!items || items.length === 0) throw new Error("No items identified");
+      if (!items) throw new Error("No items returned from sourcing");
+      setSourcedItems(
+        items.map(i => ({
+          ...i,
+          chosenIndex: i.options.length > 0 ? 0 : null,
+        }))
+      );
+      setPhase("ready");
 
-      // Auto-pick the first option per item
-      const autoPicked: SourcedItem[] = items.map(i => ({
-        ...i,
-        chosenIndex: i.options.length > 0 ? 0 : null,
-      }));
-      setSourcedItems(autoPicked);
-      toast.info(`Picked ${autoPicked.filter(i => i.chosenIndex !== null).length} items. Generating cutouts...`);
+      // Phase 3: pre-generate cutouts in the background so they're ready
+      // when the designer approves items. Runs silently; if it finishes
+      // before they approve, commit uses cached cutouts.
+      void prefetchCutouts(items);
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "Unknown error");
-      toast.error("Auto-design failed at sourcing — see panel");
-      setSourcing(false);
-      return;
+      setLastError(err instanceof Error ? err.message : "Product sourcing failed");
+      setPhase("idle");
     }
-    setSourcing(false);
-
-    // 3. Commit immediately (runs cutout generation in parallel, appends to scene)
-    // commitChosen reads sourcedItems from state — which is now populated
-    await new Promise(r => setTimeout(r, 100));
-    commitChosen();
   }
 
-  function clearScene() {
-    if (!confirm("Clear the AI scene and all draggable items on it? The room's furniture-list entries stay; only the scene background + overlay tiles get removed.")) return;
-    const fresh = getProjectFromStore(project.id);
-    if (!fresh) return;
-    const target = fresh.rooms.find(r => r.id === room.id);
-    if (!target) return;
-    target.sceneBackgroundUrl = undefined;
-    target.sceneSnapshot = undefined;
-    target.sceneItems = [];
-    saveProject(fresh);
-    logActivity(project.id, "scene_cleared", `Cleared AI scene for ${target.name}`);
-    toast.info(`Scene cleared for ${target.name}`);
-    setSourcedItems(null);
-    onUpdate();
-  }
-
-  function pickOption(itemIdx: number, optIdx: number | null) {
-    setSourcedItems(prev => prev?.map((it, i) =>
-      i === itemIdx ? { ...it, chosenIndex: optIdx } : it
-    ) ?? null);
-  }
-
-  async function commitChosen() {
-    if (!sourcedItems) return;
-    const chosen = sourcedItems.filter(i => i.chosenIndex !== null);
-    if (chosen.length === 0) return;
-
-    // Close modal immediately and show a toast so the long cutout-generation
-    // pass doesn't block the designer in a stuck state.
-    setShowSourceModal(false);
-    toast.info(`Generating ${chosen.length} product cutouts — keep working, they'll drop onto the scene shortly`);
-
-    // Phase 1: generate cutouts in parallel with a small concurrency limit.
-    // Each item either background-removes its source image or text-to-images
-    // from scratch. Cached in localStorage so reruns are free.
-    const cutoutMap = new Map<string, string>(); // itemIdx → cutout data URL
+  async function prefetchCutouts(
+    items: Array<{ description: string; category: string; options: SourcedOption[] }>
+  ) {
     await Promise.all(
-      chosen.map(async (item) => {
-        const opt = item.options[item.chosenIndex!];
+      items.map(async (it, idx) => {
+        const opt = it.options[0];
         if (!opt) return;
         const cacheKey = `cutout:${opt.vendor}:${opt.name}`.slice(0, 200);
         try {
           const cached = localStorage.getItem(cacheKey);
           if (cached) {
-            cutoutMap.set(String(sourcedItems!.indexOf(item)), cached);
+            setSourcedItems(prev =>
+              prev ? prev.map((s, i) => (i === idx ? { ...s, cutoutUrl: cached } : s)) : prev
+            );
             return;
           }
-        } catch { /* localStorage can throw on quota/private mode */ }
+        } catch {}
+        try {
+          const res = await fetch("/api/generate-cutout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: `${it.description} (${it.category})`,
+              imageUrl: opt.imageUrl || undefined,
+              vendor: opt.vendor || undefined,
+            }),
+          });
+          if (!res.ok) return;
+          const { imageDataUrl } = (await res.json()) as { imageDataUrl?: string };
+          if (!imageDataUrl) return;
+          try { localStorage.setItem(cacheKey, imageDataUrl); } catch {}
+          setSourcedItems(prev =>
+            prev ? prev.map((s, i) => (i === idx ? { ...s, cutoutUrl: imageDataUrl } : s)) : prev
+          );
+        } catch {}
+      })
+    );
+  }
 
+  // ── Per-item actions ─────────────────────────────────────────────────
+
+  function pickOption(itemIdx: number, optIdx: number | null) {
+    setSourcedItems(prev =>
+      prev
+        ? prev.map((it, i) =>
+            i === itemIdx ? { ...it, chosenIndex: optIdx, committed: false } : it
+          )
+        : prev
+    );
+  }
+
+  async function approveItem(itemIdx: number) {
+    if (!sourcedItems) return;
+    const item = sourcedItems[itemIdx];
+    if (item.chosenIndex === null) return;
+    const opt = item.options[item.chosenIndex];
+    if (!opt) return;
+
+    // Make sure we have a cutout — generate on-demand if not prefetched yet
+    let cutoutUrl = item.cutoutUrl;
+    if (!cutoutUrl) {
+      const cacheKey = `cutout:${opt.vendor}:${opt.name}`.slice(0, 200);
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) cutoutUrl = cached;
+      } catch {}
+      if (!cutoutUrl) {
         try {
           const res = await fetch("/api/generate-cutout", {
             method: "POST",
@@ -407,18 +279,17 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               vendor: opt.vendor || undefined,
             }),
           });
-          if (!res.ok) return;
-          const { imageDataUrl } = await res.json() as { imageDataUrl?: string };
-          if (!imageDataUrl) return;
-          cutoutMap.set(String(sourcedItems!.indexOf(item)), imageDataUrl);
-          try { localStorage.setItem(cacheKey, imageDataUrl); } catch { /* quota */ }
-        } catch {
-          // Silent fallback to original imageUrl
-        }
-      })
-    );
+          if (res.ok) {
+            const { imageDataUrl } = (await res.json()) as { imageDataUrl?: string };
+            if (imageDataUrl) {
+              cutoutUrl = imageDataUrl;
+              try { localStorage.setItem(cacheKey, imageDataUrl); } catch {}
+            }
+          }
+        } catch {}
+      }
+    }
 
-    // Phase 2: now write everything to the project in one localStorage write
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const target = fresh.rooms.find(r => r.id === room.id);
@@ -426,127 +297,123 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
 
     if (!target.sceneItems) target.sceneItems = [];
 
-    let added = 0;
-    const cols = Math.ceil(Math.sqrt(chosen.length));
+    const customItem: FurnitureItem = {
+      id: `ai-${generateId()}`,
+      name: opt.name,
+      category: mapCategory(item.category),
+      subcategory: item.category,
+      widthIn: parseFirstDim(opt.dimensions) ?? 36,
+      depthIn: parseSecondDim(opt.dimensions) ?? 36,
+      heightIn: parseThirdDim(opt.dimensions) ?? 30,
+      price: opt.price ?? 0,
+      vendor: opt.vendor,
+      vendorUrl: opt.url,
+      imageUrl: cutoutUrl || opt.imageUrl || "",
+      color: "",
+      material: "",
+      style: preset.designStyle,
+    };
+    const placed = placeFurniture(target, customItem);
+    // Mark as approved so it counts toward budget
+    placed.status = "approved";
+    target.furniture.push(placed);
 
-    chosen.forEach((item, idx) => {
-      const opt = item.options[item.chosenIndex!];
-      if (!opt) return;
-      const chosenIdx = String(sourcedItems!.indexOf(item));
-      // Prefer the freshly generated cutout, fall back to original search imageUrl
-      const effectiveImage = cutoutMap.get(chosenIdx) || opt.imageUrl || "";
+    // Drop onto the scene canvas too
+    const existingCount = target.sceneItems.length;
+    const cols = 4;
+    const row = Math.floor(existingCount / cols);
+    const col = existingCount % cols;
+    const sceneItem: SceneItem = {
+      id: `scene-${generateId()}`,
+      itemId: customItem.id,
+      x: clamp(10 + (col * 80) / (cols - 1), 2, 80),
+      y: clamp(55 + row * 15, 2, 85),
+      width: Math.max(12, Math.min(22, (customItem.widthIn / 96) * 25)),
+      height: Math.max(10, Math.min(22, (customItem.heightIn / 72) * 22)),
+      rotation: 0,
+      zIndex: existingCount + 1,
+    };
+    target.sceneItems.push(sceneItem);
+    saveProject(fresh);
 
-      const customItem: FurnitureItem = {
-        id: `ai-${generateId()}`,
-        name: opt.name,
-        category: mapCategory(item.category),
-        subcategory: item.category,
-        widthIn: parseFirstDim(opt.dimensions) ?? 36,
-        depthIn: parseSecondDim(opt.dimensions) ?? 36,
-        heightIn: parseThirdDim(opt.dimensions) ?? 30,
-        price: opt.price ?? 0,
-        vendor: opt.vendor,
-        vendorUrl: opt.url,
-        imageUrl: effectiveImage,
-        color: "",
-        material: "",
-        style: preset.designStyle,
-      };
-      target.furniture.push(placeFurniture(target, customItem));
-
-      const row = Math.floor(idx / cols);
-      const col = idx % cols;
-      const scenePositionX = 10 + (col * 80) / Math.max(1, cols - 1 || 1);
-      const scenePositionY = 60 + row * 15;
-      const sceneWidth = Math.max(12, Math.min(28, (customItem.widthIn / 96) * 30));
-      const sceneHeight = Math.max(8, Math.min(28, (customItem.heightIn / 72) * 25));
-      const sceneItem: SceneItem = {
-        id: `scene-${generateId()}`,
-        itemId: customItem.id,
-        x: clamp(scenePositionX, 2, 100 - sceneWidth),
-        y: clamp(scenePositionY, 2, 100 - sceneHeight),
-        width: sceneWidth,
-        height: sceneHeight,
-        rotation: 0,
-        zIndex: (target.sceneItems!.length ?? 0) + idx + 1,
-      };
-      target.sceneItems!.push(sceneItem);
-      added++;
-    });
-
-    try {
-      saveProject(fresh);
-    } catch (err) {
-      const m = err instanceof Error ? err.message : String(err);
-      toast.error(`Saved ${added} items to masterlist but scene overlays couldn't save (localStorage full): ${m.slice(0, 100)}`);
-      onUpdate();
-      setSourcedItems(null);
-      return;
-    }
-    logActivity(project.id, "ai_sourced", `AI-sourced ${added} items for ${target.name} with cutouts`);
-    toast.success(`${added} cutouts dropped onto the scene — drag them into position`);
-    setSourcedItems(null);
+    setSourcedItems(prev =>
+      prev ? prev.map((s, i) => (i === itemIdx ? { ...s, committed: true } : s)) : prev
+    );
+    logActivity(project.id, "item_approved", `${opt.name} approved for ${target.name}`);
+    toast.success(`${opt.name} added to ${target.name}`);
     onUpdate();
   }
 
-  const chosenTotal = sourcedItems?.reduce((s, i) => {
-    if (i.chosenIndex === null) return s;
-    const opt = i.options[i.chosenIndex];
-    return s + (opt?.price ?? 0);
-  }, 0) ?? 0;
-  const overBudget = budgetTotal > 0 && chosenTotal > remainingBudget;
+  function rejectItem(itemIdx: number) {
+    setSourcedItems(prev =>
+      prev
+        ? prev.map((s, i) => (i === itemIdx ? { ...s, chosenIndex: null, committed: false } : s))
+        : prev
+    );
+  }
+
+  function clearAndRestart() {
+    if (!confirm("Clear the scene background, items, and review list? The masterlist approvals stay.")) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+    target.sceneBackgroundUrl = undefined;
+    target.sceneSnapshot = undefined;
+    target.sceneItems = [];
+    saveProject(fresh);
+    setSourcedItems(null);
+    setPhase("idle");
+    setLastError(null);
+    onUpdate();
+    toast.info("Scene cleared. Design again when ready.");
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────
+
+  const approvedCount = sourcedItems?.filter(s => s.committed).length ?? 0;
+  const totalApprovedSpend =
+    sourcedItems?.reduce((sum, s) => {
+      if (!s.committed || s.chosenIndex === null) return sum;
+      return sum + (s.options[s.chosenIndex]?.price ?? 0);
+    }, 0) ?? 0;
 
   return (
     <div className="card bg-gradient-to-br from-amber/5 to-amber/0 border-amber/30 mb-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      {/* Title + health badge */}
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
         <div className="min-w-0">
-          <h3 className="font-semibold text-brand-900 text-sm flex items-center gap-1.5 flex-wrap">
+          <h3 className="text-sm font-semibold text-brand-900 flex items-center gap-2 flex-wrap">
             🪄 AI Scene Studio
-            <span className="text-[10px] font-normal text-brand-600/70">
-              powered by Gemini
-            </span>
+            <span className="text-[10px] font-normal text-brand-600/70">Gemini</span>
             {health && (
               <span
                 className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                  health.ok
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
+                  health.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
                 }`}
                 title={health.message ?? ""}
               >
-                {health.ok ? `● API ready` : `● ${health.code}`}
-              </span>
-            )}
-            {!health && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-brand-900/10 text-brand-600">
-                ● checking API…
+                {health.ok ? "● API ready" : `● ${health.code}`}
               </span>
             )}
           </h3>
           <p className="text-xs text-brand-600 mt-1">
-            Pick a style, generate a photorealistic scene, then source real products from it.
+            Drop a photo → pick a style → one-click design board. Review, approve, export.
           </p>
         </div>
       </div>
 
-      {/* API-not-ready banner — shown only when the health check failed */}
       {health && !health.ok && (
-        <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900">
+        <div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900">
           <div className="font-semibold mb-0.5">
             {health.code === "NO_KEY" ? "Gemini API key not set" : "Gemini API not responding"}
           </div>
           <div>{health.message}</div>
-          {health.code === "NO_KEY" && (
-            <div className="mt-1.5 text-[11px]">
-              After setting the env var in Vercel, trigger a redeploy — env changes don&apos;t take effect on existing deployments.
-            </div>
-          )}
         </div>
       )}
 
-      {/* Last-error banner — sticky, visible, not a fleeting toast */}
       {lastError && (
-        <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900">
+        <div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-900">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="font-semibold mb-0.5">Last call failed</div>
@@ -562,19 +429,76 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         </div>
       )}
 
-      {/* 3-step progress so designers immediately see where they are */}
-      <div className="mt-3 flex items-center gap-2 text-[11px]">
-        <StepChip n={1} label="Pick style" done={true} active={!hasScene} />
-        <div className={`h-px w-6 ${hasScene ? "bg-emerald-500" : "bg-brand-900/10"}`} />
-        <StepChip n={2} label="Generate scene" done={hasScene} active={!hasScene && !generating} loading={generating} />
-        <div className={`h-px w-6 ${hasScene && room.furniture.length > 0 ? "bg-emerald-500" : "bg-brand-900/10"}`} />
-        <StepChip n={3} label="Source real products" done={false} active={hasScene} loading={sourcing} />
+      {/* 1 · Room photo */}
+      <div className="mb-3">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+          1 · Room photo <span className="text-brand-600/60">(optional but better)</span>
+        </div>
+        <div className="rounded-lg border border-dashed border-brand-900/15 bg-white p-2.5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {referenceImage ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={referenceImage}
+                  alt="Reference"
+                  className="h-12 w-16 object-cover rounded border border-brand-900/10"
+                />
+              ) : (
+                <div className="h-12 w-16 rounded border border-dashed border-brand-900/20 bg-brand-900/5 flex items-center justify-center text-lg">
+                  🏠
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-brand-900">
+                  {referenceImage ? "Reference photo loaded" : "Walk your Matterport, screenshot this room, drop here"}
+                </div>
+                <div className="text-[10px] text-brand-600 mt-0.5">
+                  {referenceImage
+                    ? "AI will keep walls/windows/doors from this photo, just restyle."
+                    : "Walking the space first = familiarity. AI uses the photo as base architecture."}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <label className="cursor-pointer text-xs rounded-lg border border-brand-900/15 px-2.5 py-1.5 hover:border-amber/40 hover:bg-amber/5">
+                {referenceImage ? "Replace" : "Upload"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast.error("Image > 5MB — screenshot at lower resolution");
+                      e.target.value = "";
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => setReferenceImage(reader.result as string);
+                    reader.readAsDataURL(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {referenceImage && (
+                <button
+                  onClick={() => setReferenceImage(null)}
+                  className="text-xs text-red-500 hover:underline px-1"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* STEP 1 — Style presets */}
-      <div className="mt-4">
+      {/* 2 · Style */}
+      <div className="mb-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-          1 · Pick a style
+          2 · Style
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {STYLE_PRESETS.map(p => {
@@ -605,357 +529,228 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             );
           })}
         </div>
-        <div className="mt-2 text-xs text-brand-700 italic">{preset.description}</div>
+        <div className="mt-1.5 text-xs text-brand-700 italic">{preset.description}</div>
       </div>
 
-      {/* STEP 2 — Generate scene */}
-      <div className="mt-4 pt-4 border-t border-brand-900/5">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
-              2 · Generate the scene
-            </div>
-            <div className="text-[11px] text-brand-600/80 mt-0.5">
-              {referenceImage
-                ? <>Using your reference photo — Gemini will keep the actual walls, windows, and door positions, just restyle the room in <strong>{preset.label}</strong>.</>
-                : <>Gemini draws a photorealistic {preset.label.toLowerCase()} {room.type.replace(/-/g, " ")} from scratch. <strong>Upload a Matterport screenshot below</strong> for a more accurate scene that matches your actual room.</>
-              }
-            </div>
-          </div>
-          {hasScene && (
-            <span className="text-[10px] text-emerald-700 font-semibold shrink-0">
-              ✓ Scene ready
-            </span>
-          )}
-        </div>
-
-        {/* Reference photo drop — optional but high-leverage */}
-        <div className="mb-3 rounded-lg border border-dashed border-brand-900/15 bg-white p-2.5">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2.5 min-w-0">
-              {referenceImage ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={referenceImage}
-                  alt="Reference"
-                  className="h-12 w-16 object-cover rounded border border-brand-900/10"
-                />
-              ) : (
-                <div className="h-12 w-16 rounded border border-dashed border-brand-900/20 bg-brand-900/5 flex items-center justify-center text-lg">
-                  🏠
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-brand-900">
-                  {referenceImage ? "Reference photo loaded" : "Optional: drop a real photo of the empty room"}
-                </div>
-                <div className="text-[10px] text-brand-600 mt-0.5">
-                  In Matterport → navigate to this room → top-right menu → <strong>Share → Screenshot</strong> → drop here.
-                  Preserves actual walls / windows / doors in the generated scene.
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <label className="cursor-pointer text-xs rounded-lg border border-brand-900/15 px-2.5 py-1.5 hover:border-amber/40 hover:bg-amber/5">
-                {referenceImage ? "Replace" : "Upload"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={async e => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 5 * 1024 * 1024) {
-                      toast.error("Image > 5MB — please screenshot at lower resolution");
-                      e.target.value = "";
-                      return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = () => setReferenceImage(reader.result as string);
-                    reader.readAsDataURL(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              {referenceImage && (
-                <button
-                  onClick={() => setReferenceImage(null)}
-                  className="text-xs text-red-500 hover:underline px-1"
-                  title="Remove reference photo"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 flex-wrap">
+      {/* 3 · The single CTA */}
+      <div className="flex gap-2 flex-wrap">
+        <button
+          onClick={designThisRoom}
+          disabled={phase === "generating" || phase === "sourcing"}
+          className="rounded-lg bg-amber px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {phase === "generating"
+            ? "⚡ Generating background..."
+            : phase === "sourcing"
+              ? "⚡ Sourcing 3 options per item..."
+              : hasScene && sourcedItems
+                ? `⚡ Re-Design This Room (${preset.label})`
+                : `⚡ Design This Room (${preset.label})`}
+        </button>
+        {(hasScene || sourcedItems) && (
           <button
-            onClick={generateScene}
-            disabled={generating || sourcing}
-            className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={clearAndRestart}
+            className="rounded-lg border border-red-300 px-3 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50"
           >
-            {generating
-              ? "Generating scene... (15–30s)"
-              : hasScene
-                ? `🎨 Re-generate in ${preset.label}${referenceImage ? " (using reference)" : ""}`
-                : `🎨 Generate ${preset.label} Scene${referenceImage ? " (using reference)" : ""}`}
+            ↶ Clear & Restart
           </button>
-          <button
-            onClick={designWholeRoom}
-            disabled={generating || sourcing}
-            className="rounded-lg border-2 border-amber bg-white px-4 py-2 text-sm font-semibold text-amber-dark hover:bg-amber/10 disabled:opacity-60 disabled:cursor-not-allowed"
-            title="One-click: generate background → source items → auto-place cutouts on scene"
-          >
-            {generating || sourcing ? "Designing..." : "⚡ Design Whole Room (one-click)"}
-          </button>
-        </div>
-        {!generating && !sourcing && (
-          <div className="mt-2 text-[10px] text-brand-600/70">
-            <strong>Design Whole Room</strong> chains all 3 steps: generate background → source 6–10 items → drop as draggable cutouts. ~60–90 seconds total.
-          </div>
         )}
       </div>
-
-      {/* STEP 3 — Source real products — only unlocked after scene exists */}
-      <div className={`mt-4 pt-4 border-t border-brand-900/5 ${!hasScene ? "opacity-60" : ""}`}>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
-              3 · Source real products from the scene
-            </div>
-            <div className="text-[11px] text-brand-600/80 mt-0.5">
-              {hasScene
-                ? <>Gemini scans the image, lists every item (sofa, lamp, rug…), and pulls <strong>3 real buyable options</strong> from Wayfair / West Elm / CB2 / Article / Target / etc. per piece. You pick the best fit — they land in the masterlist and Space Plan.</>
-                : <>Generate a scene first, then this step unlocks.</>
-              }
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={sourceItems}
-            disabled={!hasScene || sourcing}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {sourcing
-              ? "Finding products... (30–60s)"
-              : !hasScene
-                ? "🛒 Source Real Products (disabled)"
-                : "🛒 Find 3 Real Products per Item"}
-          </button>
-          {hasScene && (
-            <button
-              onClick={clearScene}
-              className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
-              title="Remove the AI scene + all draggable overlay tiles. Your masterlist items stay put."
-            >
-              ↶ Clear Scene
-            </button>
-          )}
-        </div>
-
-        {hasScene && (
-          <div className="mt-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-[11px] text-blue-900">
-            <strong>Step 4 (after sourcing):</strong> Each confirmed product drops onto the scene as a draggable tile.
-            Drag to position · corner handles to resize · blue dot to rotate · Delete key to remove.
-            Rearrange them to match the layout you want for the client render.
-          </div>
-        )}
-      </div>
-
-      {budgetTotal > 0 && (
-        <div className="mt-4 pt-3 border-t border-brand-900/5 text-[11px] text-brand-600">
-          <strong>Budget:</strong> ${approvedSpend.toLocaleString()} approved · ${remainingBudget.toLocaleString()} remaining of ${budgetTotal.toLocaleString()}
+      {phase === "idle" && !sourcedItems && (
+        <div className="mt-2 text-[10px] text-brand-600/70">
+          Chains: generate background → source 6-10 real products with 3 options each → pre-generate cutouts. ~60-90s.
         </div>
       )}
 
-      {/* Sourcing modal */}
-      {showSourceModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-brand-900/10 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">Source Real Products</h2>
-                <p className="text-xs text-brand-600 mt-0.5">
-                  3 options per item from the web. Pick one per row, or reject.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowSourceModal(false)}
-                className="text-brand-600 hover:text-brand-900 text-xl leading-none"
-              >
-                ×
-              </button>
+      {/* 4 · Review panel — inline, below the scene (no modal) */}
+      {sourcedItems && sourcedItems.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-brand-900/10">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+              3 · Review + approve ({approvedCount}/{sourcedItems.length} approved)
             </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              {sourcing && (
-                <div className="text-center py-12">
-                  <div className="text-4xl mb-3 animate-pulse">🔍</div>
-                  <div className="text-sm font-medium text-brand-900">
-                    Analyzing scene + searching the web...
-                  </div>
-                  <div className="text-xs text-brand-600 mt-1">
-                    Gemini identifies each piece, then grounds each query in Google Search. 30–60 seconds.
-                  </div>
-                </div>
-              )}
-
-              {!sourcing && sourcedItems && sourcedItems.length === 0 && (
-                <div className="text-center py-12 text-brand-600 text-sm">
-                  Couldn&apos;t identify any items. Try regenerating the scene.
-                </div>
-              )}
-
-              {!sourcing && sourcedItems && sourcedItems.length > 0 && (
-                <div className="space-y-4">
-                  {sourcedItems.map((item, itemIdx) => (
-                    <div key={itemIdx} className="rounded-lg border border-brand-900/10 p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <div className="text-sm font-semibold text-brand-900">{item.description}</div>
-                          <div className="text-[10px] text-brand-600">
-                            {item.category} · {item.searchQuery}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => pickOption(itemIdx, null)}
-                          className={`text-[10px] px-2 py-1 rounded ${
-                            item.chosenIndex === null
-                              ? "bg-red-100 text-red-700"
-                              : "text-brand-600 hover:text-red-600"
-                          }`}
-                        >
-                          Reject all
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        {item.options.length === 0 && (
-                          <div className="col-span-3 text-xs text-brand-600 italic">
-                            No matches found for this piece.
-                          </div>
-                        )}
-                        {item.options.map((opt, optIdx) => {
-                          const picked = item.chosenIndex === optIdx;
-                          return (
-                            <button
-                              key={optIdx}
-                              onClick={() => pickOption(itemIdx, optIdx)}
-                              className={`text-left rounded-lg border p-2 transition ${
-                                picked
-                                  ? "border-amber bg-amber/10 shadow-sm"
-                                  : "border-brand-900/10 bg-white hover:border-amber/40"
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="text-xs font-medium text-brand-900 line-clamp-2">
-                                  {opt.name}
-                                </div>
-                                {picked && <span className="text-amber-dark shrink-0">✓</span>}
-                              </div>
-                              <div className="text-[10px] text-brand-600 mt-1">{opt.vendor}</div>
-                              <div className="text-sm font-semibold text-brand-900 mt-1">
-                                {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
-                              </div>
-                              {opt.dimensions && (
-                                <div className="text-[9px] text-brand-600/70 mt-0.5">{opt.dimensions}</div>
-                              )}
-                              {opt.url && (
-                                <a
-                                  href={opt.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()}
-                                  className="text-[10px] text-amber-dark hover:underline mt-1 inline-block"
-                                >
-                                  View on {opt.vendor} →
-                                </a>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {!sourcing && sourcedItems && sourcedItems.length > 0 && (
-              <div className="px-6 py-4 border-t border-brand-900/10 flex items-center justify-between flex-wrap gap-3">
-                <div className="text-xs">
-                  <div className="font-semibold text-brand-900">
-                    Picks total: ${chosenTotal.toLocaleString()}
-                    <span className="text-brand-600 font-normal ml-2">
-                      ({sourcedItems.filter(i => i.chosenIndex !== null).length}/{sourcedItems.length} chosen)
-                    </span>
-                  </div>
-                  {budgetTotal > 0 && (
-                    <div className={overBudget ? "text-red-600" : "text-brand-600"}>
-                      {overBudget
-                        ? `Over remaining budget by $${(chosenTotal - remainingBudget).toLocaleString()}`
-                        : `$${(remainingBudget - chosenTotal).toLocaleString()} budget left after confirming`}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowSourceModal(false)}
-                    className="btn-secondary btn-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={commitChosen}
-                    disabled={sourcedItems.every(i => i.chosenIndex === null)}
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed ${
-                      overBudget ? "bg-red-600 hover:bg-red-700" : "bg-amber hover:bg-amber-dark"
-                    }`}
-                  >
-                    Add {sourcedItems.filter(i => i.chosenIndex !== null).length} items to {room.name}
-                  </button>
-                </div>
+            {budgetTotal > 0 && (
+              <div className="text-[10px] text-brand-600">
+                ${totalApprovedSpend.toLocaleString()} added · ${remainingBudget.toLocaleString()} budget remaining
               </div>
             )}
           </div>
+          <div className="space-y-2">
+            {sourcedItems.map((item, itemIdx) => (
+              <ItemReviewRow
+                key={itemIdx}
+                item={item}
+                onPick={idx => pickOption(itemIdx, idx)}
+                onApprove={() => approveItem(itemIdx)}
+                onReject={() => rejectItem(itemIdx)}
+              />
+            ))}
+          </div>
+          <div className="mt-3 text-[11px] text-brand-600 italic">
+            Approved items drop onto the scene below (drag to reposition) and appear in the Deliver tab&apos;s masterlist as approved line items.
+          </div>
         </div>
       )}
+
+      {/* Advanced */}
+      <div className="mt-4 pt-3 border-t border-brand-900/5">
+        <button
+          onClick={() => setShowAdvanced(s => !s)}
+          className="text-[11px] text-brand-600 hover:text-brand-900"
+        >
+          {showAdvanced ? "▾" : "▸"} Advanced
+        </button>
+        {showAdvanced && (
+          <div className="mt-2 text-[11px] text-brand-600 space-y-1">
+            <div>
+              • <strong>Matterport auto-pull</strong> available on the Brief tab — faster than walking the model but you miss the spatial familiarity.
+            </div>
+            <div>
+              • <strong>Manual catalog browse</strong> is in the Items section of the Scene canvas below. For when AI picks miss the mark.
+            </div>
+            <div>
+              • <strong>Cutouts cache</strong> across projects — same product won&apos;t re-bill Gemini.
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// ── Step chip for the 3-step header ────────────────────────────────────
+// ── Per-item review row ──────────────────────────────────────────────
 
-function StepChip({
-  n,
-  label,
-  done,
-  active,
-  loading,
+function ItemReviewRow({
+  item,
+  onPick,
+  onApprove,
+  onReject,
 }: {
-  n: number;
-  label: string;
-  done: boolean;
-  active: boolean;
-  loading?: boolean;
+  item: SourcedItem;
+  onPick: (idx: number | null) => void;
+  onApprove: () => void;
+  onReject: () => void;
 }) {
+  const chosen = item.chosenIndex !== null ? item.options[item.chosenIndex] : null;
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <div className={`flex items-center gap-1.5 ${
-      done ? "text-emerald-700"
-      : active ? "text-brand-900 font-semibold"
-      : "text-brand-600/60"
-    }`}>
-      <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold shrink-0 ${
-        done ? "bg-emerald-500 text-white"
-        : loading ? "bg-amber text-white animate-pulse"
-        : active ? "bg-amber text-white"
-        : "bg-brand-900/10 text-brand-600/60"
-      }`}>
-        {done ? "✓" : n}
-      </span>
-      <span className="text-[11px]">{label}</span>
+    <div
+      className={`rounded-lg border p-2.5 transition ${
+        item.committed
+          ? "border-emerald-300 bg-emerald-50"
+          : item.chosenIndex === null
+            ? "border-red-200 bg-red-50 opacity-70"
+            : "border-brand-900/10 bg-white"
+      }`}
+    >
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Thumbnail */}
+        <div className="h-12 w-12 rounded border border-brand-900/10 bg-brand-900/5 overflow-hidden shrink-0">
+          {item.cutoutUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={item.cutoutUrl} alt="" className="h-full w-full object-contain" />
+          ) : chosen?.imageUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={chosen.imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-brand-600/40 text-[10px]">
+              …
+            </div>
+          )}
+        </div>
+
+        {/* Description + chosen product */}
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-brand-900 truncate">{item.description}</div>
+          {chosen ? (
+            <div className="text-[10px] text-brand-600 mt-0.5 truncate">
+              <strong>{chosen.name}</strong> · {chosen.vendor} · ${chosen.price?.toLocaleString() ?? "?"}
+            </div>
+          ) : (
+            <div className="text-[10px] text-red-600 mt-0.5">Rejected</div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-1.5 shrink-0">
+          {item.committed ? (
+            <span className="text-[10px] text-emerald-700 font-semibold px-2 py-1.5 rounded">
+              ✓ Added
+            </span>
+          ) : (
+            <>
+              <button
+                onClick={() => setExpanded(e => !e)}
+                className="text-[10px] rounded border border-brand-900/15 px-2 py-1.5 text-brand-700 hover:bg-brand-900/5"
+                title="See 3 options"
+              >
+                3 options
+              </button>
+              {item.chosenIndex === null ? (
+                <button
+                  onClick={() => onPick(0)}
+                  className="text-[10px] rounded bg-brand-900/10 px-2 py-1.5 text-brand-700 hover:bg-brand-900/15"
+                >
+                  Restore
+                </button>
+              ) : (
+                <button
+                  onClick={onReject}
+                  className="text-[10px] rounded bg-red-100 text-red-700 px-2 py-1.5 hover:bg-red-200"
+                >
+                  ✗ Reject
+                </button>
+              )}
+              {item.chosenIndex !== null && (
+                <button
+                  onClick={onApprove}
+                  className="text-[10px] rounded bg-emerald-600 text-white px-3 py-1.5 font-semibold hover:bg-emerald-700"
+                >
+                  ✓ Approve
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 3-options expansion */}
+      {expanded && (
+        <div className="mt-2 pt-2 border-t border-brand-900/5 grid grid-cols-3 gap-2">
+          {item.options.map((opt, idx) => {
+            const picked = item.chosenIndex === idx;
+            return (
+              <button
+                key={idx}
+                onClick={() => onPick(idx)}
+                className={`text-left rounded-lg border p-2 transition ${
+                  picked
+                    ? "border-amber bg-amber/10 shadow-sm"
+                    : "border-brand-900/10 bg-white hover:border-amber/40"
+                }`}
+              >
+                <div className="text-[10px] font-medium text-brand-900 line-clamp-2">{opt.name}</div>
+                <div className="text-[9px] text-brand-600 mt-0.5">{opt.vendor}</div>
+                <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
+                  {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
+                </div>
+                {opt.url && (
+                  <a
+                    href={opt.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="text-[9px] text-amber-dark hover:underline mt-1 inline-block"
+                  >
+                    View →
+                  </a>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -968,14 +763,14 @@ function clamp(n: number, lo: number, hi: number): number {
 
 function matchStyleFromDesignStyle(ds: string): string {
   const map: Record<string, string> = {
-    "scandinavian": "scandinavian",
+    scandinavian: "scandinavian",
     "mid-century": "mid-century-modern",
-    "coastal": "coastal",
-    "bohemian": "boho",
-    "traditional": "traditional",
-    "contemporary": "organic-modern",
-    "modern": "japandi",
-    "rustic": "mediterranean",
+    coastal: "coastal",
+    bohemian: "boho",
+    traditional: "traditional",
+    contemporary: "organic-modern",
+    modern: "japandi",
+    rustic: "mediterranean",
   };
   return map[ds] ?? "japandi";
 }
@@ -983,12 +778,17 @@ function matchStyleFromDesignStyle(ds: string): string {
 function mapCategory(c: string): FurnitureItem["category"] {
   const s = c.toLowerCase();
   if (s.includes("bed") || s.includes("mattress")) return "beds-mattresses";
-  if (s.includes("sofa") || s.includes("chair") || s.includes("seating") || s.includes("ottoman")) return "seating";
+  if (s.includes("sofa") || s.includes("chair") || s.includes("seating") || s.includes("ottoman"))
+    return "seating";
   if (s.includes("table") || s.includes("desk") || s.includes("nightstand")) return "tables";
-  if (s.includes("storage") || s.includes("dresser") || s.includes("shelf") || s.includes("cabinet")) return "storage";
-  if (s.includes("lamp") || s.includes("light") || s.includes("pendant") || s.includes("sconce")) return "lighting";
-  if (s.includes("rug") || s.includes("textile") || s.includes("curtain") || s.includes("pillow")) return "rugs-textiles";
-  if (s.includes("art") || s.includes("mirror") || s.includes("vase") || s.includes("plant")) return "decor";
+  if (s.includes("storage") || s.includes("dresser") || s.includes("shelf") || s.includes("cabinet"))
+    return "storage";
+  if (s.includes("lamp") || s.includes("light") || s.includes("pendant") || s.includes("sconce"))
+    return "lighting";
+  if (s.includes("rug") || s.includes("textile") || s.includes("curtain") || s.includes("pillow"))
+    return "rugs-textiles";
+  if (s.includes("art") || s.includes("mirror") || s.includes("vase") || s.includes("plant"))
+    return "decor";
   if (s.includes("outdoor") || s.includes("patio")) return "outdoor";
   if (s.includes("bathroom") || s.includes("towel")) return "bathroom";
   if (s.includes("kitchen") || s.includes("dinner")) return "kitchen-dining";
@@ -997,7 +797,7 @@ function mapCategory(c: string): FurnitureItem["category"] {
 
 function parseFirstDim(s?: string): number | null {
   if (!s) return null;
-  const m = s.match(/(\d+(?:\.\d+)?)\s*(?:\"|in|inches)?/i);
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(?:["]|in|inches)?/i);
   return m ? parseFloat(m[1]) : null;
 }
 function parseSecondDim(s?: string): number | null {
