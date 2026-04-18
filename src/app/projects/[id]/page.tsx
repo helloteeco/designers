@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import RoomPlanner from "@/components/RoomPlanner";
 import SleepOptimizer from "@/components/SleepOptimizer";
-import SpacePlanner from "@/components/SpacePlanner";
+import DesignHub from "@/components/DesignHub";
 import MoodBoardPanel from "@/components/MoodBoardPanel";
 import TeamChat from "@/components/TeamChat";
 import ScanViewer from "@/components/ScanViewer";
@@ -307,7 +307,7 @@ export default function ProjectDetailPage() {
           {tab === "inspiration" && <InspirationBoard project={project} onUpdate={reload} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
-          {tab === "design" && <SpacePlanner project={project} onUpdate={reload} />}
+          {tab === "design" && <DesignHub project={project} onUpdate={reload} />}
           {tab === "items" && <ItemsHub project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "renovation" && <RenovationHub project={project} onUpdate={reload} />}

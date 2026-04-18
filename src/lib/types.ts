@@ -192,6 +192,19 @@ export interface RoomAnnotation {
   height: number;       // 0-100 (% of plan height)
 }
 
+export interface SceneItem {
+  id: string;              // unique instance id (one item can appear multiple times)
+  itemId: string;          // references a FurnitureItem id (catalog or custom)
+  x: number;               // 0-100 (% of canvas width)
+  y: number;               // 0-100 (% of canvas height)
+  width: number;           // 0-100 (% of canvas width)
+  height: number;          // 0-100 (% of canvas height)
+  rotation: number;        // degrees 0-360
+  zIndex: number;          // display order
+  flipX?: boolean;
+  flipY?: boolean;
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -206,6 +219,8 @@ export interface Room {
   accentWall: AccentWall | null;
   notes: string;
   annotation?: RoomAnnotation;  // Optional spatial anchor on a floor plan image
+  sceneBackgroundUrl?: string;  // optional image: room photo, Matterport snap, white/blank
+  sceneItems?: SceneItem[];     // Spoak-style visual scene composition
 }
 
 export interface MoodBoard {
