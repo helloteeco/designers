@@ -65,7 +65,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   );
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "generating" | "sourcing" | "ready">("idle");
+  // Phase machine:
+  //   idle      — nothing in flight, no preview to review
+  //   generating — Gemini is rendering the scene image
+  //   preview   — image is back, designer reviews + can re-roll, refine, or approve
+  //   sourcing  — only used in cutout-bg mode; product search + cutouts running
+  //   ready     — final state (approved + sourced if applicable)
+  const [phase, setPhase] = useState<"idle" | "generating" | "preview" | "sourcing" | "ready">("idle");
+  const [refineNotes, setRefineNotes] = useState("");
   // Two render modes:
   //   "realistic" — fully furnished photorealistic render (designer/client hero
   //                 image, no cutout sourcing — what you actually see is what you get)
@@ -138,15 +145,19 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
 
   // ── Main one-click pipeline ──────────────────────────────────────────
 
-  async function designThisRoom() {
-    if (phase !== "idle" && phase !== "ready") return;
+  /**
+   * Phase 1: just render the scene image. Goes to "preview" so the
+   * designer can review, refine, re-roll, or approve before the expensive
+   * sourcing call. extraNotesOverride lets the refine flow append notes
+   * to the prompt without going through state.
+   */
+  async function generateScene(extraNotesOverride?: string) {
+    if (phase === "generating" || phase === "sourcing") return;
     setLastError(null);
-
-    // Phase 1: Generate the scene image — realistic OR empty-room-bg
-    // depending on renderMode. Reference photo (Matterport screenshot)
-    // gets passed either way and triggers image-to-image when present.
     setPhase("generating");
-    let backgroundUrl: string;
+
+    const notes = extraNotesOverride !== undefined ? extraNotesOverride : refineNotes;
+
     try {
       const res = await fetch("/api/generate-scene", {
         method: "POST",
@@ -161,66 +172,82 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           },
           referenceImageDataUrl: referenceImage ?? undefined,
           mode: renderMode === "realistic" ? "full-scene" : "install-guide-bg",
+          extraNotes: notes?.trim() || undefined,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const { imageDataUrl } = await res.json();
-      if (!imageDataUrl) throw new Error("No image returned");
-      backgroundUrl = imageDataUrl;
+      const raw = await res.text();
+      let parsed: { imageDataUrl?: string; error?: string; errors?: Array<{ model: string; error: string }> } = {};
+      try { parsed = JSON.parse(raw); } catch { /* keep raw */ }
 
-      // Save immediately so the result shows even while sourcing runs
+      if (!res.ok) {
+        const detail = parsed.error
+          || (parsed.errors && parsed.errors.length > 0
+            ? parsed.errors.map(e => `[${e.model}] ${e.error}`).join(" · ")
+            : null)
+          || raw.slice(0, 500)
+          || `HTTP ${res.status}`;
+        throw new Error(`HTTP ${res.status} — ${detail}`);
+      }
+      const imageDataUrl = parsed.imageDataUrl;
+      if (!imageDataUrl) {
+        throw new Error(`API returned 200 but no imageDataUrl. Raw response: ${raw.slice(0, 400)}`);
+      }
+
+      // Persist immediately so reload survives + Install Guide hero updates
       const fresh = getProjectFromStore(project.id);
-      if (!fresh) throw new Error("Project missing");
+      if (!fresh) throw new Error("Project missing in localStorage");
       const t = fresh.rooms.find(r => r.id === room.id);
-      if (!t) throw new Error("Room missing");
-      t.sceneBackgroundUrl = backgroundUrl;
-      t.sceneSnapshot = backgroundUrl;
+      if (!t) throw new Error(`Room ${room.id} missing in project`);
+      t.sceneBackgroundUrl = imageDataUrl;
+      t.sceneSnapshot = imageDataUrl;
       saveProject(fresh);
       onUpdate();
+
+      setPhase("preview");
+      // Clear any previous sourcing results since the scene changed
+      setSourcedItems(null);
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "Image generation failed");
+      const msg = err instanceof Error && err.message
+        ? err.message
+        : `Image generation failed (${typeof err === "object" ? JSON.stringify(err).slice(0, 200) : String(err)})`;
+      setLastError(msg);
       setPhase("idle");
+    }
+  }
+
+  /**
+   * Phase 2 (cutout-bg mode only): designer approved the preview, now
+   * source 3 real product options per identified item + prefetch cutouts.
+   */
+  async function sourceProducts() {
+    if (phase === "sourcing") return;
+    if (!room.sceneBackgroundUrl) {
+      setLastError("No scene to source from — generate one first.");
       return;
     }
-
-    // Realistic mode is one-shot: the image IS the deliverable. Skip sourcing
-    // — the whole point is "press button, see beautiful render."
-    if (renderMode === "realistic") {
-      setPhase("ready");
-      toast.success(`Realistic ${preset.label} render ready`);
-      return;
-    }
-
-    // Cutout-bg mode: continue to source real products to layer on the empty bg
-    // Phase 2: Source 3 options per identified item
+    setLastError(null);
     setPhase("sourcing");
     try {
       const res = await fetch("/api/source-from-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageDataUrl: backgroundUrl,
+          imageDataUrl: room.sceneBackgroundUrl,
           budget: remainingBudget || undefined,
           styleHint: preset.id,
         }),
       });
+      const raw = await res.text();
+      let parsed: { items?: SourcedItem[]; error?: string } = {};
+      try { parsed = JSON.parse(raw); } catch { /* keep raw */ }
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        throw new Error(`HTTP ${res.status} — ${parsed.error || raw.slice(0, 500)}`);
       }
-      const { items } = (await res.json()) as {
-        items?: Array<{
-          description: string;
-          category: string;
-          searchQuery: string;
-          estimatedSize?: string;
-          options: SourcedOption[];
-        }>;
-      };
-      if (!items) throw new Error("No items returned from sourcing");
+      const items = parsed.items;
+      if (!items) {
+        throw new Error(`API returned 200 but no items array. Raw: ${raw.slice(0, 400)}`);
+      }
       setSourcedItems(
         items.map(i => ({
           ...i,
@@ -228,14 +255,34 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         }))
       );
       setPhase("ready");
-
-      // Phase 3: pre-generate cutouts in the background so they're ready
-      // when the designer approves items. Runs silently; if it finishes
-      // before they approve, commit uses cached cutouts.
       void prefetchCutouts(items);
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "Product sourcing failed");
-      setPhase("idle");
+      const msg = err instanceof Error && err.message
+        ? err.message
+        : `Product sourcing failed (${typeof err === "object" ? JSON.stringify(err).slice(0, 200) : String(err)})`;
+      setLastError(msg);
+      setPhase("preview"); // back to preview so they can approve again or re-render
+    }
+  }
+
+  /**
+   * Convenience: realistic mode = generate + done.
+   * Cutout-bg mode = generate + preview gate + (manual) approve → source.
+   */
+  async function designThisRoom() {
+    setRefineNotes("");
+    await generateScene("");
+    // designThisRoom always goes via the preview gate now — designer
+    // explicitly clicks "Approve & source" to proceed (cutout-bg mode)
+    // or "Use this render" (realistic mode).
+  }
+
+  function approveAndContinue() {
+    if (renderMode === "realistic") {
+      setPhase("ready");
+      toast.success(`${preset.label} render saved as room hero`);
+    } else {
+      void sourceProducts();
     }
   }
 
@@ -642,16 +689,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           {phase === "generating"
             ? renderMode === "realistic"
               ? "📸 Rendering... (~25s)"
-              : "⚡ Generating background..."
+              : "⚡ Rendering empty-room background... (~25s)"
             : phase === "sourcing"
-              ? "⚡ Sourcing 3 options per item..."
-              : hasScene
+              ? "🛒 Sourcing 3 options per item... (~60s)"
+              : hasScene && phase !== "preview"
                 ? renderMode === "realistic"
                   ? `📸 Re-Render (${preset.label})`
-                  : `⚡ Re-Design This Room (${preset.label})`
+                  : `⚡ Re-Generate Background (${preset.label})`
                 : renderMode === "realistic"
                   ? `📸 Generate ${preset.label} Render`
-                  : `⚡ Design + Source (${preset.label})`}
+                  : `⚡ Generate ${preset.label} Background`}
         </button>
         {(hasScene || sourcedItems) && (
           <button
@@ -663,11 +710,20 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         )}
       </div>
 
-      {/* Rendered scene preview */}
+      {/* Rendered scene preview + APPROVAL GATE */}
       {hasScene && room.sceneBackgroundUrl && (
         <div className="mt-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-            Rendered scene
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+              {phase === "preview" ? "Preview — approve, refine, or re-roll" : "Rendered scene"}
+            </div>
+            {phase === "preview" && (
+              <span className="text-[10px] text-amber-dark font-semibold">
+                {renderMode === "realistic"
+                  ? "Approve to use as room hero"
+                  : "Approve to source 3 product options per piece"}
+              </span>
+            )}
           </div>
           <div className="relative rounded-lg overflow-hidden border border-brand-900/10 bg-brand-900/5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -677,6 +733,69 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               className="w-full h-auto max-h-[520px] object-contain"
             />
           </div>
+
+          {/* Approval gate — shown only in preview phase. The full review panel
+              for sourced items appears below if/when sourcing finishes. */}
+          {phase === "preview" && (
+            <div className="mt-3 space-y-3">
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={approveAndContinue}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  {renderMode === "realistic"
+                    ? "✓ Use this render (save as hero)"
+                    : "✓ Approve style → source 3 products per item"}
+                </button>
+                <button
+                  onClick={() => generateScene("")}
+                  className="rounded-lg border border-amber px-3 py-2 text-xs font-medium text-amber-dark hover:bg-amber/10"
+                  title="Try another version with the same style + photo"
+                >
+                  🔄 Re-roll same style
+                </button>
+                <button
+                  onClick={() => setPhase("idle")}
+                  className="rounded-lg border border-brand-900/15 px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-900/5"
+                  title="Pick a different style and try again"
+                >
+                  🎨 Try a different style
+                </button>
+              </div>
+
+              {/* Refine box — designer asks for changes in plain English */}
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1">
+                  Or refine — describe what to change
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <input
+                    type="text"
+                    value={refineNotes}
+                    onChange={e => setRefineNotes(e.target.value)}
+                    placeholder='e.g. "add a green floral wallpaper accent wall" or "swap the sofa for something curved" or "make the wall paint darker"'
+                    className="input flex-1 text-xs min-w-[260px]"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && refineNotes.trim()) {
+                        e.preventDefault();
+                        void generateScene(refineNotes);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => void generateScene(refineNotes)}
+                    disabled={!refineNotes.trim()}
+                    className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
+                  >
+                    ✏️ Re-render with notes
+                  </button>
+                </div>
+                <div className="mt-1 text-[10px] text-brand-600/70">
+                  Tip: be specific — wallpaper patterns, paint colors, swap individual items, change the time of day, etc.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
