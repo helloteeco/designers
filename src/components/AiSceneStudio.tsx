@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
+import { compositeRoomScene } from "@/lib/composite-scene";
 import { useToast } from "./Toast";
 import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
 
@@ -109,6 +110,21 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Pick-first flow — designer picks real products BEFORE the composite is
+  // built, so the final image and the masterlist ship identical items by
+  // construction. Old reverse-sourcing flow stays for AI-seeded suggestions.
+  const [pickQuery, setPickQuery] = useState<string>("");
+  const [pickOptions, setPickOptions] = useState<{ description: string; options: SourcedOption[] } | null>(null);
+  const [pickPhase, setPickPhase] = useState<"idle" | "searching" | "adding">("idle");
+  const [urlQuery, setUrlQuery] = useState<string>("");
+  const [composing, setComposing] = useState(false);
+  const [selectedPlacedId, setSelectedPlacedId] = useState<string | null>(null);
+  // When set, picking from the search result REPLACES this scene item in-place
+  // instead of adding a new one. Clears on any pick/close.
+  const [swappingId, setSwappingId] = useState<string | null>(null);
+  const [wallPrompt, setWallPrompt] = useState<string>("");
+  const [wallBusy, setWallBusy] = useState(false);
 
   const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
   const hasScene = !!room.sceneBackgroundUrl;
@@ -669,6 +685,358 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     toast.info("Scene cleared. Design again when ready.");
   }
 
+  // ── Pick-first workflow ─────────────────────────────────────────────
+  //
+  // Designer picks specific real products FIRST (by describing what they
+  // need or pasting a URL), THEN the compositor layers the product
+  // cutouts onto the empty-room backdrop. Image and masterlist ship
+  // the same items by construction — no drift.
+
+  async function searchForItem() {
+    const q = pickQuery.trim();
+    if (!q || pickPhase !== "idle") return;
+    setLastError(null);
+    setPickPhase("searching");
+    setPickOptions(null);
+    try {
+      const res = await fetch("/api/source-item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: q,
+          styleHint: preset.id,
+          budget: remainingBudget || undefined,
+          roomType: room.type,
+        }),
+      });
+      const raw = await res.text();
+      let payload: { options?: SourcedOption[]; description?: string; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch { /* keep raw */ }
+      if (!res.ok) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
+      }
+      if (!payload.options || payload.options.length === 0) {
+        throw new Error("No matches returned. Try a more specific description (material, size, color).");
+      }
+      setPickOptions({ description: payload.description ?? q, options: payload.options });
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Search failed");
+    } finally {
+      setPickPhase("idle");
+    }
+  }
+
+  async function addPickedOption(opt: SourcedOption, descHint: string) {
+    if (pickPhase !== "idle") return;
+    setPickPhase("adding");
+    setLastError(null);
+    try {
+      // 1) Background-remove the product photo (cached across projects)
+      let cutoutUrl = opt.imageUrl;
+      try {
+        const cutRes = await fetch("/api/generate-cutout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: `${opt.name} (${descHint})`,
+            imageUrl: opt.imageUrl || undefined,
+            vendor: opt.vendor || undefined,
+          }),
+        });
+        if (cutRes.ok) {
+          const json = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+          cutoutUrl = json.imageUrl ?? json.imageDataUrl ?? opt.imageUrl;
+        }
+      } catch {}
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      if (!target.sceneItems) target.sceneItems = [];
+
+      const category = mapCategory(descHint);
+
+      // SWAP path: replace an existing placement, keep its position.
+      if (swappingId) {
+        const si = target.sceneItems.find(s => s.id === swappingId);
+        if (!si) throw new Error("Item to swap missing");
+        const oldItemId = si.itemId;
+        const newItem: FurnitureItem = {
+          id: `pick-${generateId()}`,
+          name: opt.name,
+          category,
+          subcategory: descHint,
+          widthIn: parseFirstDim(opt.dimensions) ?? 36,
+          depthIn: parseSecondDim(opt.dimensions) ?? 36,
+          heightIn: parseThirdDim(opt.dimensions) ?? 30,
+          price: opt.price ?? 0,
+          vendor: opt.vendor,
+          vendorUrl: opt.url,
+          imageUrl: cutoutUrl || opt.imageUrl || "",
+          color: "",
+          material: "",
+          style: preset.designStyle,
+        };
+        target.furniture = target.furniture.filter(f => f.item.id !== oldItemId);
+        const placed = placeFurniture(target, newItem);
+        placed.status = "approved";
+        target.furniture.push(placed);
+        si.itemId = newItem.id;
+        saveProject(fresh);
+        logActivity(project.id, "item_swapped", `Swapped to ${opt.name} in ${target.name}`);
+        toast.success(`Swapped to ${opt.name}`);
+      } else {
+        // ADD path: new item + new scene placement
+        const customItem: FurnitureItem = {
+          id: `pick-${generateId()}`,
+          name: opt.name,
+          category,
+          subcategory: descHint,
+          widthIn: parseFirstDim(opt.dimensions) ?? 36,
+          depthIn: parseSecondDim(opt.dimensions) ?? 36,
+          heightIn: parseThirdDim(opt.dimensions) ?? 30,
+          price: opt.price ?? 0,
+          vendor: opt.vendor,
+          vendorUrl: opt.url,
+          imageUrl: cutoutUrl || opt.imageUrl || "",
+          color: "",
+          material: "",
+          style: preset.designStyle,
+        };
+        const placed = placeFurniture(target, customItem);
+        placed.status = "approved";
+        target.furniture.push(placed);
+        target.sceneItems.push(defaultSceneItemFor(customItem, target.sceneItems.length, category));
+        saveProject(fresh);
+        logActivity(project.id, "item_picked", `Picked ${opt.name} for ${target.name}`);
+        toast.success(`${opt.name} added`);
+      }
+
+      setPickQuery("");
+      setPickOptions(null);
+      setSwappingId(null);
+      onUpdate();
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Add failed");
+    } finally {
+      setPickPhase("idle");
+    }
+  }
+
+  /**
+   * Change the wall/backdrop: wallpaper, paint color, time-of-day, lighting.
+   * Calls edit-scene-region with a center-top anchor so the edit targets
+   * a wall. Keeps the existing backdrop architecture (windows, floor, etc.).
+   */
+  async function applyWallTreatment() {
+    const note = wallPrompt.trim();
+    if (!note || wallBusy) return;
+    if (!room.sceneBackgroundUrl) {
+      setLastError("No backdrop yet — generate one first.");
+      return;
+    }
+    setWallBusy(true);
+    setLastError(null);
+    try {
+      const res = await fetch("/api/edit-scene-region", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: room.sceneBackgroundUrl,
+          clickXPct: 50,
+          clickYPct: 30,
+          action: "swap",
+          swapTo: `${note} — applied to the walls only. Keep windows, doors, floor, and ceiling exactly as-is.`,
+        }),
+      });
+      const raw = await res.text();
+      let payload: { imageDataUrl?: string; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch {}
+      if (!res.ok || !payload.imageDataUrl) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
+      }
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      target.sceneBackgroundUrl = payload.imageDataUrl;
+      saveProject(fresh);
+      toast.success("Walls updated. Rebuild the composite to refresh the deliverable.");
+      setWallPrompt("");
+      onUpdate();
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Wall treatment failed");
+    } finally {
+      setWallBusy(false);
+    }
+  }
+
+  async function addFromUrl() {
+    const url = urlQuery.trim();
+    if (!url || pickPhase !== "idle") return;
+    if (!/^https?:\/\//i.test(url)) {
+      setLastError("URL must start with http(s)://");
+      return;
+    }
+    setPickPhase("adding");
+    setLastError(null);
+    try {
+      const domain = (() => {
+        try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return "direct"; }
+      })();
+      const vendor = prettyVendor(domain);
+      const name = `Item from ${vendor}`;
+
+      // Ask the cutout endpoint to background-remove the URL image
+      let cutoutUrl: string | undefined;
+      try {
+        const cutRes = await fetch("/api/generate-cutout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: `product from ${vendor}`,
+            imageUrl: url,
+            vendor,
+          }),
+        });
+        if (cutRes.ok) {
+          const json = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+          cutoutUrl = json.imageUrl ?? json.imageDataUrl;
+        }
+      } catch {}
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      if (!target.sceneItems) target.sceneItems = [];
+
+      const category: FurnitureItem["category"] = "decor";
+      const customItem: FurnitureItem = {
+        id: `url-${generateId()}`,
+        name,
+        category,
+        subcategory: "custom",
+        widthIn: 36,
+        depthIn: 24,
+        heightIn: 30,
+        price: 0,
+        vendor,
+        vendorUrl: url,
+        imageUrl: cutoutUrl || url,
+        color: "",
+        material: "",
+        style: preset.designStyle,
+      };
+      const placed = placeFurniture(target, customItem);
+      placed.status = "specced"; // URL items aren't auto-approved until designer sets price
+      target.furniture.push(placed);
+      target.sceneItems.push(defaultSceneItemFor(customItem, target.sceneItems.length, category));
+      saveProject(fresh);
+
+      logActivity(project.id, "item_url_added", `URL-added item from ${vendor}`);
+      toast.info(`Added. Edit name + price in the Items tab or Deliver → Order.`);
+
+      setUrlQuery("");
+      onUpdate();
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "URL add failed");
+    } finally {
+      setPickPhase("idle");
+    }
+  }
+
+  function removePlacedItem(sceneItemId: string) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target || !target.sceneItems) return;
+    const si = target.sceneItems.find(x => x.id === sceneItemId);
+    if (!si) return;
+    target.sceneItems = target.sceneItems.filter(x => x.id !== sceneItemId);
+    target.furniture = target.furniture.filter(f => f.item.id !== si.itemId);
+    saveProject(fresh);
+    if (selectedPlacedId === sceneItemId) setSelectedPlacedId(null);
+    onUpdate();
+  }
+
+  /** Patch a placed cutout's x/y/width/height. Used by drag + resize. */
+  function updateScenePos(
+    sceneItemId: string,
+    patch: Partial<Pick<SceneItem, "x" | "y" | "width" | "height">>
+  ) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target || !target.sceneItems) return;
+    const si = target.sceneItems.find(x => x.id === sceneItemId);
+    if (!si) return;
+    Object.assign(si, patch);
+    saveProject(fresh);
+    onUpdate();
+  }
+
+  async function buildComposite() {
+    if (composing) return;
+    if (!room.sceneBackgroundUrl) {
+      setLastError("Generate or upload a backdrop first (step 3).");
+      return;
+    }
+    const items = room.sceneItems ?? [];
+    if (items.length === 0) {
+      setLastError("Add at least one item before building the composite.");
+      return;
+    }
+    setComposing(true);
+    setLastError(null);
+    try {
+      const placements = items
+        .map(si => {
+          const f = room.furniture.find(ff => ff.item.id === si.itemId);
+          return f?.item.imageUrl ? { sceneItem: si, cutoutUrl: f.item.imageUrl } : null;
+        })
+        .filter((p): p is { sceneItem: typeof items[0]; cutoutUrl: string } => !!p);
+
+      if (placements.length === 0) {
+        throw new Error("No cutouts to composite — re-add items so cutouts can generate.");
+      }
+
+      const dataUrl = await compositeRoomScene({
+        backdropUrl: room.sceneBackgroundUrl,
+        placements,
+        room,
+        showTitle: true,
+        showFloorPlan: true,
+      });
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      target.sceneSnapshot = dataUrl;
+      saveProject(fresh);
+      logActivity(project.id, "composite_built", `Built composite for ${target.name} (${placements.length} items)`);
+      toast.success(`Composite built — flows into Install Guide + masterlist.`);
+      onUpdate();
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Composite failed");
+    } finally {
+      setComposing(false);
+    }
+  }
+
+  // Items currently placed on the scene, paired with their FurnitureItem
+  interface PlacedRow { sceneItem: SceneItem; item: FurnitureItem; status: FurnitureItem["name"] extends never ? never : string | undefined }
+  const placedItems: PlacedRow[] = (room.sceneItems ?? [])
+    .map(si => {
+      const f = room.furniture.find(ff => ff.item.id === si.itemId);
+      return f ? { sceneItem: si, item: f.item, status: f.status as string | undefined } : null;
+    })
+    .filter((x): x is PlacedRow => !!x);
+
+  const placedTotalCost = placedItems.reduce((s, p) => s + (p.item.price ?? 0), 0);
+
   // ── Render ───────────────────────────────────────────────────────────
 
   const approvedCount = sourcedItems?.filter(s => s.committed).length ?? 0;
@@ -732,7 +1100,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       {/* 1 · Room photo */}
       <div className="mb-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-          1 · Room photo <span className="text-brand-600/60">(optional but better)</span>
+          1 · Room photo <span className="text-red-600/80 font-semibold">(required)</span>
         </div>
         <div
           className={`rounded-lg border-2 border-dashed bg-white p-2.5 transition ${
@@ -799,7 +1167,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 <div className="text-[10px] text-brand-600 mt-0.5">
                   {referenceImage
                     ? "AI will keep walls/windows/doors from this photo, just restyle."
-                    : "Walking the space first = familiarity. AI uses the photo as base architecture."}
+                    : "Required — AI anchors the render to YOUR walls, windows, and finishes. Without it, you get a generic room."}
                 </div>
               </div>
             </div>
@@ -891,7 +1259,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             <div className="text-[11px] text-brand-600 leading-snug">
               {referenceImage
                 ? "AI furnishes YOUR room (keeps walls, windows, chandelier exactly). Single image, ~25s."
-                : "Photorealistic furnished room from text. ~25s. Drop a Matterport screenshot above to anchor it to your real room."}
+                : "Upload a room photo above first — the render will anchor to YOUR walls, windows, and finishes."}
             </div>
           </button>
 
@@ -917,7 +1285,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             <div className="text-[11px] text-brand-600 leading-snug">
               {referenceImage
                 ? <>YOUR room kept exactly + 3 real products per piece layered on top as cutouts. The Teeco install-guide style.</>
-                : <>Empty-room schematic + 3 real products per piece. Better with a reference photo above.</>}
+                : <>Upload a room photo above first — composite anchors to YOUR room (walls, windows, chandelier) + layers products on top.</>}
               {" "}~60-90s.
             </div>
           </button>
@@ -943,7 +1311,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={designThisRoom}
-          disabled={phase === "generating" || phase === "sourcing"}
+          disabled={phase === "generating" || phase === "sourcing" || !referenceImage}
+          title={!referenceImage ? "Upload a room photo above first — required to anchor the render to your real space." : undefined}
           className="rounded-lg bg-amber px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {phase === "generating"
@@ -952,15 +1321,15 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               : "🎬 Building composite backdrop... (~25s)"
             : phase === "sourcing"
               ? "🛒 Sourcing 3 options per item... (~60s)"
-              : hasScene && phase !== "preview"
-                ? renderMode === "realistic"
-                  ? `📸 Re-Render (${preset.label})`
-                  : `🎬 Re-Build Composite (${preset.label})`
-                : renderMode === "realistic"
-                  ? `📸 Generate ${preset.label} Render`
-                  : referenceImage
-                    ? `🎬 Build ${preset.label} Composite from Your Room`
-                    : `🎬 Build ${preset.label} Composite`}
+              : !referenceImage
+                ? "👆 Upload a room photo first"
+                : hasScene && phase !== "preview"
+                  ? renderMode === "realistic"
+                    ? `📸 Re-Render (${preset.label})`
+                    : `🎬 Re-Build Composite (${preset.label})`
+                  : renderMode === "realistic"
+                    ? `📸 Generate ${preset.label} Render`
+                    : `🎬 Build ${preset.label} Composite from Your Room`}
         </button>
         {(hasScene || sourcedItems) && (
           <button
@@ -971,6 +1340,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           </button>
         )}
       </div>
+      {!referenceImage && hasScene && (
+        <div className="mt-2 rounded-lg bg-amber/10 border border-amber/30 px-3 py-2 text-[11px] text-brand-900">
+          ⚠️ <strong>Heads up:</strong> The render shown below is a leftover from a previous session and is NOT anchored to a real room. Drop your Matterport screenshot above to render YOUR space.
+        </div>
+      )}
 
       {/* Rendered scene preview + APPROVAL GATE */}
       {hasScene && room.sceneBackgroundUrl && (
@@ -987,7 +1361,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </span>
             )}
           </div>
-          <div className="relative rounded-lg overflow-hidden border border-brand-900/10 bg-brand-900/5">
+          <div
+            data-scene-surface
+            className="relative rounded-lg overflow-hidden border border-brand-900/10 bg-brand-900/5"
+            onClick={() => setSelectedPlacedId(null)}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={room.sceneBackgroundUrl}
@@ -997,6 +1375,20 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               }`}
               onClick={onSceneClick}
             />
+
+            {/* Placed cutouts — draggable, each represents a real product.
+                Drag to reposition. Click-to-edit still works on empty backdrop. */}
+            {placedItems.map(row => (
+              <DraggableCutout
+                key={row.sceneItem.id}
+                sceneItem={row.sceneItem}
+                imageUrl={row.item.imageUrl}
+                selected={selectedPlacedId === row.sceneItem.id}
+                onSelect={() => setSelectedPlacedId(row.sceneItem.id)}
+                onMove={(x, y) => updateScenePos(row.sceneItem.id, { x, y })}
+                onResize={(w, h) => updateScenePos(row.sceneItem.id, { width: w, height: h })}
+              />
+            ))}
 
             {/* Click marker — shows where the designer clicked */}
             {clickEdit && (
@@ -1055,8 +1447,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 )}
                 <button
                   onClick={() => generateScene("")}
-                  className="rounded-lg border border-amber px-3 py-2 text-xs font-medium text-amber-dark hover:bg-amber/10"
-                  title="Try another version with the same style + photo"
+                  disabled={!referenceImage}
+                  className="rounded-lg border border-amber px-3 py-2 text-xs font-medium text-amber-dark hover:bg-amber/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!referenceImage ? "Re-upload your room photo first" : "Try another version with the same style + photo"}
                 >
                   🔄 Re-roll same style
                 </button>
@@ -1123,7 +1516,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                   />
                   <button
                     onClick={() => void generateScene(refineNotes)}
-                    disabled={!refineNotes.trim()}
+                    disabled={!refineNotes.trim() || !referenceImage}
+                    title={!referenceImage ? "Re-upload your room photo first" : undefined}
                     className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
                   >
                     ✏️ Re-render with notes
@@ -1132,6 +1526,286 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 <div className="mt-1 text-[10px] text-brand-600/70">
                   Tip: be specific — wallpaper patterns, paint colors, swap individual items, change the time of day, etc.
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pick-first workflow — the new primary path. Appears whenever we
+          have a backdrop to composite onto. Designer picks real products,
+          each product's cutout lands in the masterlist + on the scene, and
+          one "Build Composite" click stitches them into the deliverable. */}
+      {hasScene && (
+        <div className="mt-4 pt-4 border-t border-brand-900/10">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <div>
+              <h4 className="text-xs font-semibold text-brand-900">📦 Items in this room <span className="text-brand-600 font-normal">({placedItems.length})</span></h4>
+              <p className="text-[10px] text-brand-600 mt-0.5">Pick real products → they land in the masterlist + on the composite.</p>
+            </div>
+            {placedItems.length > 0 && (
+              <div className="text-[10px] text-brand-600">
+                ${placedTotalCost.toLocaleString()} so far
+              </div>
+            )}
+          </div>
+
+          {/* Placed items — list with drag-on-scene + swap + remove. */}
+          {placedItems.length > 0 && (
+            <div className="space-y-1.5 mb-3">
+              {placedItems.map(row => {
+                const isSelected = selectedPlacedId === row.sceneItem.id;
+                const isSwapping = swappingId === row.sceneItem.id;
+                return (
+                  <div
+                    key={row.sceneItem.id}
+                    onClick={() => setSelectedPlacedId(row.sceneItem.id)}
+                    className={`flex items-center gap-2 rounded-lg border p-2 cursor-pointer transition ${
+                      isSwapping
+                        ? "border-amber bg-amber/10"
+                        : isSelected
+                          ? "border-amber bg-white"
+                          : "border-brand-900/10 bg-white hover:border-amber/40"
+                    }`}
+                  >
+                    <div className="h-10 w-10 rounded border border-brand-900/10 bg-brand-900/5 overflow-hidden shrink-0">
+                      {row.item.imageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={row.item.imageUrl} alt="" className="h-full w-full object-contain" />
+                      ) : null}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-brand-900 truncate">{row.item.name}</div>
+                      <div className="text-[10px] text-brand-600 truncate">
+                        {row.item.vendor}
+                        {row.item.price ? ` · $${row.item.price.toLocaleString()}` : " · $0 (set price)"}
+                      </div>
+                    </div>
+                    {row.item.vendorUrl && (
+                      <a
+                        href={row.item.vendorUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-[10px] text-amber-dark hover:underline px-1"
+                      >
+                        view
+                      </a>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (isSwapping) {
+                          setSwappingId(null);
+                        } else {
+                          setSwappingId(row.sceneItem.id);
+                          setPickQuery(row.item.subcategory || row.item.name);
+                          setPickOptions(null);
+                        }
+                      }}
+                      className={`text-[10px] px-2 py-1 rounded ${
+                        isSwapping
+                          ? "bg-amber text-white"
+                          : "text-brand-700 hover:bg-brand-900/5 border border-brand-900/15"
+                      }`}
+                      title="Find 3 alternative products to replace this item (keeps position)"
+                    >
+                      {isSwapping ? "Cancel swap" : "🔄 Swap"}
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        removePlacedItem(row.sceneItem.id);
+                      }}
+                      className="text-[10px] text-red-600 hover:bg-red-50 px-2 py-1 rounded"
+                      title="Remove from scene + masterlist"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                );
+              })}
+              {placedItems.length > 0 && (
+                <div className="text-[10px] text-brand-600/70 italic pl-1">
+                  💡 Drag items directly on the scene above to reposition. Click a placed item to show its resize handle.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Wall / wallpaper treatment — AI edits backdrop only, cutouts stay put */}
+          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+              🧱 Walls & wallpaper
+            </div>
+            <div className="flex gap-2 flex-wrap mb-1.5">
+              <input
+                type="text"
+                value={wallPrompt}
+                onChange={e => setWallPrompt(e.target.value)}
+                placeholder='e.g. "moody green paint", "botanical wallpaper accent wall"'
+                className="input flex-1 text-xs min-w-[240px]"
+                disabled={wallBusy}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && wallPrompt.trim()) {
+                    e.preventDefault();
+                    void applyWallTreatment();
+                  }
+                }}
+              />
+              <button
+                onClick={() => void applyWallTreatment()}
+                disabled={!wallPrompt.trim() || wallBusy}
+                className="rounded-lg border border-brand-900 px-3 py-2 text-xs font-medium text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-900/5"
+              >
+                {wallBusy ? "Applying..." : "Apply to walls"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { label: "Dark moody green", value: "rich dark forest green paint on all walls" },
+                { label: "Warm plaster", value: "warm limewashed plaster walls in creamy beige" },
+                { label: "Botanical wallpaper", value: "botanical floral wallpaper accent on the longest wall, keep other walls white" },
+                { label: "Wood paneling", value: "vertical warm oak wood paneling on the back wall" },
+                { label: "Terracotta", value: "soft terracotta paint with a matte finish" },
+              ].map(c => (
+                <button
+                  key={c.label}
+                  onClick={() => setWallPrompt(c.value)}
+                  disabled={wallBusy}
+                  className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1 text-[10px] text-brand-600/70">
+              Windows, doors, floor stay. Placed items stay. Rebuild the composite after to refresh the deliverable.
+            </div>
+          </div>
+
+          {/* Add by description — AI suggests 3 real products.
+              Doubles as the swap panel when swappingId is set. */}
+          <div className={`rounded-lg bg-white border p-2.5 mb-2 ${swappingId ? "border-amber" : "border-brand-900/10"}`}>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5 flex items-center justify-between">
+              <span>{swappingId ? "🔄 Swap for..." : "Add by description"}</span>
+              {swappingId && (
+                <button
+                  onClick={() => { setSwappingId(null); setPickOptions(null); setPickQuery(""); }}
+                  className="text-[10px] text-brand-600 hover:text-brand-900"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="text"
+                value={pickQuery}
+                onChange={e => setPickQuery(e.target.value)}
+                placeholder='e.g. "curved boucle sectional sofa in cream"'
+                className="input flex-1 text-xs min-w-[240px]"
+                disabled={pickPhase !== "idle"}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && pickQuery.trim()) {
+                    e.preventDefault();
+                    void searchForItem();
+                  }
+                }}
+              />
+              <button
+                onClick={() => void searchForItem()}
+                disabled={!pickQuery.trim() || pickPhase !== "idle"}
+                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
+              >
+                {pickPhase === "searching" ? "Searching..." : "🔍 Find 3 products"}
+              </button>
+            </div>
+
+            {pickOptions && pickOptions.options.length > 0 && (
+              <div className="mt-2 grid sm:grid-cols-3 gap-2">
+                {pickOptions.options.map((opt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => void addPickedOption(opt, pickOptions.description)}
+                    disabled={pickPhase !== "idle"}
+                    className="text-left rounded-lg border border-brand-900/10 p-2 hover:border-amber/40 hover:bg-amber/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {opt.imageUrl && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={opt.imageUrl}
+                        alt=""
+                        className="w-full h-24 object-contain bg-white rounded mb-1.5"
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
+                    <div className="text-[11px] font-semibold text-brand-900 line-clamp-2">{opt.name}</div>
+                    <div className="text-[9px] text-brand-600 truncate">{opt.vendor}</div>
+                    <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
+                      {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add by URL — paste a direct product link */}
+          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+              Or paste a product URL
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="url"
+                value={urlQuery}
+                onChange={e => setUrlQuery(e.target.value)}
+                placeholder="https://www.wayfair.com/..."
+                className="input flex-1 text-xs min-w-[240px]"
+                disabled={pickPhase !== "idle"}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && urlQuery.trim()) {
+                    e.preventDefault();
+                    void addFromUrl();
+                  }
+                }}
+              />
+              <button
+                onClick={() => void addFromUrl()}
+                disabled={!urlQuery.trim() || pickPhase !== "idle"}
+                className="rounded-lg border border-brand-900 px-3 py-2 text-xs font-medium text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-900/5"
+              >
+                {pickPhase === "adding" ? "Adding..." : "+ Add from URL"}
+              </button>
+            </div>
+          </div>
+
+          {/* Build Composite — the whole point */}
+          <button
+            onClick={() => void buildComposite()}
+            disabled={composing || placedItems.length === 0}
+            className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {composing
+              ? "🎨 Building composite..."
+              : placedItems.length === 0
+                ? "Add items above, then build the composite"
+                : `🎨 Build Composite (${placedItems.length} item${placedItems.length === 1 ? "" : "s"}) — saves to Install Guide`}
+          </button>
+          {room.sceneSnapshot && room.sceneSnapshot !== room.sceneBackgroundUrl && (
+            <div className="mt-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1">
+                Latest composite
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={room.sceneSnapshot}
+                alt={`${room.name} composite`}
+                className="w-full h-auto rounded-lg border border-brand-900/10"
+              />
+              <div className="mt-1 text-[10px] text-brand-600">
+                This is what lands in the Install Guide PDF + matches the Excel masterlist 1:1.
               </div>
             </div>
           )}
@@ -1560,4 +2234,174 @@ function parseThirdDim(s?: string): number | null {
   if (!s) return null;
   const m = s.match(/\d+(?:\.\d+)?["\s]*[xX×]\s*\d+(?:\.\d+)?["\s]*[xX×]\s*(\d+(?:\.\d+)?)/);
   return m ? parseFloat(m[1]) : null;
+}
+
+/**
+ * Default position + size for a newly-picked item, tuned by category so
+ * sofas land low-center-back, pendants hang top-center, rugs lay flat,
+ * etc. Designer can drag to fine-tune later (v2 — drag/resize).
+ */
+function defaultSceneItemFor(
+  item: FurnitureItem,
+  index: number,
+  category: FurnitureItem["category"]
+): SceneItem {
+  const p = categoryPlacement(category, index);
+  return {
+    id: `scene-${generateId()}`,
+    itemId: item.id,
+    x: p.x,
+    y: p.y,
+    width: p.w,
+    height: p.h,
+    rotation: 0,
+    zIndex: index + 1,
+  };
+}
+
+function categoryPlacement(
+  category: FurnitureItem["category"],
+  index: number
+): { x: number; y: number; w: number; h: number } {
+  // Offsets cycle so two of the same category don't stack
+  const offset = (index % 3) * 10 - 10;
+  switch (category) {
+    case "seating":       return { x: 50 + offset, y: 62, w: 34, h: 26 };
+    case "beds-mattresses": return { x: 50 + offset, y: 55, w: 42, h: 30 };
+    case "tables":        return { x: 50 + offset, y: 72, w: 20, h: 14 };
+    case "storage":       return { x: 80 + offset / 2, y: 55, w: 20, h: 32 };
+    case "lighting":      return { x: 50 + offset * 2, y: 18, w: 10, h: 22 };
+    case "rugs-textiles": return { x: 50, y: 82, w: 55, h: 18 };
+    case "decor":         return { x: 78 + offset / 2, y: 40, w: 10, h: 14 };
+    case "kitchen-dining": return { x: 30 + offset, y: 70, w: 18, h: 22 };
+    case "bathroom":      return { x: 50 + offset, y: 55, w: 20, h: 28 };
+    case "outdoor":       return { x: 50 + offset, y: 60, w: 30, h: 24 };
+    default:              return { x: 50 + offset, y: 55, w: 20, h: 22 };
+  }
+}
+
+function prettyVendor(domain: string): string {
+  const parts = domain.split(".");
+  const core = parts.length >= 2 ? parts[parts.length - 2] : domain;
+  return core.charAt(0).toUpperCase() + core.slice(1);
+}
+
+// ── Draggable cutout overlay ──────────────────────────────────────────
+//
+// A placed product rendered on top of the scene backdrop. Drag to move,
+// corner handle to resize. Clicking it selects (shows the outline + handle).
+// All coordinates are percentages of the scene image bounds.
+
+interface DraggableCutoutProps {
+  sceneItem: SceneItem;
+  imageUrl: string;
+  selected: boolean;
+  onSelect: () => void;
+  onMove: (xPct: number, yPct: number) => void;
+  onResize: (widthPct: number, heightPct: number) => void;
+}
+
+function DraggableCutout({
+  sceneItem,
+  imageUrl,
+  selected,
+  onSelect,
+  onMove,
+  onResize,
+}: DraggableCutoutProps) {
+  const [drag, setDrag] = useState<null | {
+    mode: "move" | "resize";
+    startClientX: number;
+    startClientY: number;
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+    parentW: number;
+    parentH: number;
+  }>(null);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, mode: "move" | "resize") {
+    e.stopPropagation();
+    e.preventDefault();
+    onSelect();
+    const parent = (e.currentTarget.closest("[data-scene-surface]") as HTMLElement | null);
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setDrag({
+      mode,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startX: sceneItem.x,
+      startY: sceneItem.y,
+      startW: sceneItem.width,
+      startH: sceneItem.height,
+      parentW: rect.width,
+      parentH: rect.height,
+    });
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drag) return;
+    const dx = ((e.clientX - drag.startClientX) / drag.parentW) * 100;
+    const dy = ((e.clientY - drag.startClientY) / drag.parentH) * 100;
+    if (drag.mode === "move") {
+      const nx = Math.max(2, Math.min(98, drag.startX + dx));
+      const ny = Math.max(2, Math.min(98, drag.startY + dy));
+      onMove(nx, ny);
+    } else {
+      // Resize from bottom-right: grow width + height proportionally to cursor delta
+      const nw = Math.max(4, Math.min(100, drag.startW + dx * 2));
+      const nh = Math.max(4, Math.min(100, drag.startH + dy * 2));
+      onResize(nw, nh);
+    }
+  }
+
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (drag) {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      setDrag(null);
+    }
+  }
+
+  const style: React.CSSProperties = {
+    position: "absolute",
+    left: `${sceneItem.x}%`,
+    top: `${sceneItem.y}%`,
+    width: `${sceneItem.width}%`,
+    height: `${sceneItem.height}%`,
+    transform: "translate(-50%, -50%)",
+    cursor: drag?.mode === "move" ? "grabbing" : "grab",
+    touchAction: "none",
+    zIndex: sceneItem.zIndex ?? 1,
+  };
+
+  return (
+    <div
+      style={style}
+      onPointerDown={e => onPointerDown(e, "move")}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      className={selected ? "outline outline-2 outline-amber outline-offset-1 rounded" : ""}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl}
+        alt=""
+        draggable={false}
+        className="w-full h-full object-contain pointer-events-none select-none"
+        style={{ filter: "drop-shadow(0 8px 10px rgba(0,0,0,0.22))" }}
+      />
+      {selected && (
+        <div
+          onPointerDown={e => onPointerDown(e, "resize")}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          className="absolute -bottom-1.5 -right-1.5 h-4 w-4 rounded-full bg-amber border-2 border-white shadow cursor-nwse-resize"
+          title="Drag corner to resize"
+        />
+      )}
+    </div>
+  );
 }
