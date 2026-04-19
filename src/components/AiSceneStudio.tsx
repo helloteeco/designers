@@ -65,7 +65,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       ? matchStyleFromDesignStyle(project.moodBoards.find(b => b.isLockedConcept)!.style)
       : STYLE_PRESETS[0].id
   );
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  // Reference image persists on room.referenceImageUrl so it survives
+  // tab switches + reloads. The composite board uses this as its
+  // backdrop (not a stripped AI render — the actual room photo).
+  const [referenceImage, setReferenceImage] = useState<string | null>(() => room.referenceImageUrl ?? null);
   const [isDragOver, setIsDragOver] = useState(false);
   // Phase machine:
   //   idle      — nothing in flight, no preview to review
@@ -248,14 +251,28 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       return;
     }
     const reader = new FileReader();
-    await new Promise<void>((resolve, reject) => {
-      reader.onload = () => {
-        setReferenceImage(reader.result as string);
-        resolve();
-      };
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => reject(reader.error ?? new Error("FileReader error"));
       reader.readAsDataURL(file);
     });
+    setReferenceImage(dataUrl);
+
+    // Persist immediately — upload to Supabase so localStorage stays
+    // small AND switching rooms / reloading keeps the reference around.
+    const hosted = await ensureHostedUrl(dataUrl, "scenes");
+    const fresh = getProjectFromStore(project.id);
+    if (fresh) {
+      const t = fresh.rooms.find(r => r.id === room.id);
+      if (t) {
+        t.referenceImageUrl = hosted ?? dataUrl;
+        saveProject(fresh);
+        // Keep component state in sync with what's persisted so downstream
+        // code (placeReviewedItems, etc.) sees the hosted URL not the blob
+        setReferenceImage(hosted ?? dataUrl);
+        onUpdate();
+      }
+    }
   }
 
   // ── Main one-click pipeline ──────────────────────────────────────────
@@ -521,29 +538,36 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     setLastError(null);
     setPlacingReviewed(true);
     try {
-      // 1. Strip the render
-      const stripRes = await fetch("/api/strip-scene", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageDataUrl: extractionReview.sourceRender }),
-      });
-      const stripPayload = (await stripRes.json()) as { imageDataUrl?: string; error?: string };
-      if (!stripRes.ok || !stripPayload.imageDataUrl) {
-        throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
+      // 1. Backdrop: use the designer's ACTUAL uploaded room photo —
+      //    that's the real empty room. Skip the strip-scene AI call
+      //    entirely (expensive + often imprecise). If somehow the
+      //    reference photo is gone, fall back to stripping the render.
+      let backdrop = referenceImage ?? room.referenceImageUrl;
+      if (!backdrop) {
+        const stripRes = await fetch("/api/strip-scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageDataUrl: extractionReview.sourceRender }),
+        });
+        const stripPayload = (await stripRes.json()) as { imageDataUrl?: string; error?: string };
+        if (!stripRes.ok || !stripPayload.imageDataUrl) {
+          throw new Error(stripPayload.error || "No reference photo — and strip-fallback failed");
+        }
+        backdrop = stripPayload.imageDataUrl;
       }
-      const emptyBackdrop = await ensureHostedUrl(stripPayload.imageDataUrl, "scenes");
+      backdrop = (await ensureHostedUrl(backdrop, "scenes")) ?? backdrop;
 
-      // 2. Persist the stripped backdrop + clear any stale items
+      // 2. Persist the backdrop + clear any stale items
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
       if (!target) throw new Error("Room missing");
-      target.sceneBackgroundUrl = emptyBackdrop;
+      target.sceneBackgroundUrl = backdrop;
       target.sceneSnapshot = undefined;
       target.sceneItems = [];
       saveProject(fresh);
       onUpdate();
-      toast.info(`Placing ${kept.length} items on the empty backdrop... (~15s)`);
+      toast.info(`Placing ${kept.length} items on your room photo... (~15s)`);
 
       // 3. For each kept item: clean bg-remove on the thumbnail + source real product
       //    Both run in parallel; we re-read project state per save to avoid races.

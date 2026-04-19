@@ -89,36 +89,32 @@ export async function POST(request: Request) {
   // substitute new walls/windows/floor based on style — that's the bug
   // Jeff hit (Matterport screenshot of a hardwood living room → AI rendered
   // an arched-window orange-walled tile-floor "Groovy" room from scratch).
+  const roomKind = room.type.replace(/-/g, " ");
   let prompt: string;
   if (hasReference) {
     if (effectiveMode === "full-scene") {
-      // Image-to-image FURNISH. Prompt ordering matters: Nano Banana 2
-      // tends to stay close to the input when the "do not change" list
-      // comes first, sometimes returning the input photo unchanged.
-      // Lead with the REQUIRED action, list architectural preservation
-      // AFTER, and end with an explicit "output must show furniture".
+      // Output-focused prompt. Nano Banana tends to echo the input when
+      // prompted with "do X to the input" — framing this as "GENERATE
+      // this new photo" with the input as architectural reference
+      // pushes the model to produce a genuinely new, furnished image.
       prompt =
-        `INSTRUCTION: furnish the empty room in the input photo, image-to-image, in ${preset.label} interior design style. ` +
-        `You MUST add full room-worth of furniture and decor — the output image must be a FURNISHED room, not the empty input.\n\n` +
-        `REQUIRED FURNITURE TO PLACE (pick pieces that fit the room's footprint):\n` +
-        `- Hero pieces: ${preset.signaturePieces.join(", ")}\n` +
-        `- A rug centered in the seating or sleeping area\n` +
-        `- Wall art, sconces or table/floor lamps, plants in planters\n` +
-        `- Throw pillows, a throw blanket, and decorative objects on any surfaces\n` +
-        `- Replace any dated or builder-grade light fixtures with style-appropriate alternatives\n\n` +
-        `STYLE NOTES:\n` +
+        `Generate a photorealistic, magazine-quality interior design photograph of a fully-FURNISHED ${preset.label}-style ${roomKind}. ` +
+        `Architectural Digest / Dwell photo quality. The room must be visibly furnished with a complete furniture set — empty rooms fail this task.\n\n` +
+        `USE THE INPUT PHOTO AS ARCHITECTURAL REFERENCE ONLY — match its wall paint color, wall texture, window positions + sizes + frame styles, flooring material + color + pattern, baseboards, crown molding, door positions, ceiling height, camera angle, and room perspective. ` +
+        `The furniture and decor in the input (if any) should be REPLACED, not preserved — this is a re-design, not a preservation task.\n\n` +
+        `REQUIRED ELEMENTS in the output image:\n` +
+        `- Hero furniture: ${preset.signaturePieces.join(", ")} — pick a set that fits the ${room.widthFt}' × ${room.lengthFt}' footprint\n` +
+        `- A rug anchoring the main seating/sleeping arrangement\n` +
+        `- Wall art, 2-3 light sources (table lamps, floor lamps, or sconces), potted plants\n` +
+        `- Throw pillows, a throw blanket, styled decor on every surface\n` +
+        `- Style-appropriate ceiling fixture (upgrade any dated builder-grade chandelier visible in the input)\n\n` +
+        `STYLE:\n` +
         `- Vibe: ${preset.vibe}\n` +
-        `- Furniture + decor color palette: ${preset.palette.slice(0, 3).join(", ")} with accents from ${preset.palette.slice(3).join(", ")}\n\n` +
-        `PRESERVE FROM THE INPUT (don't change):\n` +
-        `- Wall paint color and wall texture\n` +
-        `- Ceiling height\n` +
-        `- Window positions, sizes, and frame styles\n` +
-        `- Flooring material, color, and pattern\n` +
-        `- Baseboards, crown molding, door positions, door styles, built-ins\n` +
-        `- Camera angle and room perspective\n\n` +
-        `OUTPUT REQUIREMENTS: photorealistic magazine-quality interior photograph (think Architectural Digest, Dwell). ` +
-        `The final image MUST show a furnished room — if you return the empty input image, you have failed the task.` +
-        (extraNotes ? `\n\nADDITIONAL NOTES FROM DESIGNER: ${extraNotes}` : "");
+        `- Primary palette: ${preset.palette.slice(0, 3).join(", ")}\n` +
+        `- Accents: ${preset.palette.slice(3).join(", ")}\n\n` +
+        `Magazine-quality lighting (warm golden-hour daylight through the windows + interior lamp glow). Photorealistic, not illustration. ` +
+        `The input photo is the architectural shell — the output is that same shell, fully furnished and styled.` +
+        (extraNotes ? `\n\nDESIGNER NOTES: ${extraNotes}` : "");
     } else {
       // Image-to-image EMPTY-ROOM: keep the room's architecture exactly,
       // remove any furniture, return clean empty backdrop ready for cutouts.
@@ -179,6 +175,18 @@ export async function POST(request: Request) {
   const ai = new GoogleGenAI({ apiKey });
   const errors: { model: string; error: string }[] = [];
 
+  // Capture the input-image SHA so we can detect (and reject) the case
+  // where Nano Banana just echoes our reference back. That's the most
+  // common "the render didn't change anything" failure mode.
+  let inputHash: string | null = null;
+  if (hasReference && referenceImageDataUrl) {
+    const [, data] = referenceImageDataUrl.split(",");
+    if (data) {
+      const { createHash } = await import("crypto");
+      inputHash = createHash("sha256").update(data).digest("hex");
+    }
+  }
+
   // ── Attempt 1: Gemini image-via-chat models ──
   for (const model of orderedGemini) {
     try {
@@ -192,14 +200,43 @@ export async function POST(request: Request) {
       });
 
       const parts = response.candidates?.[0]?.content?.parts ?? [];
-      const imagePart = parts.find(p => p.inlineData?.data);
-      if (!imagePart?.inlineData?.data) {
+      // Collect EVERY image part. Nano Banana sometimes returns the
+      // input as the first image and the actual edit as a later one;
+      // we iterate newest-first and skip any part that matches the
+      // input hash (pure echo).
+      const imageParts = parts.filter(p => p.inlineData?.data);
+      if (imageParts.length === 0) {
         errors.push({ model, error: "No image in response" });
         continue;
       }
 
-      const mimeType = imagePart.inlineData.mimeType || "image/png";
-      const imageDataUrl = `data:${mimeType};base64,${imagePart.inlineData.data}`;
+      let chosen: typeof imageParts[0] | null = null;
+      for (let i = imageParts.length - 1; i >= 0; i--) {
+        const cand = imageParts[i];
+        const candData = cand.inlineData?.data;
+        if (!candData) continue;
+        if (inputHash) {
+          const { createHash } = await import("crypto");
+          const candHash = createHash("sha256").update(candData).digest("hex");
+          if (candHash === inputHash) {
+            // Skip — this is the model echoing our reference image
+            continue;
+          }
+        }
+        chosen = cand;
+        break;
+      }
+
+      if (!chosen?.inlineData?.data) {
+        errors.push({
+          model,
+          error: `Model returned ${imageParts.length} image part(s) but all were echoes of the reference. Try a different style or re-roll.`,
+        });
+        continue;
+      }
+
+      const mimeType = chosen.inlineData.mimeType || "image/png";
+      const imageDataUrl = `data:${mimeType};base64,${chosen.inlineData.data}`;
 
       return NextResponse.json({
         imageDataUrl,

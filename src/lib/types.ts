@@ -261,6 +261,11 @@ export interface Room {
   accentWall: AccentWall | null;
   notes: string;
   annotation?: RoomAnnotation;  // Optional spatial anchor on a floor plan image
+  /** The original Matterport / room photo the designer uploaded. Persisted
+   *  so that switching rooms + coming back keeps the reference available.
+   *  This is ALSO the default Composite Board backdrop — we layer cutouts
+   *  directly onto the real room photo instead of stripping the AI render. */
+  referenceImageUrl?: string;
   sceneBackgroundUrl?: string;  // optional image: room photo, Matterport snap, white/blank
   sceneItems?: SceneItem[];     // Spoak-style visual scene composition
   /** Install-guide per-room tips (shown on room's install guide page) */
