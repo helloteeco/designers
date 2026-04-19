@@ -17,20 +17,29 @@ export interface CompositeOptions {
   showTitle?: boolean;
   /** Show the mini floor plan in the bottom-right. Default true. */
   showFloorPlan?: boolean;
+  /** Optional install tips rendered underneath the scene, left side. */
+  tips?: string;
   /** Output width in px. Height is derived from the backdrop aspect. */
   outputWidth?: number;
 }
 
 /**
  * Composite a Teeco-style install-guide board from an empty-room backdrop
- * + a list of product cutouts (background-removed PNGs). This is the
- * function that turns the Design tab's per-room artifacts into Jeff's
- * actual deliverable — the image that lands in the Install Guide PDF
- * and matches the masterlist by construction.
+ * + a list of product cutouts. Output layout matches Jeff's reference:
  *
- * Pure client-side canvas work: no server round-trip, no Gemini call.
- * Designer can re-run it instantly after re-positioning or swapping
- * products.
+ *   ┌──────────────────────────────┐
+ *   │      ROOM TITLE (banner)     │
+ *   ├──────────────────────────────┤
+ *   │                              │
+ *   │         SCENE (cutouts)      │
+ *   │                              │
+ *   ├──────────────────────────────┤
+ *   │ TIPS (left)   │ FLOOR (right)│
+ *   └──────────────────────────────┘
+ *
+ * Pure client-side canvas work: no server round-trip for the composition
+ * itself. Cutouts hosted on third-party CDNs load via /api/proxy-image so
+ * the canvas never gets CORS-tainted.
  */
 export async function compositeRoomScene(opts: CompositeOptions): Promise<string> {
   const {
@@ -39,13 +48,21 @@ export async function compositeRoomScene(opts: CompositeOptions): Promise<string
     room,
     showTitle = true,
     showFloorPlan = true,
+    tips,
     outputWidth = 1600,
   } = opts;
 
   const backdrop = await loadImage(backdropUrl);
-  const aspect = backdrop.naturalHeight / backdrop.naturalWidth;
+  const backdropAspect = backdrop.naturalHeight / backdrop.naturalWidth;
+  const sceneW = outputWidth;
+  const sceneH = Math.round(outputWidth * backdropAspect);
+
+  const titleH = showTitle ? Math.round(sceneH * 0.07) : 0;
+  const hasBottom = !!(tips && tips.trim()) || showFloorPlan;
+  const bottomH = hasBottom ? Math.round(sceneH * 0.18) : 0;
+
   const W = outputWidth;
-  const H = Math.round(outputWidth * aspect);
+  const H = titleH + sceneH + bottomH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -53,10 +70,19 @@ export async function compositeRoomScene(opts: CompositeOptions): Promise<string
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get 2D canvas context");
 
-  // 1. Backdrop — fills the canvas
-  ctx.drawImage(backdrop, 0, 0, W, H);
+  // 0. Page background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
 
-  // 2. Cutouts — back-to-front by zIndex
+  // 1. Title banner (top)
+  if (showTitle) {
+    drawTitleBanner(ctx, room.name, W, titleH);
+  }
+
+  // 2. Scene — backdrop fills the middle band
+  ctx.drawImage(backdrop, 0, titleH, sceneW, sceneH);
+
+  // 3. Cutouts — back-to-front by zIndex, positioned as % of scene band
   const sorted = [...placements].sort(
     (a, b) => (a.sceneItem.zIndex ?? 0) - (b.sceneItem.zIndex ?? 0)
   );
@@ -64,23 +90,42 @@ export async function compositeRoomScene(opts: CompositeOptions): Promise<string
     if (!cutoutUrl) continue;
     try {
       const cutout = await loadImage(cutoutUrl);
-      drawCutout(ctx, cutout, sceneItem, W, H);
+      drawCutout(ctx, cutout, sceneItem, sceneW, sceneH, titleH);
     } catch {
       // One bad cutout shouldn't sink the whole composite
     }
   }
 
-  // 3. Room-title banner (top)
-  if (showTitle) {
-    drawTitleBanner(ctx, room.name, W, H);
-  }
+  // 4. Bottom band: tips left + floor plan right (matches Jeff's reference)
+  if (hasBottom) {
+    const pad = Math.round(W * 0.02);
+    const bottomTop = titleH + sceneH;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, bottomTop, W, bottomH);
+    // subtle hairline between scene and bottom
+    ctx.fillStyle = "rgba(0,0,0,0.08)";
+    ctx.fillRect(0, bottomTop, W, 1);
 
-  // 4. Floor-plan inset (bottom-right)
-  if (showFloorPlan) {
-    try {
-      await drawFloorPlanInset(ctx, room, W, H);
-    } catch {
-      // If the SVG rasterization fails (rare), just skip the inset
+    // Floor plan on the right
+    let tipsRightLimit = W - pad;
+    if (showFloorPlan) {
+      try {
+        const svg = buildFloorPlanSvg(room);
+        const img = await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+        const planH = bottomH - pad * 2;
+        const planW = Math.round(planH * (img.naturalWidth / img.naturalHeight));
+        const planX = W - planW - pad;
+        const planY = bottomTop + pad;
+        ctx.drawImage(img, planX, planY, planW, planH);
+        tipsRightLimit = planX - pad;
+      } catch {
+        // If SVG rasterization fails we still get tips on the left
+      }
+    }
+
+    // Tips on the left
+    if (tips && tips.trim()) {
+      drawTips(ctx, tips, pad, bottomTop + pad, tipsRightLimit - pad, bottomH - pad * 2);
     }
   }
 
@@ -91,13 +136,14 @@ function drawCutout(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   item: SceneItem,
-  W: number,
-  H: number
+  sceneW: number,
+  sceneH: number,
+  sceneTop: number
 ): void {
-  const cx = (item.x / 100) * W;
-  const cy = (item.y / 100) * H;
-  const w = (item.width / 100) * W;
-  const h = (item.height / 100) * H;
+  const cx = (item.x / 100) * sceneW;
+  const cy = sceneTop + (item.y / 100) * sceneH;
+  const w = (item.width / 100) * sceneW;
+  const h = (item.height / 100) * sceneH;
   const rot = ((item.rotation ?? 0) * Math.PI) / 180;
 
   ctx.save();
@@ -123,44 +169,66 @@ function drawTitleBanner(
   W: number,
   H: number
 ): void {
-  const bandH = Math.round(H * 0.07);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
-  ctx.fillRect(0, 0, W, bandH);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#1a1a1a";
-  ctx.font = `600 ${Math.round(bandH * 0.52)}px "Inter", system-ui, -apple-system, sans-serif`;
+  ctx.font = `600 ${Math.round(H * 0.52)}px "Inter", system-ui, -apple-system, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(name.toUpperCase(), W / 2, bandH / 2);
+  ctx.fillText(name.toUpperCase(), W / 2, H / 2);
   // Hairline separator underneath
   ctx.fillStyle = "rgba(0,0,0,0.08)";
-  ctx.fillRect(0, bandH, W, 1);
+  ctx.fillRect(0, H, W, 1);
 }
 
-async function drawFloorPlanInset(
+/**
+ * Draw install tips as a wrapped paragraph with a heading.
+ * Matches the Teeco install-guide look: "TIPS" caps label + bullet list.
+ */
+function drawTips(
   ctx: CanvasRenderingContext2D,
-  room: Room,
-  W: number,
-  H: number
-): Promise<void> {
-  const svg = buildFloorPlanSvg(room);
-  const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  const img = await loadImage(dataUrl);
+  tips: string,
+  x: number,
+  y: number,
+  maxW: number,
+  maxH: number
+): void {
+  ctx.fillStyle = "#374151";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = `600 14px "Inter", system-ui, sans-serif`;
+  ctx.fillText("TIPS", x, y);
 
-  const insetW = Math.round(W * 0.18);
-  const insetH = Math.round(insetW * (img.naturalHeight / img.naturalWidth));
-  const pad = Math.round(W * 0.015);
-  const x = W - insetW - pad;
-  const y = H - insetH - pad;
+  const bodyFontSize = Math.max(14, Math.round(maxH * 0.12));
+  ctx.font = `${bodyFontSize}px "Inter", system-ui, sans-serif`;
+  ctx.fillStyle = "#374151";
 
-  // White card behind the plan so it reads on any backdrop
-  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
-  roundRect(ctx, x - 6, y - 6, insetW + 12, insetH + 12, 6);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.drawImage(img, x, y, insetW, insetH);
+  const lines = tips.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  let cursorY = y + 26;
+  const lineH = bodyFontSize * 1.35;
+  for (const line of lines) {
+    if (cursorY > y + maxH) break;
+    const bullet = line.startsWith("•") || line.startsWith("-") ? "" : "• ";
+    const text = `${bullet}${line.replace(/^[•\-]\s*/, "")}`;
+    // Simple word-wrap inside maxW
+    const words = text.split(" ");
+    let row = "";
+    for (const word of words) {
+      const candidate = row ? `${row} ${word}` : word;
+      if (ctx.measureText(candidate).width > maxW) {
+        ctx.fillText(row, x, cursorY);
+        cursorY += lineH;
+        row = word;
+        if (cursorY > y + maxH) return;
+      } else {
+        row = candidate;
+      }
+    }
+    if (row) {
+      ctx.fillText(row, x, cursorY);
+      cursorY += lineH;
+    }
+  }
 }
 
 /**
@@ -194,7 +262,7 @@ function buildFloorPlanSvg(room: Room): string {
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
-    <rect width="${w}" height="${h}" fill="#f0ede6" />
+    <rect width="${w}" height="${h}" fill="#f5f1e8" />
     <rect x="1" y="1" width="${w - 2}" height="${h - 2}" fill="none" stroke="#374151" stroke-width="2" />
     ${rects.join("")}
   </svg>`;
@@ -216,29 +284,50 @@ function categoryColor(category: string): string {
   }
 }
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number
-): void {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
+/**
+ * Load an image for canvas compositing without tainting it. Strategy:
+ *   - data: URLs load directly
+ *   - everything else goes through /api/proxy-image which streams the
+ *     bytes back from our origin, so the canvas stays clean and
+ *     toDataURL() works reliably
+ *
+ * If the proxy fails (network issue, non-image response), we fall back
+ * to a direct anonymous-CORS load — cutouts on well-configured CDNs
+ * (e.g. Supabase Storage with public access) usually work this way.
+ */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  if (src.startsWith("data:")) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("data URL load failed"));
+      img.src = src;
+    });
+  }
+  return loadViaProxy(src).catch(() => loadDirect(src));
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+async function loadViaProxy(src: string): Promise<HTMLImageElement> {
+  const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(src)}`);
+  if (!res.ok) throw new Error(`proxy ${res.status}`);
+  const blob = await res.blob();
+  const objUrl = URL.createObjectURL(blob);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("blob load failed"));
+    img.src = objUrl;
+    // Object URL stays valid until the tab unloads; that's fine because
+    // the resulting <img> is only needed for the current canvas draw.
+  });
+}
+
+function loadDirect(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src.slice(0, 80)}`));
+    img.onerror = () => reject(new Error(`Failed to load: ${src.slice(0, 80)}`));
     img.src = src;
   });
 }

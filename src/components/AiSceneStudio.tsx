@@ -125,6 +125,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [swappingId, setSwappingId] = useState<string | null>(null);
   const [wallPrompt, setWallPrompt] = useState<string>("");
   const [wallBusy, setWallBusy] = useState(false);
+  const [tipsDraft, setTipsDraft] = useState<string>(room.installTips ?? "");
 
   const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
   const hasScene = !!room.sceneBackgroundUrl;
@@ -961,6 +962,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     onUpdate();
   }
 
+  function saveTips(value: string) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+    target.installTips = value;
+    saveProject(fresh);
+    onUpdate();
+  }
+
   /** Patch a placed cutout's x/y/width/height. Used by drag + resize. */
   function updateScenePos(
     sceneItemId: string,
@@ -1008,6 +1019,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         room,
         showTitle: true,
         showFloorPlan: true,
+        tips: room.installTips || defaultTipsForRoom(room.type),
       });
 
       const fresh = getProjectFromStore(project.id);
@@ -1781,6 +1793,25 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
           </div>
 
+          {/* Install tips — appear in the composite bottom-left + on Install Guide page */}
+          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5 flex items-center justify-between">
+              <span>📝 Install tips</span>
+              <span className="text-brand-600/60 font-normal normal-case">One tip per line · appears on the composite + PDF</span>
+            </div>
+            <textarea
+              value={tipsDraft}
+              onChange={e => setTipsDraft(e.target.value)}
+              onBlur={() => saveTips(tipsDraft)}
+              placeholder={defaultTipsForRoom(room.type)}
+              rows={3}
+              className="input w-full text-xs font-mono resize-y"
+            />
+            <div className="mt-1 text-[10px] text-brand-600/70">
+              Leave blank to use the defaults for a {room.type.replace(/-/g, " ")}.
+            </div>
+          </div>
+
           {/* Build Composite — the whole point */}
           <button
             onClick={() => void buildComposite()}
@@ -2284,6 +2315,39 @@ function prettyVendor(domain: string): string {
   const parts = domain.split(".");
   const core = parts.length >= 2 ? parts[parts.length - 2] : domain;
   return core.charAt(0).toUpperCase() + core.slice(1);
+}
+
+/**
+ * Fallback tips per room type — same copy as the Install Guide per-room
+ * page. Used when the designer hasn't typed custom tips yet so the
+ * composite never ships with an empty tips block.
+ */
+function defaultTipsForRoom(type: string): string {
+  if (type === "living-room" || type === "den" || type === "media-room") {
+    return [
+      "Center the sofa, media center, and coffee table on the rug.",
+      "Bend tree branches and plant leaves outward for realism.",
+    ].join("\n");
+  }
+  if (type === "dining-room" || type === "kitchen") {
+    return [
+      "Feed cords through the wall where possible for clean lines.",
+      "Center the dining table under the pendant fixture.",
+    ].join("\n");
+  }
+  if (type === "bedroom" || type === "primary-bedroom" || type === "loft") {
+    return [
+      "Lay throw blankets across the bed from back to front.",
+      "Karate-chop pillow tops for a magazine look.",
+    ].join("\n");
+  }
+  if (type === "bathroom") {
+    return [
+      "Roll towels for the shelves, stack them for the counter.",
+      "Keep counter clear except for one decorative tray.",
+    ].join("\n");
+  }
+  return "Bend tree branches and plant leaves outward for realism.";
 }
 
 // ── Draggable cutout overlay ──────────────────────────────────────────
