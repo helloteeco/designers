@@ -538,26 +538,22 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     setLastError(null);
     setPlacingReviewed(true);
     try {
-      // 1. Backdrop: use the designer's ACTUAL uploaded room photo —
-      //    that's the real empty room. Skip the strip-scene AI call
-      //    entirely (expensive + often imprecise). If somehow the
-      //    reference photo is gone, fall back to stripping the render.
-      let backdrop = referenceImage ?? room.referenceImageUrl;
-      if (!backdrop) {
-        const stripRes = await fetch("/api/strip-scene", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageDataUrl: extractionReview.sourceRender }),
-        });
-        const stripPayload = (await stripRes.json()) as { imageDataUrl?: string; error?: string };
-        if (!stripRes.ok || !stripPayload.imageDataUrl) {
-          throw new Error(stripPayload.error || "No reference photo — and strip-fallback failed");
-        }
-        backdrop = stripPayload.imageDataUrl;
+      // 1. Strip the AI render → empty-but-styled backdrop. Jeff prefers
+      //    this over using the raw reference photo because the strip
+      //    keeps any AI-applied style touches (lighting/mood) from the
+      //    render while removing only the furniture.
+      const stripRes = await fetch("/api/strip-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: extractionReview.sourceRender }),
+      });
+      const stripPayload = (await stripRes.json()) as { imageDataUrl?: string; error?: string };
+      if (!stripRes.ok || !stripPayload.imageDataUrl) {
+        throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
       }
-      backdrop = (await ensureHostedUrl(backdrop, "scenes")) ?? backdrop;
+      const backdrop = (await ensureHostedUrl(stripPayload.imageDataUrl, "scenes")) ?? stripPayload.imageDataUrl;
 
-      // 2. Persist the backdrop + clear any stale items
+      // 2. Persist the stripped backdrop + clear any stale items
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
@@ -567,7 +563,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       target.sceneItems = [];
       saveProject(fresh);
       onUpdate();
-      toast.info(`Placing ${kept.length} items on your room photo... (~15s)`);
+      toast.info(`Placing ${kept.length} items on the empty backdrop... (~15s)`);
 
       // 3. For each kept item: clean bg-remove on the thumbnail + source real product
       //    Both run in parallel; we re-read project state per save to avoid races.
