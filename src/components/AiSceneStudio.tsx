@@ -606,103 +606,147 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       onUpdate();
       toast.info(`Placing ${kept.length} items on the empty backdrop... (~15s)`);
 
-      // 3. For each kept item: clean bg-remove on the thumbnail + source real product.
-      //    API calls run in parallel (fast), but saves are batched at the end
-      //    to avoid the race where parallel saves clobber each other.
-      interface PlacedResult {
-        customItem: FurnitureItem;
-        placed: ReturnType<typeof placeFurniture>;
-        bb: { x: number; y: number; w: number; h: number };
+      // ── Phase 1 (critical path ~20-25s): cutouts only ──────────────────
+      // Get bg-removed cutouts for each kept item in parallel. No sourcing
+      // yet — that runs in the background AFTER the composite board is
+      // visible so the designer can start arranging immediately.
+      interface CutoutResult {
+        item: typeof kept[0];
+        cutoutUrl: string;
         idx: number;
       }
-      const placedResults: PlacedResult[] = [];
+      const cutoutResults: CutoutResult[] = [];
 
       await Promise.all(kept.map(async (item, idx) => {
-        const [cutoutResult, sourceResult] = await Promise.allSettled([
-          fetch("/api/generate-cutout", {
+        try {
+          const res = await fetch("/api/generate-cutout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               description: item.description,
               imageUrl: item.thumbnailDataUrl,
             }),
-          }).then(r => r.ok ? r.json() as Promise<{ imageUrl?: string; imageDataUrl?: string }> : null),
-          fetch("/api/source-item", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              description: item.description,
-              styleHint: preset.id,
-              budget: remainingBudget || undefined,
-              roomType: room.type,
-            }),
-          }).then(r => r.ok ? r.json() as Promise<{ options?: SourcedOption[] }> : null),
-        ]);
-
-        const rawCutoutUrl = cutoutResult.status === "fulfilled" && cutoutResult.value
-          ? (cutoutResult.value.imageUrl ?? cutoutResult.value.imageDataUrl ?? item.thumbnailDataUrl)
-          : item.thumbnailDataUrl;
-        const cutoutUrl = await finalizeCutout(rawCutoutUrl);
-
-        const opt = sourceResult.status === "fulfilled" && sourceResult.value?.options?.[0]
-          ? sourceResult.value.options[0]
-          : null;
-
-        const category = mapCategory(item.category);
-        const customItem: FurnitureItem = {
-          id: `ext-${generateId()}`,
-          name: opt?.name ?? item.description,
-          category,
-          subcategory: item.category,
-          widthIn: parseFirstDim(opt?.dimensions) ?? 36,
-          depthIn: parseSecondDim(opt?.dimensions) ?? 36,
-          heightIn: parseThirdDim(opt?.dimensions) ?? 30,
-          price: opt?.price ?? 0,
-          vendor: opt?.vendor ?? "—",
-          vendorUrl: opt?.url ?? "",
-          imageUrl: cutoutUrl ?? item.thumbnailDataUrl,
-          color: "",
-          material: "",
-          style: preset.designStyle,
-        };
-        // Build the placed furniture (assigns position) but don't save yet —
-        // we need a fresh project snapshot AFTER all parallel work is done.
-        // Use a temp room clone for position calculation only.
-        const tempRoom = { ...room, furniture: [...room.furniture] };
-        const placed = placeFurniture(tempRoom, customItem);
-        placed.status = opt ? "approved" : "specced";
-
-        placedResults.push({ customItem, placed, bb: item.boundingBoxPct, idx });
+          });
+          const payload = res.ok ? (await res.json()) as { imageUrl?: string; imageDataUrl?: string } : null;
+          const rawUrl = payload
+            ? (payload.imageUrl ?? payload.imageDataUrl ?? item.thumbnailDataUrl)
+            : item.thumbnailDataUrl;
+          const cutoutUrl = await finalizeCutout(rawUrl);
+          cutoutResults.push({ item, cutoutUrl: cutoutUrl ?? item.thumbnailDataUrl, idx });
+        } catch {
+          cutoutResults.push({ item, cutoutUrl: item.thumbnailDataUrl, idx });
+        }
       }));
 
-      // 4. Single atomic save — read once, write once, no race.
+      // Save composite board with CUTOUTS — no real product data yet.
+      // Items show extraction descriptions + "🔎 Sourcing..." status.
+      // This is the moment the composite board becomes visible and
+      // interactive (~20-25s from the button click).
+      interface PlacedStub {
+        itemId: string;
+        bb: { x: number; y: number; w: number; h: number };
+        idx: number;
+      }
+      const stubs: PlacedStub[] = [];
       const next = getProjectFromStore(project.id);
       if (next) {
         const tt = next.rooms.find(r => r.id === room.id);
         if (tt) {
           if (!tt.sceneItems) tt.sceneItems = [];
-          for (const { customItem, placed, bb, idx } of placedResults) {
+          for (const { item, cutoutUrl, idx } of cutoutResults) {
+            const category = mapCategory(item.category);
+            const stubItem: FurnitureItem = {
+              id: `ext-${generateId()}`,
+              name: item.description,
+              category,
+              subcategory: item.category,
+              widthIn: 36, depthIn: 36, heightIn: 30,
+              price: 0,
+              vendor: "🔎 sourcing...",
+              vendorUrl: "",
+              imageUrl: cutoutUrl,
+              color: "", material: "",
+              style: preset.designStyle,
+            };
+            const tempRoom = { ...tt, furniture: [...tt.furniture] };
+            const placed = placeFurniture(tempRoom, stubItem);
+            placed.status = "specced";
             tt.furniture.push(placed);
+            const bb = item.boundingBoxPct;
             tt.sceneItems.push({
               id: `scene-${generateId()}`,
-              itemId: customItem.id,
+              itemId: stubItem.id,
               x: bb.x + bb.w / 2,
               y: bb.y + bb.h / 2,
-              width: bb.w,
-              height: bb.h,
-              rotation: 0,
-              zIndex: idx + 1,
+              width: bb.w, height: bb.h,
+              rotation: 0, zIndex: idx + 1,
             });
+            stubs.push({ itemId: stubItem.id, bb, idx });
           }
           saveProject(next);
           onUpdate();
         }
       }
 
+      // Board is now visible — designer can start dragging items around.
       setExtractionReview(null);
       setPhase("ready");
-      logActivity(project.id, "composite_from_render", `Placed ${kept.length} render-cutouts in ${room.name}`);
-      toast.success(`Composite board ready — drag, rotate, flip, swap, or remove anything.`);
+      logActivity(project.id, "composite_from_render", `Placed ${kept.length} cutouts in ${room.name} — sourcing products in background`);
+      toast.success(`Composite board ready with ${kept.length} cutouts. Real products sourcing in background...`);
+
+      // ── Phase 2 (background ~15-60s): source real products ────────────
+      // Each item gets a source-item call. When it resolves, we update
+      // the matching furniture row with real vendor / price / URL / rating.
+      // Saves are serialized via a promise chain so they don't race.
+      let saveChain = Promise.resolve();
+      for (const { item, idx } of cutoutResults) {
+        const stubId = stubs[idx]?.itemId;
+        if (!stubId) continue;
+
+        // Fire the source call (these run in parallel via the loop — we
+        // don't await here, only the save is serialized).
+        const sourcePromise = fetch("/api/source-item", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: item.description,
+            styleHint: preset.id,
+            budget: remainingBudget || undefined,
+            roomType: room.type,
+          }),
+        }).then(r => r.ok ? r.json() as Promise<{ options?: SourcedOption[] }> : null)
+          .catch(() => null);
+
+        saveChain = saveChain.then(async () => {
+          const result = await sourcePromise;
+          const opt = result?.options?.[0] ?? null;
+          // Re-read project state (serialized — safe against concurrent saves)
+          const fresh2 = getProjectFromStore(project.id);
+          if (!fresh2) return;
+          const rr = fresh2.rooms.find(r2 => r2.id === room.id);
+          if (!rr) return;
+          const furn = rr.furniture.find(f => f.item.id === stubId);
+          if (!furn) return;
+          // Overwrite stub with real data (keep cutout image + position)
+          if (opt) {
+            furn.item.name = opt.name;
+            furn.item.price = opt.price ?? 0;
+            furn.item.vendor = opt.vendor;
+            furn.item.vendorUrl = opt.url;
+            furn.item.widthIn = parseFirstDim(opt.dimensions) ?? furn.item.widthIn;
+            furn.item.depthIn = parseSecondDim(opt.dimensions) ?? furn.item.depthIn;
+            furn.item.heightIn = parseThirdDim(opt.dimensions) ?? furn.item.heightIn;
+            furn.status = "approved";
+          } else {
+            furn.item.vendor = "—";
+            furn.status = "specced";
+          }
+          saveProject(fresh2);
+          onUpdate();
+        });
+      }
+      // Don't await saveChain — it runs in the background. The designer
+      // sees items update one-by-one as each source-item call resolves.
     } catch (err) {
       setLastError(err instanceof Error ? err.message : "Placement failed");
     } finally {
