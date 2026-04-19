@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       if (imgPart) {
         for (const model of models) {
           try {
-            const prompt = `Remove the background from this product image. Output only the product (${description}${vendorHint}), isolated on a pure white background, centered, studio-lit catalog style. Do not add or remove features. Do not add decor around it.`;
+            const prompt = `Remove the background from this product image completely. Output the product (${description}${vendorHint}) isolated on a solid pure-white (#FFFFFF) background — every non-product pixel must be pure white, no gradients, no shadows extending into the background, no drop shadow, no textured backdrop. The product itself should be centered with a little padding. Do not add or remove features. Do not add decor around it.`;
             const response = await ai.models.generateContent({
               model,
               contents: [{ role: "user", parts: [{ text: prompt }, imgPart] }],
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
   }
 
   // ── Mode 2: generate from scratch (no source image available) ──
-  const genPrompt = `Product catalog photo of ${description}${vendorHint}. Studio-lit, isolated on pure white background, centered, shot from 3/4 front angle. Clean, minimal, no decor around it. Photorealistic.`;
+  const genPrompt = `Product catalog photo of ${description}${vendorHint}. Studio-lit, isolated on solid pure-white (#FFFFFF) background — every non-product pixel must be pure white, no gradient, no shadow on the background. Centered, shot from 3/4 front angle. Photorealistic.`;
   for (const model of models) {
     try {
       const response = await ai.models.generateContent({

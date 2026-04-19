@@ -5,7 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
-import { ensureHostedUrl, compactProjectImages } from "@/lib/scene-storage";
+import { ensureHostedUrl, compactProjectImages, finalizeCutout } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
 import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
 
@@ -211,6 +211,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       });
     return () => { cancelled = true; };
   }, []);
+
+  // Auto-compact on mount: silently move any leftover base64 images from
+  // localStorage to Supabase so storage never fills up. Skip if we've
+  // already compacted this project this session — saves needless uploads.
+  const compactedKey = `compacted:${project.id}`;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(compactedKey) === "1") return;
+    const run = async () => {
+      try {
+        const fresh = getProjectFromStore(project.id);
+        if (!fresh) return;
+        const { uploaded } = await compactProjectImages(fresh);
+        if (uploaded > 0) {
+          saveProject(fresh);
+          onUpdate();
+        }
+        sessionStorage.setItem(compactedKey, "1");
+      } catch {
+        // fail quiet — worst case Jeff's localStorage still fills up
+        // and the storage-full alert points at the manual escape hatch
+      }
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id]);
 
   async function loadReferenceFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -546,8 +572,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         const rawCutoutUrl = cutoutResult.status === "fulfilled" && cutoutResult.value
           ? (cutoutResult.value.imageUrl ?? cutoutResult.value.imageDataUrl ?? item.thumbnailDataUrl)
           : item.thumbnailDataUrl;
-        // Make sure the cutout is a hosted URL, not a giant base64
-        const cutoutUrl = await ensureHostedUrl(rawCutoutUrl, "cutouts");
+        // Color-key white → transparent, then upload. Gives us real
+        // cutouts (no white box around each item on the composite).
+        const cutoutUrl = await finalizeCutout(rawCutoutUrl);
 
         const opt = sourceResult.status === "fulfilled" && sourceResult.value?.options?.[0]
           ? sourceResult.value.options[0]
@@ -696,7 +723,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         } catch {
           // If cutout fails, fall back to the raw product image URL (proxy will still serve it)
         }
-        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
+        cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
         const next = getProjectFromStore(project.id);
         if (!next) return;
         const tt = next.rooms.find(r => r.id === room.id);
@@ -1008,9 +1035,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           cutoutUrl = json.imageUrl ?? json.imageDataUrl;
         }
       } catch {}
-      if (cutoutUrl?.startsWith("data:")) {
-        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
-      }
+      cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
     }
 
     const fresh = getProjectFromStore(project.id);
@@ -1155,9 +1180,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           cutoutUrl = json.imageUrl ?? json.imageDataUrl ?? opt.imageUrl;
         }
       } catch {}
-      if (cutoutUrl?.startsWith("data:")) {
-        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
-      }
+      cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
 
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
@@ -1316,9 +1339,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           cutoutUrl = json.imageUrl ?? json.imageDataUrl;
         }
       } catch {}
-      if (cutoutUrl?.startsWith("data:")) {
-        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
-      }
+      cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
 
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
@@ -1666,117 +1687,40 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         <div className="mt-1.5 text-xs text-brand-700 italic">{preset.description}</div>
       </div>
 
-      {/* 3 · Pick output mode */}
+      {/* 3 · Generate CTA */}
       <div className="mb-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-          3 · What do you want?
+          3 · Generate AI render
         </div>
-        <div className="grid sm:grid-cols-2 gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => setRenderMode("realistic")}
-            disabled={phase === "generating" || phase === "sourcing"}
-            className={`text-left rounded-lg border-2 p-3 transition ${
-              renderMode === "realistic"
-                ? "border-amber bg-amber/10 shadow-sm"
-                : "border-brand-900/10 bg-white hover:border-amber/40"
-            }`}
+            onClick={designThisRoom}
+            disabled={phase === "generating" || phase === "sourcing" || !referenceImage}
+            title={!referenceImage ? "Upload a room photo above first — required to anchor the render to your real space." : undefined}
+            className="rounded-lg bg-amber px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-base">📸</span>
-              <span className="text-sm font-semibold text-brand-900">Realistic Render</span>
-              {renderMode === "realistic" && <span className="text-xs text-amber-dark ml-auto">●</span>}
-            </div>
-            <div className="text-[11px] text-brand-600 leading-snug">
-              {referenceImage
-                ? "AI furnishes YOUR room (keeps walls, windows, chandelier exactly). Single image, ~25s."
-                : "Upload a room photo above first — the render will anchor to YOUR walls, windows, and finishes."}
-            </div>
+            {phase === "generating"
+              ? "📸 Rendering your room... (~25s)"
+              : phase === "sourcing"
+                ? "🛒 Sourcing products... (~60s)"
+                : !referenceImage
+                  ? "👆 Upload a room photo first"
+                  : hasScene && phase !== "preview"
+                    ? `📸 Re-render (${preset.label})`
+                    : `📸 Generate ${preset.label} render`}
           </button>
-
-          <button
-            onClick={() => setRenderMode("cutout-bg")}
-            disabled={phase === "generating" || phase === "sourcing"}
-            className={`text-left rounded-lg border-2 p-3 transition relative ${
-              renderMode === "cutout-bg"
-                ? "border-amber bg-amber/10 shadow-sm"
-                : "border-brand-900/10 bg-white hover:border-amber/40"
-            }`}
-          >
-            {referenceImage && renderMode !== "cutout-bg" && (
-              <span className="absolute -top-2 right-2 text-[9px] font-bold uppercase tracking-wider bg-emerald-600 text-white px-1.5 py-0.5 rounded">
-                Recommended
-              </span>
-            )}
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-base">🎬</span>
-              <span className="text-sm font-semibold text-brand-900">Composite Board</span>
-              {renderMode === "cutout-bg" && <span className="text-xs text-amber-dark ml-auto">●</span>}
-            </div>
-            <div className="text-[11px] text-brand-600 leading-snug">
-              {referenceImage
-                ? <>YOUR room kept exactly + 3 real products per piece layered on top as cutouts. The Teeco install-guide style.</>
-                : <>Upload a room photo above first — composite anchors to YOUR room (walls, windows, chandelier) + layers products on top.</>}
-              {" "}~60-90s.
-            </div>
-          </button>
+          {(hasScene || sourcedItems) && (
+            <button
+              onClick={clearAndRestart}
+              className="rounded-lg border border-red-300 px-3 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50"
+            >
+              ↶ Clear & Restart
+            </button>
+          )}
         </div>
-
-        {/* What is composite — Jeff's definition spelled out so designers know
-            when to pick this mode */}
-        {renderMode === "cutout-bg" && (
-          <div className="mt-2 rounded-lg bg-emerald-50/60 border border-emerald-200 px-3 py-2 text-[11px] text-emerald-900 leading-snug">
-            <strong>Composite board</strong> = your room photo + ideal staging + perfect view + balanced lighting,
-            merged into one cohesive image. Use the refine box on the preview to swap window views (&ldquo;sunny lake view&rdquo;,
-            &ldquo;cherry blossoms&rdquo;), brighten lighting, or stage in custom items.
-            {!referenceImage && (
-              <span className="block mt-1 italic text-emerald-800">
-                💡 Drop a Matterport screenshot up top so the composite anchors to YOUR real room.
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 4 · CTA */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={designThisRoom}
-          disabled={phase === "generating" || phase === "sourcing" || !referenceImage}
-          title={!referenceImage ? "Upload a room photo above first — required to anchor the render to your real space." : undefined}
-          className="rounded-lg bg-amber px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {phase === "generating"
-            ? renderMode === "realistic"
-              ? "📸 Rendering... (~25s)"
-              : "🎬 Building composite backdrop... (~25s)"
-            : phase === "sourcing"
-              ? "🛒 Sourcing 3 options per item... (~60s)"
-              : !referenceImage
-                ? "👆 Upload a room photo first"
-                : hasScene && phase !== "preview"
-                  ? renderMode === "realistic"
-                    ? `📸 Re-Render (${preset.label})`
-                    : `🎬 Re-Build Composite (${preset.label})`
-                  : renderMode === "realistic"
-                    ? `📸 Generate ${preset.label} Render`
-                    : `🎬 Build ${preset.label} Composite from Your Room`}
-        </button>
-        {(hasScene || sourcedItems) && (
-          <button
-            onClick={clearAndRestart}
-            className="rounded-lg border border-red-300 px-3 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50"
-          >
-            ↶ Clear & Restart
-          </button>
-        )}
-        <button
-          onClick={() => void freeUpStorage()}
-          disabled={compacting}
-          className="rounded-lg border border-brand-900/15 px-3 py-2.5 text-xs font-medium text-brand-700 hover:bg-brand-900/5 disabled:opacity-50"
-          title="Offload base64 images in this project to cloud storage. Run if you hit 'Storage full'."
-        >
-          {compacting ? "Compacting..." : "🧹 Free storage"}
-        </button>
+        <div className="mt-1.5 text-[11px] text-brand-600">
+          After the render appears, you&apos;ll extract the items into an editable composite board.
+        </div>
       </div>
       {!referenceImage && hasScene && (
         <div className="mt-2 rounded-lg bg-amber/10 border border-amber/30 px-3 py-2 text-[11px] text-brand-900">
@@ -1945,50 +1889,46 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
           )}
 
-          {/* Approval gate — shown only in preview phase. The full review panel
-              for sourced items appears below if/when sourcing finishes. */}
+          {/* Step 4: Turn the AI render into an editable composite board */}
           {phase === "preview" && (
             <div className="mt-3 space-y-3">
-              <div className="flex gap-2 flex-wrap">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+                4 · Extract items → Composite Board
+              </div>
+              <div className="text-[11px] text-brand-600">
+                The AI render is inspiration. Click below to identify every item in it. You&apos;ll then pick which to keep and place them on an editable composite board.
+              </div>
+              <div className="flex gap-2 flex-wrap items-start">
                 <button
-                  onClick={approveAndContinue}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                  onClick={() => void identifyItemsForReview()}
+                  disabled={extractingReview || !!extractionReview}
+                  className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
                 >
-                  {renderMode === "realistic"
-                    ? "✓ Use this render (save as hero)"
-                    : "✓ Approve style → source 3 products per item"}
+                  {extractingReview ? "🔎 Identifying items..." : "🎬 Extract items → Composite Board"}
                 </button>
-                {renderMode === "realistic" && (
-                  <button
-                    onClick={() => void identifyItemsForReview()}
-                    disabled={extractingReview || !!extractionReview}
-                    className="rounded-lg border-2 border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                    title="Identify every item in this render and give you a review list — pick which ones to keep before anything gets placed on the composite board."
-                  >
-                    {extractingReview ? "🔎 Identifying items..." : "🎬 Turn this into an editable composite board"}
-                  </button>
-                )}
                 <button
                   onClick={() => generateScene("")}
                   disabled={!referenceImage}
-                  className="rounded-lg border border-amber px-3 py-2 text-xs font-medium text-amber-dark hover:bg-amber/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={!referenceImage ? "Re-upload your room photo first" : "Try another version with the same style + photo"}
+                  className="rounded-lg border border-amber px-3 py-2.5 text-xs font-medium text-amber-dark hover:bg-amber/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!referenceImage ? "Re-upload your room photo first" : "Try another render with the same style + photo"}
                 >
-                  🔄 Re-roll same style
+                  🔄 Re-roll
                 </button>
                 <button
                   onClick={() => setPhase("idle")}
-                  className="rounded-lg border border-brand-900/15 px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-900/5"
+                  className="rounded-lg border border-brand-900/15 px-3 py-2.5 text-xs font-medium text-brand-700 hover:bg-brand-900/5"
                   title="Pick a different style and try again"
                 >
                   🎨 Try a different style
                 </button>
+                <button
+                  onClick={approveAndContinue}
+                  className="rounded-lg border border-brand-900/15 px-3 py-2.5 text-xs font-medium text-brand-700 hover:bg-brand-900/5"
+                  title="Skip the composite — just save this render as the room's hero image"
+                >
+                  ✓ Just use this render
+                </button>
               </div>
-              {renderMode === "realistic" && (
-                <div className="text-[11px] text-brand-600/80 italic">
-                  💡 <strong>Workflow:</strong> use the AI render as inspiration. Click <strong>&ldquo;Turn this into an editable composite board&rdquo;</strong> and the system strips it to an empty backdrop, sources real products matching what&apos;s in the render, and auto-places the top pick per item. You then drag, swap, or remove anything — and the masterlist matches 1:1.
-                </div>
-              )}
 
               {/* Refine box — designer asks for changes in plain English */}
               <div>
@@ -2055,16 +1995,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         </div>
       )}
 
-      {/* Pick-first workflow — the new primary path. Appears whenever we
-          have a backdrop to composite onto. Designer picks real products,
-          each product's cutout lands in the masterlist + on the scene, and
-          one "Build Composite" click stitches them into the deliverable. */}
+      {/* The Composite Board — this is where every designer spends most of
+          their time. Appears once a backdrop exists. Items get placed here
+          (from render-extraction OR manual pick/URL), and all the editing
+          tools (drag/rotate/flip/resize/swap/walls/tips) live in this block. */}
       {hasScene && (
         <div className="mt-4 pt-4 border-t border-brand-900/10">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <div>
-              <h4 className="text-xs font-semibold text-brand-900">📦 Items in this room <span className="text-brand-600 font-normal">({placedItems.length})</span></h4>
-              <p className="text-[10px] text-brand-600 mt-0.5">Pick real products → they land in the masterlist + on the composite.</p>
+              <h4 className="text-xs font-semibold text-brand-900">🎬 Composite Board <span className="text-brand-600 font-normal">— {placedItems.length} item{placedItems.length === 1 ? "" : "s"}</span></h4>
+              <p className="text-[10px] text-brand-600 mt-0.5">Drag, rotate, flip, resize on the scene above. Swap / add / remove below. Change walls. Build the final composite when ready.</p>
             </div>
             {placedItems.length > 0 && (
               <div className="text-[10px] text-brand-600">
