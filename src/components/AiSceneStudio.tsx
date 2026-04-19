@@ -555,6 +555,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
       }
       const backdrop = (await ensureHostedUrl(stripPayload.imageDataUrl, "scenes")) ?? stripPayload.imageDataUrl;
+      if (backdrop.startsWith("data:")) {
+        toast.warning("Cloud upload failed — using local storage. Hit 🧹 Free Storage later to retry.");
+      }
 
       // 2. Persist the stripped backdrop + clear any stale items
       const fresh = getProjectFromStore(project.id);
@@ -568,8 +571,17 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       onUpdate();
       toast.info(`Placing ${kept.length} items on the empty backdrop... (~15s)`);
 
-      // 3. For each kept item: clean bg-remove on the thumbnail + source real product
-      //    Both run in parallel; we re-read project state per save to avoid races.
+      // 3. For each kept item: clean bg-remove on the thumbnail + source real product.
+      //    API calls run in parallel (fast), but saves are batched at the end
+      //    to avoid the race where parallel saves clobber each other.
+      interface PlacedResult {
+        customItem: FurnitureItem;
+        placed: ReturnType<typeof placeFurniture>;
+        bb: { x: number; y: number; w: number; h: number };
+        idx: number;
+      }
+      const placedResults: PlacedResult[] = [];
+
       await Promise.all(kept.map(async (item, idx) => {
         const [cutoutResult, sourceResult] = await Promise.allSettled([
           fetch("/api/generate-cutout", {
@@ -595,20 +607,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         const rawCutoutUrl = cutoutResult.status === "fulfilled" && cutoutResult.value
           ? (cutoutResult.value.imageUrl ?? cutoutResult.value.imageDataUrl ?? item.thumbnailDataUrl)
           : item.thumbnailDataUrl;
-        // Color-key white → transparent, then upload. Gives us real
-        // cutouts (no white box around each item on the composite).
         const cutoutUrl = await finalizeCutout(rawCutoutUrl);
 
         const opt = sourceResult.status === "fulfilled" && sourceResult.value?.options?.[0]
           ? sourceResult.value.options[0]
           : null;
-
-        // Re-fetch fresh project state so parallel saves don't clobber
-        const next = getProjectFromStore(project.id);
-        if (!next) return;
-        const tt = next.rooms.find(r => r.id === room.id);
-        if (!tt) return;
-        if (!tt.sceneItems) tt.sceneItems = [];
 
         const category = mapCategory(item.category);
         const customItem: FurnitureItem = {
@@ -627,26 +630,39 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           material: "",
           style: preset.designStyle,
         };
-        const placed = placeFurniture(tt, customItem);
+        // Build the placed furniture (assigns position) but don't save yet —
+        // we need a fresh project snapshot AFTER all parallel work is done.
+        // Use a temp room clone for position calculation only.
+        const tempRoom = { ...room, furniture: [...room.furniture] };
+        const placed = placeFurniture(tempRoom, customItem);
         placed.status = opt ? "approved" : "specced";
-        tt.furniture.push(placed);
 
-        // Position from the ORIGINAL bounding box — cutout lands where the
-        // render showed the item. Designer can drag/rotate/flip from there.
-        const bb = item.boundingBoxPct;
-        tt.sceneItems.push({
-          id: `scene-${generateId()}`,
-          itemId: customItem.id,
-          x: bb.x + bb.w / 2,
-          y: bb.y + bb.h / 2,
-          width: bb.w,
-          height: bb.h,
-          rotation: 0,
-          zIndex: idx + 1,
-        });
-        saveProject(next);
-        onUpdate();
+        placedResults.push({ customItem, placed, bb: item.boundingBoxPct, idx });
       }));
+
+      // 4. Single atomic save — read once, write once, no race.
+      const next = getProjectFromStore(project.id);
+      if (next) {
+        const tt = next.rooms.find(r => r.id === room.id);
+        if (tt) {
+          if (!tt.sceneItems) tt.sceneItems = [];
+          for (const { customItem, placed, bb, idx } of placedResults) {
+            tt.furniture.push(placed);
+            tt.sceneItems.push({
+              id: `scene-${generateId()}`,
+              itemId: customItem.id,
+              x: bb.x + bb.w / 2,
+              y: bb.y + bb.h / 2,
+              width: bb.w,
+              height: bb.h,
+              rotation: 0,
+              zIndex: idx + 1,
+            });
+          }
+          saveProject(next);
+          onUpdate();
+        }
+      }
 
       setExtractionReview(null);
       setPhase("ready");
@@ -1317,6 +1333,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
       }
       const hosted = (await ensureHostedUrl(payload.imageDataUrl, "scenes")) ?? payload.imageDataUrl;
+      if (hosted.startsWith("data:")) {
+        toast.warning("Cloud upload failed — backdrop saved locally. Hit 🧹 Free Storage later.");
+      }
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
@@ -1380,6 +1399,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
       }
       const hosted = (await ensureHostedUrl(payload.imageDataUrl, "scenes")) ?? payload.imageDataUrl;
+      if (hosted.startsWith("data:")) {
+        toast.warning("Cloud upload failed — image saved locally. Hit 🧹 Free Storage later.");
+      }
       setReferenceImage(hosted);
       const fresh = getProjectFromStore(project.id);
       if (fresh) {

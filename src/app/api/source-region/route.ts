@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
+import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -55,15 +56,25 @@ export async function POST(request: Request) {
   }
 
   const { imageDataUrl, clickXPct, clickYPct, styleHint, budget } = body;
-  if (!imageDataUrl?.startsWith("data:image/")) {
-    return NextResponse.json({ error: "imageDataUrl must be a data:image/... URL" }, { status: 400 });
+  if (!imageDataUrl) {
+    return NextResponse.json({ error: "imageDataUrl is required (data: or https: URL)" }, { status: 400 });
   }
   if (typeof clickXPct !== "number" || typeof clickYPct !== "number") {
     return NextResponse.json({ error: "clickXPct + clickYPct (0-100) required" }, { status: 400 });
   }
 
-  const [meta, base64Data] = imageDataUrl.split(",");
-  const mimeType = meta.replace(/^data:/, "").replace(/;base64$/, "") || "image/png";
+  let base64Data: string;
+  let mimeType: string;
+  try {
+    const img = await imageToInlineBase64(imageDataUrl);
+    base64Data = img.data;
+    mimeType = img.mimeType;
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Could not load image: ${e instanceof Error ? e.message : "unknown"}` },
+      { status: 400 }
+    );
+  }
 
   const ai = new GoogleGenAI({ apiKey });
 
