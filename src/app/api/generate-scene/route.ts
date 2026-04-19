@@ -92,22 +92,33 @@ export async function POST(request: Request) {
   let prompt: string;
   if (hasReference) {
     if (effectiveMode === "full-scene") {
-      // Image-to-image FURNISH: keep the room's architecture exactly,
-      // ADD furniture in the chosen style.
+      // Image-to-image FURNISH. Prompt ordering matters: Nano Banana 2
+      // tends to stay close to the input when the "do not change" list
+      // comes first, sometimes returning the input photo unchanged.
+      // Lead with the REQUIRED action, list architectural preservation
+      // AFTER, and end with an explicit "output must show furniture".
       prompt =
-        `INPUT: a photograph of an empty real-life room. ` +
-        `TASK: photorealistically furnish this exact room in ${preset.label} style. ` +
-        `STRICT RULES — DO NOT CHANGE: the wall paint color, the wall texture/finish, the ceiling ` +
-        `height, the window positions, the window sizes, the window frame style, the existing ` +
-        `chandelier or ceiling fixtures, the flooring material/color/pattern, baseboards, crown ` +
-        `molding, door positions, door styles, any built-ins, the camera angle, the lighting ` +
-        `quality, or the room's perspective. The output room MUST be recognizable as the SAME ROOM ` +
-        `as the input — same walls, same floor, same windows, same chandelier, same trim. ` +
-        `WHAT TO ADD: ${preset.vibe} furniture and decor — ${preset.signaturePieces.join(", ")} — ` +
-        `placed naturally and to scale. Add a rug, art on walls, lamps, plants, throw pillows. ` +
-        `Color palette for furniture only: ${preset.palette.slice(0, 3).join(", ")} (do not repaint walls). ` +
-        `Magazine-quality interior photography. Same daylight from the existing windows. ` +
-        `${extraNotes ?? ""}`.trim();
+        `INSTRUCTION: furnish the empty room in the input photo, image-to-image, in ${preset.label} interior design style. ` +
+        `You MUST add full room-worth of furniture and decor — the output image must be a FURNISHED room, not the empty input.\n\n` +
+        `REQUIRED FURNITURE TO PLACE (pick pieces that fit the room's footprint):\n` +
+        `- Hero pieces: ${preset.signaturePieces.join(", ")}\n` +
+        `- A rug centered in the seating or sleeping area\n` +
+        `- Wall art, sconces or table/floor lamps, plants in planters\n` +
+        `- Throw pillows, a throw blanket, and decorative objects on any surfaces\n` +
+        `- Replace any dated or builder-grade light fixtures with style-appropriate alternatives\n\n` +
+        `STYLE NOTES:\n` +
+        `- Vibe: ${preset.vibe}\n` +
+        `- Furniture + decor color palette: ${preset.palette.slice(0, 3).join(", ")} with accents from ${preset.palette.slice(3).join(", ")}\n\n` +
+        `PRESERVE FROM THE INPUT (don't change):\n` +
+        `- Wall paint color and wall texture\n` +
+        `- Ceiling height\n` +
+        `- Window positions, sizes, and frame styles\n` +
+        `- Flooring material, color, and pattern\n` +
+        `- Baseboards, crown molding, door positions, door styles, built-ins\n` +
+        `- Camera angle and room perspective\n\n` +
+        `OUTPUT REQUIREMENTS: photorealistic magazine-quality interior photograph (think Architectural Digest, Dwell). ` +
+        `The final image MUST show a furnished room — if you return the empty input image, you have failed the task.` +
+        (extraNotes ? `\n\nADDITIONAL NOTES FROM DESIGNER: ${extraNotes}` : "");
     } else {
       // Image-to-image EMPTY-ROOM: keep the room's architecture exactly,
       // remove any furniture, return clean empty backdrop ready for cutouts.
