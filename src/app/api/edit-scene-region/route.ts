@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI, Modality, Type } from "@google/genai";
+import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -54,8 +55,8 @@ export async function POST(request: Request) {
   }
 
   const { imageDataUrl, clickXPct, clickYPct, action, swapTo } = body;
-  if (!imageDataUrl?.startsWith("data:image/")) {
-    return NextResponse.json({ error: "imageDataUrl must be a data:image/... URL" }, { status: 400 });
+  if (!imageDataUrl) {
+    return NextResponse.json({ error: "imageDataUrl (data: or https://) required" }, { status: 400 });
   }
   if (typeof clickXPct !== "number" || typeof clickYPct !== "number") {
     return NextResponse.json({ error: "clickXPct + clickYPct (0-100) required" }, { status: 400 });
@@ -67,8 +68,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "swapTo is required for action 'swap'" }, { status: 400 });
   }
 
-  const [meta, base64Data] = imageDataUrl.split(",");
-  const mimeType = meta.replace(/^data:/, "").replace(/;base64$/, "") || "image/png";
+  let mimeType: string;
+  let base64Data: string;
+  try {
+    const normalized = await imageToInlineBase64(imageDataUrl);
+    mimeType = normalized.mimeType;
+    base64Data = normalized.data;
+  } catch (err) {
+    return NextResponse.json(
+      { error: `Could not load image: ${err instanceof Error ? err.message : String(err)}` },
+      { status: 400 }
+    );
+  }
 
   const ai = new GoogleGenAI({ apiKey });
 

@@ -129,6 +129,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [swappingId, setSwappingId] = useState<string | null>(null);
   const [wallPrompt, setWallPrompt] = useState<string>("");
   const [wallBusy, setWallBusy] = useState(false);
+  const [fixturesPrompt, setFixturesPrompt] = useState<string>("");
+  const [fixturesBusy, setFixturesBusy] = useState(false);
+  const [strippingRef, setStrippingRef] = useState(false);
   const [tipsDraft, setTipsDraft] = useState<string>(room.installTips ?? "");
   // Staging list after "Turn into composite" identifies items in the render.
   // Designer picks which to KEEP vs REMOVE, maybe adds a custom item, then
@@ -1278,29 +1281,33 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }
 
   /**
-   * Change the wall/backdrop: wallpaper, paint color, time-of-day, lighting.
-   * Calls edit-scene-region with a center-top anchor so the edit targets
-   * a wall. Keeps the existing backdrop architecture (windows, floor, etc.).
+   * Whole-scene edit on the backdrop. Used by the Walls & Wallpaper,
+   * Floors, and Fixtures panels — each passes a "focus" hint that
+   * sharpens the prompt server-side. The backdrop is whatever the
+   * composite board is currently showing (hosted URL is fine).
    */
-  async function applyWallTreatment() {
-    const note = wallPrompt.trim();
-    if (!note || wallBusy) return;
+  async function applyBackdropEdit(
+    instruction: string,
+    focus: "walls" | "floor" | "fixtures" | "general",
+    setBusy: (b: boolean) => void,
+    onSuccess: () => void,
+    successToast: string
+  ) {
+    if (!instruction.trim()) return;
     if (!room.sceneBackgroundUrl) {
-      setLastError("No backdrop yet — generate one first.");
+      setLastError("No backdrop yet — generate a render first.");
       return;
     }
-    setWallBusy(true);
+    setBusy(true);
     setLastError(null);
     try {
-      const res = await fetch("/api/edit-scene-region", {
+      const res = await fetch("/api/edit-backdrop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageDataUrl: room.sceneBackgroundUrl,
-          clickXPct: 50,
-          clickYPct: 30,
-          action: "swap",
-          swapTo: `${note} — applied to the walls only. Keep windows, doors, floor, and ceiling exactly as-is.`,
+          instruction: instruction.trim(),
+          focus,
         }),
       });
       const raw = await res.text();
@@ -1309,20 +1316,85 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!res.ok || !payload.imageDataUrl) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
       }
-      const hostedWall = await ensureHostedUrl(payload.imageDataUrl, "scenes");
+      const hosted = (await ensureHostedUrl(payload.imageDataUrl, "scenes")) ?? payload.imageDataUrl;
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
       if (!target) throw new Error("Room missing");
-      target.sceneBackgroundUrl = hostedWall;
+      target.sceneBackgroundUrl = hosted;
       saveProject(fresh);
-      toast.success("Walls updated. Rebuild the composite to refresh the deliverable.");
-      setWallPrompt("");
+      toast.success(successToast);
+      onSuccess();
       onUpdate();
     } catch (err) {
-      setLastError(err instanceof Error ? err.message : "Wall treatment failed");
+      setLastError(err instanceof Error ? err.message : "Backdrop edit failed");
     } finally {
-      setWallBusy(false);
+      setBusy(false);
+    }
+  }
+
+  function applyWallTreatment() {
+    void applyBackdropEdit(
+      wallPrompt,
+      "walls",
+      setWallBusy,
+      () => setWallPrompt(""),
+      "Walls updated. Rebuild the composite to refresh the deliverable."
+    );
+  }
+
+  function applyFixturesEdit() {
+    void applyBackdropEdit(
+      fixturesPrompt,
+      "fixtures",
+      setFixturesBusy,
+      () => setFixturesPrompt(""),
+      "Fixtures/finishes updated. Rebuild the composite to refresh the deliverable."
+    );
+  }
+
+  /**
+   * Strip the uploaded reference photo of any existing furniture / clutter.
+   * Useful when the Matterport capture happened while the house was still
+   * lived-in — designers want a clean architectural shell as their starting
+   * point.
+   */
+  async function stripReferencePhoto() {
+    if (strippingRef) return;
+    if (!referenceImage) {
+      setLastError("Upload a room photo first.");
+      return;
+    }
+    setStrippingRef(true);
+    setLastError(null);
+    try {
+      const res = await fetch("/api/strip-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: referenceImage }),
+      });
+      const raw = await res.text();
+      let payload: { imageDataUrl?: string; error?: string } = {};
+      try { payload = JSON.parse(raw); } catch {}
+      if (!res.ok || !payload.imageDataUrl) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
+      }
+      const hosted = (await ensureHostedUrl(payload.imageDataUrl, "scenes")) ?? payload.imageDataUrl;
+      setReferenceImage(hosted);
+      const fresh = getProjectFromStore(project.id);
+      if (fresh) {
+        const t = fresh.rooms.find(r => r.id === room.id);
+        if (t) {
+          t.referenceImageUrl = hosted;
+          saveProject(fresh);
+          onUpdate();
+        }
+      }
+      toast.success("Furniture & clutter removed from your room photo.");
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Strip failed");
+    } finally {
+      setStrippingRef(false);
     }
   }
 
@@ -1658,12 +1730,22 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 />
               </label>
               {referenceImage && (
-                <button
-                  onClick={() => setReferenceImage(null)}
-                  className="text-xs text-red-500 hover:underline px-1"
-                >
-                  Remove
-                </button>
+                <>
+                  <button
+                    onClick={() => void stripReferencePhoto()}
+                    disabled={strippingRef}
+                    className="text-xs rounded-lg border border-brand-900/15 px-2.5 py-1.5 hover:border-amber/40 hover:bg-amber/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Remove existing furniture and clutter from this photo — useful when the Matterport was captured while the house was still lived-in."
+                  >
+                    {strippingRef ? "Stripping..." : "🧹 Empty the room"}
+                  </button>
+                  <button
+                    onClick={() => setReferenceImage(null)}
+                    className="text-xs text-red-500 hover:underline px-1"
+                  >
+                    Remove
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -2184,6 +2266,61 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
             <div className="mt-1 text-[10px] text-brand-600/70">
               Windows, doors, floor stay. Placed items stay. Rebuild the composite after to refresh the deliverable.
+            </div>
+          </div>
+
+          {/* Fixtures / floors / hardware — same pattern as walls but the
+              prompt targets architectural finishes rather than walls. */}
+          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+              🛠️ Floors, fixtures & hardware
+            </div>
+            <div className="flex gap-2 flex-wrap mb-1.5">
+              <input
+                type="text"
+                value={fixturesPrompt}
+                onChange={e => setFixturesPrompt(e.target.value)}
+                placeholder='e.g. "replace ceiling fan with brass pendant", "matte black cabinet pulls"'
+                className="input flex-1 text-xs min-w-[240px]"
+                disabled={fixturesBusy}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && fixturesPrompt.trim()) {
+                    e.preventDefault();
+                    applyFixturesEdit();
+                  }
+                }}
+              />
+              <button
+                onClick={applyFixturesEdit}
+                disabled={!fixturesPrompt.trim() || fixturesBusy}
+                className="rounded-lg border border-brand-900 px-3 py-2 text-xs font-medium text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-900/5"
+              >
+                {fixturesBusy ? "Applying..." : "Apply"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { label: "Ceiling fan → pendant", value: "replace the ceiling fan with a style-appropriate modern pendant light" },
+                { label: "Brass hardware", value: "upgrade all visible cabinet and door hardware to warm brushed brass" },
+                { label: "Matte black pulls", value: "upgrade all cabinet pulls and door handles to matte black" },
+                { label: "White oak floors", value: "replace the flooring with wide-plank white oak hardwood" },
+                { label: "Herringbone floor", value: "replace the flooring with white oak herringbone pattern" },
+                { label: "Remove popcorn ceiling", value: "remove any popcorn or textured ceiling — smooth flat ceiling in the wall color" },
+                { label: "Crown molding", value: "add simple modern crown molding where the walls meet the ceiling" },
+                { label: "Panel doors", value: "upgrade doors to 5-panel shaker-style doors painted crisp white" },
+              ].map(c => (
+                <button
+                  key={c.label}
+                  onClick={() => setFixturesPrompt(c.value)}
+                  disabled={fixturesBusy}
+                  className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1 text-[10px] text-brand-600/70">
+              Targets lighting, hardware, flooring, trim — not walls, not your placed items.
             </div>
           </div>
 
