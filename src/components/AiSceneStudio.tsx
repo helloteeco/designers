@@ -126,6 +126,22 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   const [wallPrompt, setWallPrompt] = useState<string>("");
   const [wallBusy, setWallBusy] = useState(false);
   const [tipsDraft, setTipsDraft] = useState<string>(room.installTips ?? "");
+  // Staging list after "Turn into composite" identifies items in the render.
+  // Designer picks which to KEEP vs REMOVE, maybe adds a custom item, then
+  // hits "Place selected items" to actually composite.
+  const [extractionReview, setExtractionReview] = useState<null | {
+    sourceRender: string; // the original AI render we extracted from
+    items: Array<{
+      id: string;
+      description: string;
+      category: string;
+      thumbnailDataUrl: string;
+      boundingBoxPct: { x: number; y: number; w: number; h: number };
+      keep: boolean;
+    }>;
+  }>(null);
+  const [extractingReview, setExtractingReview] = useState(false);
+  const [placingReviewed, setPlacingReviewed] = useState(false);
 
   const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
   const hasScene = !!room.sceneBackgroundUrl;
@@ -330,22 +346,236 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }
 
   /**
-   * The connector flow Jeff wants: take the AI's realistic render (which
-   * shows what the room COULD look like — inspiration) and convert it
-   * into an editable composite board (real products layered on the empty
-   * room, each draggable/swappable/removable).
+   * Step 1 of the AI-render → composite conversion: identify every item
+   * in the render, crop a thumbnail of each one from the render itself,
+   * and surface them as a REVIEW list. Designer ticks keep/remove (and
+   * can add custom items) before anything gets placed on the backdrop.
    *
-   * Three stages run in sequence:
-   *   1. Strip the render → empty architectural backdrop (same walls,
-   *      windows, floor, trim — no furniture)
-   *   2. Source real products by analyzing the ORIGINAL render (not the
-   *      stripped version — it has nothing to identify)
-   *   3. Auto-pick the top option per item, generate a cutout, and place
-   *      it on the scene at a category-based default position
+   * Why a review step: Jeff doesn't want to auto-place everything
+   * blindly. The render often includes items he wouldn't ship
+   * (existing chandelier he hates, throw pillows he'd skip, etc).
+   * Cull first, THEN commit to the composite.
+   */
+  async function identifyItemsForReview() {
+    if (extractingReview) return;
+    const render = room.sceneBackgroundUrl;
+    if (!render) {
+      setLastError("Generate a render first, then extract items.");
+      return;
+    }
+    setLastError(null);
+    setExtractingReview(true);
+    try {
+      // 1. Get bounding boxes from Gemini vision
+      const res = await fetch("/api/extract-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: render }),
+      });
+      const raw = await res.text();
+      let payload: {
+        items?: Array<{
+          description: string;
+          category: string;
+          boundingBoxPct: { x: number; y: number; w: number; h: number };
+        }>;
+        error?: string;
+      } = {};
+      try { payload = JSON.parse(raw); } catch {}
+      if (!res.ok) {
+        throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
+      }
+      const items = payload.items ?? [];
+      if (items.length === 0) {
+        throw new Error("AI couldn't identify items in this render. Try re-rolling the render first.");
+      }
+
+      // 2. Crop a thumbnail per item, client-side from the render
+      const img = await loadImageEl(render);
+      const thumbnails = await Promise.all(items.map(async it => {
+        try {
+          const thumbnailDataUrl = cropToDataUrl(img, it.boundingBoxPct);
+          return {
+            id: `rev-${generateId()}`,
+            description: it.description,
+            category: it.category,
+            thumbnailDataUrl,
+            boundingBoxPct: it.boundingBoxPct,
+            keep: true,
+          };
+        } catch {
+          return null;
+        }
+      }));
+      const valid = thumbnails.filter((x): x is NonNullable<typeof x> => !!x);
+
+      setExtractionReview({ sourceRender: render, items: valid });
+      toast.info(`Found ${valid.length} items. Keep the ones you want, then place them on the backdrop.`);
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Extraction failed");
+    } finally {
+      setExtractingReview(false);
+    }
+  }
+
+  function toggleReviewKeep(id: string) {
+    setExtractionReview(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map(it => it.id === id ? { ...it, keep: !it.keep } : it),
+      };
+    });
+  }
+
+  function removeReviewItem(id: string) {
+    setExtractionReview(prev => {
+      if (!prev) return prev;
+      return { ...prev, items: prev.items.filter(it => it.id !== id) };
+    });
+  }
+
+  function cancelReview() {
+    setExtractionReview(null);
+  }
+
+  /**
+   * Step 2 of the AI-render → composite conversion: take the kept items
+   * from the review list, strip the render to an empty backdrop, and
+   * place each kept item as a cutout at its original bounding-box
+   * position. In parallel, source a real product for each item so the
+   * masterlist ships something actually buyable.
    *
-   * Designer lands in the Items panel with everything pre-populated, then
-   * drags, swaps, removes, or adds to refine. One-click conversion from
-   * "pretty picture" → "shippable deliverable with matching masterlist."
+   * The composite image ends up looking exactly like the AI render
+   * (because the cutouts ARE cropped from it). The Excel sheet ships
+   * real SKUs. Best of both.
+   */
+  async function placeReviewedItems() {
+    if (!extractionReview || placingReviewed) return;
+    const kept = extractionReview.items.filter(i => i.keep);
+    if (kept.length === 0) {
+      setLastError("Select at least one item to keep.");
+      return;
+    }
+    setLastError(null);
+    setPlacingReviewed(true);
+    try {
+      // 1. Strip the render
+      const stripRes = await fetch("/api/strip-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: extractionReview.sourceRender }),
+      });
+      const stripPayload = (await stripRes.json()) as { imageDataUrl?: string; error?: string };
+      if (!stripRes.ok || !stripPayload.imageDataUrl) {
+        throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
+      }
+      const emptyBackdrop = stripPayload.imageDataUrl;
+
+      // 2. Persist the stripped backdrop + clear any stale items
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      target.sceneBackgroundUrl = emptyBackdrop;
+      target.sceneSnapshot = undefined;
+      target.sceneItems = [];
+      saveProject(fresh);
+      onUpdate();
+      toast.info(`Placing ${kept.length} items on the empty backdrop... (~15s)`);
+
+      // 3. For each kept item: clean bg-remove on the thumbnail + source real product
+      //    Both run in parallel; we re-read project state per save to avoid races.
+      await Promise.all(kept.map(async (item, idx) => {
+        const [cutoutResult, sourceResult] = await Promise.allSettled([
+          fetch("/api/generate-cutout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: item.description,
+              imageUrl: item.thumbnailDataUrl,
+            }),
+          }).then(r => r.ok ? r.json() as Promise<{ imageUrl?: string; imageDataUrl?: string }> : null),
+          fetch("/api/source-item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: item.description,
+              styleHint: preset.id,
+              budget: remainingBudget || undefined,
+              roomType: room.type,
+            }),
+          }).then(r => r.ok ? r.json() as Promise<{ options?: SourcedOption[] }> : null),
+        ]);
+
+        const cutoutUrl = cutoutResult.status === "fulfilled" && cutoutResult.value
+          ? (cutoutResult.value.imageUrl ?? cutoutResult.value.imageDataUrl ?? item.thumbnailDataUrl)
+          : item.thumbnailDataUrl;
+
+        const opt = sourceResult.status === "fulfilled" && sourceResult.value?.options?.[0]
+          ? sourceResult.value.options[0]
+          : null;
+
+        // Re-fetch fresh project state so parallel saves don't clobber
+        const next = getProjectFromStore(project.id);
+        if (!next) return;
+        const tt = next.rooms.find(r => r.id === room.id);
+        if (!tt) return;
+        if (!tt.sceneItems) tt.sceneItems = [];
+
+        const category = mapCategory(item.category);
+        const customItem: FurnitureItem = {
+          id: `ext-${generateId()}`,
+          name: opt?.name ?? item.description,
+          category,
+          subcategory: item.category,
+          widthIn: parseFirstDim(opt?.dimensions) ?? 36,
+          depthIn: parseSecondDim(opt?.dimensions) ?? 36,
+          heightIn: parseThirdDim(opt?.dimensions) ?? 30,
+          price: opt?.price ?? 0,
+          vendor: opt?.vendor ?? "—",
+          vendorUrl: opt?.url ?? "",
+          imageUrl: cutoutUrl,
+          color: "",
+          material: "",
+          style: preset.designStyle,
+        };
+        const placed = placeFurniture(tt, customItem);
+        placed.status = opt ? "approved" : "specced";
+        tt.furniture.push(placed);
+
+        // Position from the ORIGINAL bounding box — cutout lands where the
+        // render showed the item. Designer can drag/rotate/flip from there.
+        const bb = item.boundingBoxPct;
+        tt.sceneItems.push({
+          id: `scene-${generateId()}`,
+          itemId: customItem.id,
+          x: bb.x + bb.w / 2,
+          y: bb.y + bb.h / 2,
+          width: bb.w,
+          height: bb.h,
+          rotation: 0,
+          zIndex: idx + 1,
+        });
+        saveProject(next);
+        onUpdate();
+      }));
+
+      setExtractionReview(null);
+      setPhase("ready");
+      logActivity(project.id, "composite_from_render", `Placed ${kept.length} render-cutouts in ${room.name}`);
+      toast.success(`Composite board ready — drag, rotate, flip, swap, or remove anything.`);
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Placement failed");
+    } finally {
+      setPlacingReviewed(false);
+    }
+  }
+
+  /**
+   * Original one-shot connector — kept for the legacy preview-gate button
+   * in case someone still has it. Superseded by identifyItemsForReview →
+   * placeReviewedItems flow.
    */
   async function convertRenderToComposite() {
     if (phase === "generating" || phase === "sourcing") return;
@@ -1105,10 +1335,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     onUpdate();
   }
 
-  /** Patch a placed cutout's x/y/width/height. Used by drag + resize. */
+  /** Patch a placed cutout's position/size/orientation. Used by drag + resize + rotate + flip. */
   function updateScenePos(
     sceneItemId: string,
-    patch: Partial<Pick<SceneItem, "x" | "y" | "width" | "height">>
+    patch: Partial<Pick<SceneItem, "x" | "y" | "width" | "height" | "rotation" | "flipX" | "flipY">>
   ) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
@@ -1532,6 +1762,13 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 onSelect={() => setSelectedPlacedId(row.sceneItem.id)}
                 onMove={(x, y) => updateScenePos(row.sceneItem.id, { x, y })}
                 onResize={(w, h) => updateScenePos(row.sceneItem.id, { width: w, height: h })}
+                onRotate={deg => updateScenePos(row.sceneItem.id, { rotation: deg })}
+                onFlip={axis => {
+                  const cur = (room.sceneItems ?? []).find(s => s.id === row.sceneItem.id);
+                  if (!cur) return;
+                  if (axis === "x") updateScenePos(row.sceneItem.id, { flipX: !cur.flipX });
+                  else updateScenePos(row.sceneItem.id, { flipY: !cur.flipY });
+                }}
               />
             ))}
 
@@ -1568,6 +1805,83 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
           )}
 
+          {/* Review list — appears after "Turn this into composite board" identifies items.
+              Designer ticks which to KEEP, optionally removes any entirely, then hits
+              "Place selected" to commit to the composite board. */}
+          {extractionReview && (
+            <div className="mt-3 rounded-lg border-2 border-emerald-500 bg-emerald-50/60 p-3">
+              <div className="flex items-start justify-between gap-2 flex-wrap mb-2">
+                <div>
+                  <div className="text-xs font-semibold text-emerald-900">
+                    ✅ Found {extractionReview.items.length} items in your render
+                  </div>
+                  <div className="text-[11px] text-emerald-800 mt-0.5">
+                    Toggle any you DON&apos;T want, then place the rest on the empty backdrop. You can still add/swap/drag after.
+                  </div>
+                </div>
+                <div className="text-[10px] text-emerald-800">
+                  {extractionReview.items.filter(i => i.keep).length} selected
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
+                {extractionReview.items.map(it => (
+                  <div
+                    key={it.id}
+                    onClick={() => toggleReviewKeep(it.id)}
+                    className={`relative cursor-pointer rounded-lg border-2 p-2 transition ${
+                      it.keep
+                        ? "border-emerald-500 bg-white"
+                        : "border-brand-900/10 bg-white opacity-50"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={it.thumbnailDataUrl}
+                      alt={it.description}
+                      className="w-full h-24 object-contain bg-brand-900/5 rounded mb-1"
+                    />
+                    <div className="text-[11px] font-medium text-brand-900 line-clamp-2">{it.description}</div>
+                    <div className="text-[9px] text-brand-600 uppercase tracking-wider mt-0.5">{it.category}</div>
+                    <div className="absolute top-1 right-1 flex gap-1">
+                      <span
+                        className={`h-5 w-5 rounded flex items-center justify-center text-[10px] font-bold ${
+                          it.keep ? "bg-emerald-500 text-white" : "bg-brand-900/10 text-brand-600"
+                        }`}
+                      >
+                        {it.keep ? "✓" : ""}
+                      </span>
+                      <button
+                        onClick={e => { e.stopPropagation(); removeReviewItem(it.id); }}
+                        className="h-5 w-5 rounded bg-red-100 text-red-600 text-[10px] font-bold hover:bg-red-200"
+                        title="Remove entirely from this list"
+                      >
+                        ✗
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => void placeReviewedItems()}
+                  disabled={placingReviewed || extractionReview.items.filter(i => i.keep).length === 0}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {placingReviewed
+                    ? "🎨 Placing cutouts on backdrop..."
+                    : `🎨 Place ${extractionReview.items.filter(i => i.keep).length} items on the composite board`}
+                </button>
+                <button
+                  onClick={cancelReview}
+                  disabled={placingReviewed}
+                  className="rounded-lg border border-brand-900/15 px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-900/5 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Approval gate — shown only in preview phase. The full review panel
               for sourced items appears below if/when sourcing finishes. */}
           {phase === "preview" && (
@@ -1583,11 +1897,12 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 </button>
                 {renderMode === "realistic" && (
                   <button
-                    onClick={() => void convertRenderToComposite()}
-                    className="rounded-lg border-2 border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
-                    title="Strip the render, source 3 real products per identified item, auto-place the top pick on the empty backdrop. Then drag, swap, or remove anything you don't like."
+                    onClick={() => void identifyItemsForReview()}
+                    disabled={extractingReview || !!extractionReview}
+                    className="rounded-lg border-2 border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Identify every item in this render and give you a review list — pick which ones to keep before anything gets placed on the composite board."
                   >
-                    🎬 Turn this into an editable composite board
+                    {extractingReview ? "🔎 Identifying items..." : "🎬 Turn this into an editable composite board"}
                   </button>
                 )}
                 <button
@@ -2450,6 +2765,42 @@ function prettyVendor(domain: string): string {
   return core.charAt(0).toUpperCase() + core.slice(1);
 }
 
+/** Load an image into an HTMLImageElement. Used by the client-side cropper. */
+function loadImageEl(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image for cropping"));
+    img.src = src;
+  });
+}
+
+/**
+ * Crop a percentage-defined rectangle out of an image and return a PNG
+ * data URL. Used to extract per-item thumbnails from an AI render — the
+ * thumbnail then feeds the background-removal pipeline to produce a
+ * clean cutout.
+ */
+function cropToDataUrl(
+  img: HTMLImageElement,
+  box: { x: number; y: number; w: number; h: number }
+): string {
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+  const sx = Math.max(0, Math.min(W, (box.x / 100) * W));
+  const sy = Math.max(0, Math.min(H, (box.y / 100) * H));
+  const sw = Math.max(1, Math.min(W - sx, (box.w / 100) * W));
+  const sh = Math.max(1, Math.min(H - sy, (box.h / 100) * H));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(sw);
+  canvas.height = Math.round(sh);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas 2d unavailable");
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/png");
+}
+
 /**
  * Fallback tips per room type — same copy as the Install Guide per-room
  * page. Used when the designer hasn't typed custom tips yet so the
@@ -2496,6 +2847,8 @@ interface DraggableCutoutProps {
   onSelect: () => void;
   onMove: (xPct: number, yPct: number) => void;
   onResize: (widthPct: number, heightPct: number) => void;
+  onRotate: (deg: number) => void;
+  onFlip: (axis: "x" | "y") => void;
 }
 
 function DraggableCutout({
@@ -2505,26 +2858,34 @@ function DraggableCutout({
   onSelect,
   onMove,
   onResize,
+  onRotate,
+  onFlip,
 }: DraggableCutoutProps) {
   const [drag, setDrag] = useState<null | {
-    mode: "move" | "resize";
+    mode: "move" | "resize" | "rotate";
     startClientX: number;
     startClientY: number;
     startX: number;
     startY: number;
     startW: number;
     startH: number;
+    startRot: number;
+    centerClientX: number;
+    centerClientY: number;
     parentW: number;
     parentH: number;
   }>(null);
 
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, mode: "move" | "resize") {
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, mode: "move" | "resize" | "rotate") {
     e.stopPropagation();
     e.preventDefault();
     onSelect();
     const parent = (e.currentTarget.closest("[data-scene-surface]") as HTMLElement | null);
     if (!parent) return;
     const rect = parent.getBoundingClientRect();
+    // Center of the current item in client coords (needed for rotation math)
+    const centerClientX = rect.left + (sceneItem.x / 100) * rect.width;
+    const centerClientY = rect.top + (sceneItem.y / 100) * rect.height;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setDrag({
       mode,
@@ -2534,6 +2895,9 @@ function DraggableCutout({
       startY: sceneItem.y,
       startW: sceneItem.width,
       startH: sceneItem.height,
+      startRot: sceneItem.rotation ?? 0,
+      centerClientX,
+      centerClientY,
       parentW: rect.width,
       parentH: rect.height,
     });
@@ -2541,17 +2905,32 @@ function DraggableCutout({
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!drag) return;
-    const dx = ((e.clientX - drag.startClientX) / drag.parentW) * 100;
-    const dy = ((e.clientY - drag.startClientY) / drag.parentH) * 100;
     if (drag.mode === "move") {
-      const nx = Math.max(2, Math.min(98, drag.startX + dx));
-      const ny = Math.max(2, Math.min(98, drag.startY + dy));
-      onMove(nx, ny);
+      const dx = ((e.clientX - drag.startClientX) / drag.parentW) * 100;
+      const dy = ((e.clientY - drag.startClientY) / drag.parentH) * 100;
+      onMove(
+        Math.max(2, Math.min(98, drag.startX + dx)),
+        Math.max(2, Math.min(98, drag.startY + dy)),
+      );
+    } else if (drag.mode === "resize") {
+      const dx = ((e.clientX - drag.startClientX) / drag.parentW) * 100;
+      const dy = ((e.clientY - drag.startClientY) / drag.parentH) * 100;
+      onResize(
+        Math.max(4, Math.min(100, drag.startW + dx * 2)),
+        Math.max(4, Math.min(100, drag.startH + dy * 2)),
+      );
     } else {
-      // Resize from bottom-right: grow width + height proportionally to cursor delta
-      const nw = Math.max(4, Math.min(100, drag.startW + dx * 2));
-      const nh = Math.max(4, Math.min(100, drag.startH + dy * 2));
-      onResize(nw, nh);
+      // Rotate: angle between center→start and center→current
+      const startAngle = Math.atan2(
+        drag.startClientY - drag.centerClientY,
+        drag.startClientX - drag.centerClientX,
+      );
+      const nowAngle = Math.atan2(
+        e.clientY - drag.centerClientY,
+        e.clientX - drag.centerClientX,
+      );
+      const deltaDeg = ((nowAngle - startAngle) * 180) / Math.PI;
+      onRotate(drag.startRot + deltaDeg);
     }
   }
 
@@ -2562,13 +2941,16 @@ function DraggableCutout({
     }
   }
 
+  const rotDeg = sceneItem.rotation ?? 0;
+  const sx = sceneItem.flipX ? -1 : 1;
+  const sy = sceneItem.flipY ? -1 : 1;
   const style: React.CSSProperties = {
     position: "absolute",
     left: `${sceneItem.x}%`,
     top: `${sceneItem.y}%`,
     width: `${sceneItem.width}%`,
     height: `${sceneItem.height}%`,
-    transform: "translate(-50%, -50%)",
+    transform: `translate(-50%, -50%) rotate(${rotDeg}deg)`,
     cursor: drag?.mode === "move" ? "grabbing" : "grab",
     touchAction: "none",
     zIndex: sceneItem.zIndex ?? 1,
@@ -2588,16 +2970,55 @@ function DraggableCutout({
         alt=""
         draggable={false}
         className="w-full h-full object-contain pointer-events-none select-none"
-        style={{ filter: "drop-shadow(0 8px 10px rgba(0,0,0,0.22))" }}
+        style={{
+          filter: "drop-shadow(0 8px 10px rgba(0,0,0,0.22))",
+          transform: `scale(${sx}, ${sy})`,
+        }}
       />
       {selected && (
-        <div
-          onPointerDown={e => onPointerDown(e, "resize")}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          className="absolute -bottom-1.5 -right-1.5 h-4 w-4 rounded-full bg-amber border-2 border-white shadow cursor-nwse-resize"
-          title="Drag corner to resize"
-        />
+        <>
+          {/* Resize handle — bottom-right corner */}
+          <div
+            onPointerDown={e => onPointerDown(e, "resize")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute -bottom-1.5 -right-1.5 h-4 w-4 rounded-full bg-amber border-2 border-white shadow cursor-nwse-resize"
+            title="Drag corner to resize"
+          />
+          {/* Rotation handle — above the top edge */}
+          <div
+            onPointerDown={e => onPointerDown(e, "rotate")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute -top-5 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white shadow cursor-grab"
+            title="Drag to rotate"
+          />
+          {/* Flip buttons — above the rotation handle, as a floating toolbar */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex gap-1"
+            style={{ top: "-36px" }}
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onFlip("x"); }}
+              className="h-5 w-5 rounded bg-white border border-brand-900/20 shadow text-[10px] leading-none hover:bg-brand-900/5"
+              title="Flip horizontally"
+              style={{ transform: `rotate(${-rotDeg}deg)` }}
+            >
+              ⇆
+            </button>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onFlip("y"); }}
+              className="h-5 w-5 rounded bg-white border border-brand-900/20 shadow text-[10px] leading-none hover:bg-brand-900/5"
+              title="Flip vertically"
+              style={{ transform: `rotate(${-rotDeg}deg)` }}
+            >
+              ⇅
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
