@@ -76,7 +76,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   //   preview   — image is back, designer reviews + can re-roll, refine, or approve
   //   sourcing  — only used in cutout-bg mode; product search + cutouts running
   //   ready     — final state (approved + sourced if applicable)
-  const [phase, setPhase] = useState<"idle" | "generating" | "preview" | "sourcing" | "ready">("idle");
+  //
+  // Initial phase restoration — if the room already has a rendered scene from
+  // a previous session, pick up where we left off instead of resetting to
+  // "idle" (which would hide the Extract → Composite Board button):
+  //   • sceneItems present & non-empty  → composite board already populated → "ready"
+  //   • sceneBackgroundUrl present      → render exists but not extracted → "preview"
+  //   • otherwise                       → "idle"
+  const [phase, setPhase] = useState<"idle" | "generating" | "preview" | "sourcing" | "ready">(() => {
+    if (room.sceneItems && room.sceneItems.length > 0) return "ready";
+    if (room.sceneBackgroundUrl) return "preview";
+    return "idle";
+  });
   const [refineNotes, setRefineNotes] = useState("");
 
   // When a reference photo is uploaded for the first time, auto-flip the
