@@ -168,8 +168,16 @@ export function saveProject(project: Project): void {
     console.error("Failed to save project to localStorage:", e);
     if (typeof window !== "undefined") {
       alert(
-        "Storage full. Your browser's local storage is out of space. " +
-        "Download a backup from Settings → Backup & Data, then delete old projects to free space."
+        "Storage full.\n\n" +
+        "Quick fix: click the 🧹 Free storage button in the Design tab — it moves " +
+        "renders and cutouts to cloud storage.\n\n" +
+        "If that fails, Supabase isn't configured yet. Add these env vars in Vercel " +
+        "(Settings → Environment Variables → design-studio):\n" +
+        "  NEXT_PUBLIC_SUPABASE_URL\n" +
+        "  SUPABASE_SERVICE_ROLE_KEY\n" +
+        "Create a free Supabase project at supabase.com, make a public 'cutouts' " +
+        "storage bucket, then redeploy.\n\n" +
+        "Last resort: delete an old project or download a backup from Settings → Backup."
       );
     }
     // Still sync to DB if configured — cloud isn't affected
