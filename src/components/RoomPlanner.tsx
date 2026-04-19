@@ -7,7 +7,7 @@ import FloorPlanAnnotator from "./FloorPlanAnnotator";
 import AutoDetectRooms from "./AutoDetectRooms";
 import RoomLabeler from "./RoomLabeler";
 import { findDuplicateNames } from "@/lib/smart-label";
-import type { Project, Room, RoomType } from "@/lib/types";
+import type { Project, Room, RoomType, WindowSpec } from "@/lib/types";
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
   { value: "primary-bedroom", label: "Primary Bedroom" },
@@ -71,6 +71,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       accentWallColor: "#787060",
       accentWallTreatment: "paint" as "paint" | "wallpaper" | "shiplap" | "stone" | "wood-panel" | "tile",
       accentWallSide: "north" as "north" | "south" | "east" | "west",
+      windows: [] as WindowSpec[],
     };
   }
 
@@ -95,6 +96,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       accentWallSide: room.accentWall?.wall ?? "north",
       features: [...room.features],
       notes: room.notes,
+      windows: room.windows ? [...room.windows] : [],
     });
     setShowForm(true);
   }
@@ -125,6 +127,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       features: form.features,
       notes: form.notes,
       accentWall,
+      windows: form.windows,
     };
 
     const fresh = getProjectFromStore(project.id);
@@ -735,6 +738,16 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
                 )}
               </div>
 
+              {/* Windows & Blinds — optional, per-window measurements for sourcing
+                  rattan shades, curtains, etc. Off Matterport ruler or tape measure. */}
+              <WindowsSection
+                windows={form.windows}
+                onChange={(windows) => setForm({ ...form, windows })}
+                projectId={project.id}
+                roomId={editingRoom?.id}
+                onAfterShop={onUpdate}
+              />
+
               <div>
                 <label className="label">Notes</label>
                 <textarea
@@ -769,4 +782,360 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 function getFloors(rooms: Room[]): number[] {
   const floors = Array.from(new Set(rooms.map((r) => r.floor)));
   return floors.sort((a, b) => a - b);
+}
+
+// ── Windows & Blinds sub-component ───────────────────────────────────
+//
+// Manual measurement capture (off Matterport ruler or tape measure) + one-click
+// blind sourcing via existing /api/source-item. No new API, no new tab, no new
+// storage — windows live on the Room, sourced blinds go into room.furniture so
+// the masterlist xlsx picks them up automatically.
+
+interface WindowsSectionProps {
+  windows: WindowSpec[];
+  onChange: (windows: WindowSpec[]) => void;
+  projectId: string;
+  roomId: string | undefined;     // only set when editing an existing room
+  onAfterShop: () => void;
+}
+
+interface BlindOption {
+  name: string;
+  vendor: string;
+  price: number | null;
+  url: string;
+  imageUrl?: string;
+  dimensions?: string;
+}
+
+function WindowsSection({ windows, onChange, projectId, roomId, onAfterShop }: WindowsSectionProps) {
+  const [expanded, setExpanded] = useState(windows.length > 0);
+  const [draft, setDraft] = useState<{ label: string; widthIn: string; heightIn: string; mountType: "inside" | "outside"; notes: string } | null>(null);
+  const [shoppingId, setShoppingId] = useState<string | null>(null);
+  const [shopOptions, setShopOptions] = useState<BlindOption[] | null>(null);
+  const [shopError, setShopError] = useState<string | null>(null);
+  const [shopStyleChips, setShopStyleChips] = useState<Set<string>>(new Set(["🪵 Woven / rattan"]));
+
+  // Preset material / safety / install chips that tack onto the sourcing query.
+  // Same pattern as AiSceneStudio's STR chips so sourcing feels consistent.
+  const CHIPS = [
+    { label: "🪵 Woven / rattan", qualifier: "natural woven bamboo or rattan material" },
+    { label: "☀️ Light-filtering", qualifier: "light-filtering semi-sheer" },
+    { label: "🌙 Blackout lining", qualifier: "with blackout liner for sleep rooms" },
+    { label: "🚫 Cordless (child-safe)", qualifier: "cordless and child-safe" },
+    { label: "📏 Inside mount", qualifier: "inside-mount compatible" },
+    { label: "💧 Moisture-resistant", qualifier: "moisture-resistant for bathrooms and kitchens" },
+  ];
+
+  function toggleChip(label: string) {
+    setShopStyleChips(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
+
+  function addWindow() {
+    if (!draft) return;
+    const w: WindowSpec = {
+      id: generateId(),
+      label: draft.label.trim() || `Window ${windows.length + 1}`,
+      widthIn: Math.max(1, parseFloat(draft.widthIn) || 0),
+      heightIn: Math.max(1, parseFloat(draft.heightIn) || 0),
+      mountType: draft.mountType,
+      notes: draft.notes.trim(),
+    };
+    if (w.widthIn <= 0 || w.heightIn <= 0) return;
+    onChange([...windows, w]);
+    setDraft(null);
+  }
+
+  function removeWindow(id: string) {
+    onChange(windows.filter(w => w.id !== id));
+  }
+
+  function updateWindow(id: string, patch: Partial<WindowSpec>) {
+    onChange(windows.map(w => w.id === id ? { ...w, ...patch } : w));
+  }
+
+  async function shopBlinds(win: WindowSpec) {
+    setShoppingId(win.id);
+    setShopOptions(null);
+    setShopError(null);
+    try {
+      // Mount-type math: inside mount subtracts ¼" deadwood, outside adds ~2.5"
+      // each side + 2" top overlap. Matches industry standard sizing.
+      const isInside = win.mountType === "inside";
+      const orderWidth = isInside ? Math.max(1, win.widthIn - 0.25) : win.widthIn + 5;
+      const orderHeight = isInside ? Math.max(1, win.heightIn - 0.25) : win.heightIn + 2;
+      const chipQualifiers = CHIPS.filter(c => shopStyleChips.has(c.label)).map(c => c.qualifier).join(", ");
+      const description = `Window shade sized ${orderWidth.toFixed(1)}" W × ${orderHeight.toFixed(1)}" H for ${isInside ? "inside" : "outside"}-mount installation${chipQualifiers ? `, ${chipQualifiers}` : ""}`.trim();
+
+      const res = await fetch("/api/source-item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description,
+          estimatedSize: `${orderWidth.toFixed(1)}x${orderHeight.toFixed(1)} inches`,
+        }),
+      });
+      const payload = (await res.json()) as { options?: BlindOption[]; error?: string };
+      if (!res.ok) throw new Error(payload.error || `HTTP ${res.status}`);
+      setShopOptions(payload.options ?? []);
+    } catch (err) {
+      setShopError(err instanceof Error ? err.message : "Sourcing failed");
+    }
+  }
+
+  function commitBlindPick(win: WindowSpec, opt: BlindOption) {
+    if (!roomId) return;
+    const fresh = getProjectFromStore(projectId);
+    if (!fresh) return;
+    const room = fresh.rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    // Push as a SelectedFurniture row. Category "decor" + subcategory "Window Treatment"
+    // so masterlist + UI treat it naturally.
+    const itemId = `win-${generateId()}`;
+    room.furniture.push({
+      item: {
+        id: itemId,
+        name: opt.name,
+        category: "decor",
+        subcategory: "Window Treatment",
+        widthIn: win.widthIn,
+        depthIn: 2,
+        heightIn: win.heightIn,
+        price: opt.price ?? 0,
+        vendor: opt.vendor,
+        vendorUrl: opt.url,
+        imageUrl: opt.imageUrl ?? "",
+        color: "",
+        material: "",
+        style: fresh.style,
+      },
+      quantity: 1,
+      roomId,
+      notes: `Window "${win.label}" — ${win.mountType} mount`,
+      status: "specced",
+    });
+
+    // Link the window to this furniture row so we can show "✓ blind picked"
+    const updated = windows.map(w => w.id === win.id ? { ...w, sourcedFurnitureId: itemId } : w);
+    // Also persist the updated windows on the saved room
+    room.windows = updated;
+    saveProject(fresh);
+    onChange(updated);
+    setShoppingId(null);
+    setShopOptions(null);
+    onAfterShop();
+  }
+
+  const totalSourced = windows.filter(w => w.sourcedFurnitureId).length;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full text-left hover:text-amber-dark transition"
+      >
+        <span className="label mb-0">
+          🪟 Windows &amp; Blinds
+          {windows.length > 0 && (
+            <span className="ml-1 font-normal normal-case text-brand-600">
+              ({windows.length} window{windows.length === 1 ? "" : "s"}
+              {totalSourced > 0 ? ` · ${totalSourced} blind${totalSourced === 1 ? "" : "s"} picked` : ""})
+            </span>
+          )}
+        </span>
+        <span className="text-xs text-brand-600">{expanded ? "▼" : "▶"}</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-2 space-y-2 rounded-lg border border-brand-900/10 p-3 bg-cream/40">
+          <p className="text-[11px] text-brand-600">
+            Enter measurements from the Matterport ruler or a tape measure. Inside-mount
+            subtracts ¼" deadwood; outside-mount adds ~2.5" each side + 2" top overlap automatically.
+          </p>
+
+          {/* Window list */}
+          {windows.map(w => {
+            const picked = !!w.sourcedFurnitureId;
+            return (
+              <div key={w.id} className="rounded-lg bg-white border border-brand-900/10 p-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className="input py-1 text-xs flex-1 min-w-[120px]"
+                    value={w.label}
+                    onChange={(e) => updateWindow(w.id, { label: e.target.value })}
+                    placeholder="Label"
+                  />
+                  <input
+                    type="number"
+                    step="0.25"
+                    className="input py-1 text-xs w-20"
+                    value={w.widthIn || ""}
+                    onChange={(e) => updateWindow(w.id, { widthIn: parseFloat(e.target.value) || 0 })}
+                    placeholder='W "'
+                  />
+                  <span className="text-brand-600 text-xs">×</span>
+                  <input
+                    type="number"
+                    step="0.25"
+                    className="input py-1 text-xs w-20"
+                    value={w.heightIn || ""}
+                    onChange={(e) => updateWindow(w.id, { heightIn: parseFloat(e.target.value) || 0 })}
+                    placeholder='H "'
+                  />
+                  <select
+                    className="select py-1 text-xs w-24"
+                    value={w.mountType}
+                    onChange={(e) => updateWindow(w.id, { mountType: e.target.value as "inside" | "outside" })}
+                  >
+                    <option value="inside">Inside</option>
+                    <option value="outside">Outside</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => shopBlinds(w)}
+                    disabled={shoppingId === w.id}
+                    className="text-xs rounded-lg bg-amber/20 px-2.5 py-1 font-semibold text-amber-dark hover:bg-amber/40 disabled:opacity-50"
+                  >
+                    {shoppingId === w.id ? "⏳ Shopping..." : picked ? "✓ Re-shop" : "🛍 Shop blinds"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeWindow(w.id)}
+                    className="text-xs text-red-500 hover:text-red-700"
+                    title="Remove window"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Style chips — only shown while shopping this window */}
+                {shoppingId === w.id && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {CHIPS.map(c => {
+                      const active = shopStyleChips.has(c.label);
+                      return (
+                        <button
+                          key={c.label}
+                          type="button"
+                          onClick={() => toggleChip(c.label)}
+                          className={`text-[10px] rounded-full border px-2 py-0.5 transition ${
+                            active ? "border-amber bg-amber/15 text-amber-dark" : "border-brand-900/15 text-brand-600 hover:border-amber/40"
+                          }`}
+                        >
+                          {c.label}{active ? " ✓" : ""}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => shopBlinds(w)}
+                      className="text-[10px] rounded-full border border-brand-900 bg-brand-900 text-white px-2 py-0.5"
+                    >
+                      ↻ Re-search with chips
+                    </button>
+                  </div>
+                )}
+
+                {/* Shop results / errors */}
+                {shoppingId === w.id && shopError && (
+                  <div className="mt-2 text-xs text-red-500">{shopError}</div>
+                )}
+                {shoppingId === w.id && shopOptions && shopOptions.length === 0 && (
+                  <div className="mt-2 text-xs text-brand-600">No products found — try fewer chips or a simpler description.</div>
+                )}
+                {shoppingId === w.id && shopOptions && shopOptions.length > 0 && (
+                  <div className="mt-2 grid sm:grid-cols-3 gap-2">
+                    {shopOptions.map((opt, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => commitBlindPick(w, opt)}
+                        disabled={!roomId}
+                        className="text-left rounded-lg border border-brand-900/10 bg-white p-2 text-xs hover:border-amber/40 disabled:opacity-60"
+                        title={!roomId ? "Save the room first before picking a blind" : undefined}
+                      >
+                        <div className="font-semibold text-brand-900 truncate">{opt.name}</div>
+                        <div className="text-brand-600">{opt.vendor}{opt.price ? ` · $${opt.price}` : ""}</div>
+                        {opt.dimensions && <div className="text-[10px] text-brand-600/70">{opt.dimensions}</div>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {shoppingId === w.id && !roomId && (
+                  <div className="mt-2 text-[11px] text-amber-dark">
+                    Save the room first ↑ — the blind needs a room to attach to.
+                  </div>
+                )}
+
+                {w.notes && (
+                  <div className="mt-1.5 text-[11px] text-brand-600">📝 {w.notes}</div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Add new window — inline draft row */}
+          {draft ? (
+            <div className="rounded-lg bg-amber/5 border border-amber/30 p-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  autoFocus
+                  className="input py-1 text-xs flex-1 min-w-[120px]"
+                  placeholder="Label (e.g. Over sink)"
+                  value={draft.label}
+                  onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                />
+                <input
+                  type="number"
+                  step="0.25"
+                  className="input py-1 text-xs w-20"
+                  placeholder='W "'
+                  value={draft.widthIn}
+                  onChange={(e) => setDraft({ ...draft, widthIn: e.target.value })}
+                />
+                <span className="text-brand-600 text-xs">×</span>
+                <input
+                  type="number"
+                  step="0.25"
+                  className="input py-1 text-xs w-20"
+                  placeholder='H "'
+                  value={draft.heightIn}
+                  onChange={(e) => setDraft({ ...draft, heightIn: e.target.value })}
+                />
+                <select
+                  className="select py-1 text-xs w-24"
+                  value={draft.mountType}
+                  onChange={(e) => setDraft({ ...draft, mountType: e.target.value as "inside" | "outside" })}
+                >
+                  <option value="inside">Inside</option>
+                  <option value="outside">Outside</option>
+                </select>
+                <button type="button" onClick={addWindow} className="text-xs btn-primary btn-sm">
+                  Add
+                </button>
+                <button type="button" onClick={() => setDraft(null)} className="text-xs text-brand-600 hover:text-brand-900">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setDraft({ label: "", widthIn: "", heightIn: "", mountType: "inside", notes: "" })}
+              className="w-full text-xs rounded-lg border border-dashed border-brand-900/20 py-2 text-brand-600 hover:border-amber/40 hover:text-brand-900"
+            >
+              + Add window
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -277,6 +277,24 @@ export interface Room {
    *  Used to crop the SVG so the Space Planner backdrop shows just this
    *  room's walls, doors, and windows. */
   svgBBox?: { x: number; y: number; width: number; height: number };
+  /** Per-window measurements designers capture (usually off the Matterport
+   *  ruler tool) so we can source correctly-sized rattan blinds, roller
+   *  shades, curtains, etc. Optional — rooms without this field work fine. */
+  windows?: WindowSpec[];
+}
+
+/** A single window with measurements for blind/shade sourcing. */
+export interface WindowSpec {
+  id: string;
+  label: string;                 // e.g. "North window", "Over sink" — designer's choice
+  widthIn: number;               // inner frame width
+  heightIn: number;              // inner frame height
+  mountType: "inside" | "outside";
+  notes: string;                 // optional ("trim depth 1.5in", "near radiator", etc.)
+  /** If a blind/shade has been sourced for this window, this references the
+   *  furniture line-item id in room.furniture so masterlist + composite stay
+   *  in sync without duplicate plumbing. */
+  sourcedFurnitureId?: string;
 }
 
 export interface MoodBoard {
