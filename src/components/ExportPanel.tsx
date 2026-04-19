@@ -6,6 +6,7 @@ import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import { logActivity } from "@/lib/store";
 import { getStudioSettings } from "@/lib/studio-settings";
 import { downloadMasterlistXlsx } from "@/lib/masterlist-export";
+import { useToast } from "@/components/Toast";
 
 interface Props {
   project: Project;
@@ -19,6 +20,7 @@ export default function ExportPanel({ project }: Props) {
   const totalCost = rows.reduce((s, r) => s + r.totalPrice, 0);
   const sleeping = getTotalSleeping(project.rooms);
   const settings = getStudioSettings();
+  const toast = useToast();
   const [generating, setGenerating] = useState(false);
 
   async function downloadXlsx() {
@@ -26,6 +28,10 @@ export default function ExportPanel({ project }: Props) {
     try {
       await downloadMasterlistXlsx(project);
       logActivity(project.id, "exported", "Exported Teeco masterlist xlsx");
+      toast.success("Masterlist .xlsx downloaded");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Export failed";
+      toast.error(`Couldn't generate masterlist: ${msg}`);
     } finally {
       setGenerating(false);
     }

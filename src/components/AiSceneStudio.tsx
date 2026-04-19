@@ -198,6 +198,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   );
   const remainingBudget = Math.max(0, budgetTotal - approvedSpend);
 
+  // Disable action buttons while any long-running Gemini phase is in flight.
+  // Prevents designers from spamming "Generate" during the 30–45s render and
+  // queueing N duplicate Gemini calls (wasted $$$).
+  const isBusy = phase === "generating" || phase === "sourcing";
+
   // Health-check on mount
   useEffect(() => {
     let cancelled = false;
@@ -2052,11 +2057,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 </button>
                 <button
                   onClick={() => generateScene("")}
-                  disabled={!referenceImage}
+                  disabled={!referenceImage || isBusy}
                   className="rounded-lg border border-amber px-3 py-2.5 text-xs font-medium text-amber-dark hover:bg-amber/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={!referenceImage ? "Re-upload your room photo first" : "Try another render with the same style + photo"}
+                  title={!referenceImage ? "Re-upload your room photo first" : isBusy ? "Wait for current render to finish" : "Try another render with the same style + photo"}
                 >
-                  🔄 Re-roll
+                  {isBusy ? "⏳ Working..." : "🔄 Re-roll"}
                 </button>
                 <button
                   onClick={() => setPhase("idle")}
@@ -2123,11 +2128,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                   />
                   <button
                     onClick={() => void generateScene(refineNotes)}
-                    disabled={!refineNotes.trim() || !referenceImage}
-                    title={!referenceImage ? "Re-upload your room photo first" : undefined}
+                    disabled={!refineNotes.trim() || !referenceImage || isBusy}
+                    title={!referenceImage ? "Re-upload your room photo first" : isBusy ? "Wait for current render to finish" : undefined}
                     className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
                   >
-                    ✏️ Re-render with notes
+                    {isBusy ? "⏳ Working..." : "✏️ Re-render with notes"}
                   </button>
                 </div>
                 <div className="mt-1 text-[10px] text-brand-600/70">

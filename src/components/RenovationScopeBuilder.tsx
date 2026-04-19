@@ -158,11 +158,17 @@ export default function RenovationScopeBuilder({ project, onUpdate }: Props) {
     e.preventDefault();
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
+    // If a roomId was picked, make sure it still exists. Otherwise fall back
+    // to whole-home scope so the item isn't orphaned pointing at a deleted room.
+    const validRoomId =
+      customForm.roomId && fresh.rooms.some(r => r.id === customForm.roomId)
+        ? customForm.roomId
+        : "";
     if (!fresh.scope) fresh.scope = [];
     fresh.scope.push({
       id: generateId(),
       description: customForm.description,
-      roomId: customForm.roomId,
+      roomId: validRoomId,
       trade: customForm.trade,
       laborHours: customForm.laborHours,
       materialCost: customForm.materialCost,

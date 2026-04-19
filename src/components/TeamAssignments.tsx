@@ -92,12 +92,18 @@ export default function TeamAssignments({ project, onUpdate }: Props) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     if (!fresh.tasks) fresh.tasks = [];
+    // Guard against orphan: if the picked room was deleted since the form
+    // was opened, drop the assignment so the task isn't invisible later.
+    const validRoomId =
+      taskForm.roomId && fresh.rooms.some(r => r.id === taskForm.roomId)
+        ? taskForm.roomId
+        : undefined;
     const task: TaskAssignment = {
       id: generateId(),
       title: taskForm.title,
       description: taskForm.description,
       assignedTo: taskForm.assignedTo,
-      roomId: taskForm.roomId || undefined,
+      roomId: validRoomId,
       trade: taskForm.trade,
       status: "not-started",
       dueDate: taskForm.dueDate || undefined,
