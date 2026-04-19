@@ -2362,6 +2362,51 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </button>
             </div>
 
+            {/* STR-oriented descriptor chips — append useful qualifiers that
+                boost guest capacity and reduce wear. Click to tack on to
+                your current description; click again to remove. */}
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {[
+                { label: "🛏 Sleeper / pullout", qualifier: "with pullout sleeper bed for extra guests" },
+                { label: "🫧 Performance fabric", qualifier: "in stain-resistant performance fabric" },
+                { label: "🐶 Pet-friendly", qualifier: "pet-friendly and kid-friendly" },
+                { label: "📏 Under 80\"", qualifier: "under 80 inches wide" },
+                { label: "🧼 Easy to clean", qualifier: "easy-clean, durable for short-term rental use" },
+              ].map(chip => {
+                const active = pickQuery.includes(chip.qualifier);
+                return (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    disabled={pickPhase !== "idle"}
+                    onClick={() => {
+                      if (active) {
+                        // Remove the qualifier
+                        setPickQuery(
+                          pickQuery
+                            .replace(new RegExp(",?\\s*" + chip.qualifier.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "i"), "")
+                            .trim()
+                            .replace(/\s+/g, " ")
+                        );
+                      } else {
+                        // Add the qualifier
+                        const base = pickQuery.trim();
+                        setPickQuery(base ? `${base}, ${chip.qualifier}` : chip.qualifier);
+                      }
+                    }}
+                    className={`text-[10px] rounded-full border px-2 py-0.5 transition ${
+                      active
+                        ? "border-amber bg-amber/15 text-amber-dark"
+                        : "border-brand-900/15 hover:border-amber/40 hover:bg-amber/5"
+                    }`}
+                    title={`Adds "${chip.qualifier}" to your search — useful for short-term rental sourcing`}
+                  >
+                    {chip.label}{active ? " ✓" : ""}
+                  </button>
+                );
+              })}
+            </div>
+
             {pickOptions && pickOptions.options.length > 0 && (
               <div className="mt-2 grid sm:grid-cols-3 gap-2">
                 {pickOptions.options.map((opt, i) => (
