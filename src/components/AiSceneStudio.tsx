@@ -5,6 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
+import { ensureHostedUrl, compactProjectImages } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
 import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
 
@@ -142,6 +143,35 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }>(null);
   const [extractingReview, setExtractingReview] = useState(false);
   const [placingReviewed, setPlacingReviewed] = useState(false);
+  const [compacting, setCompacting] = useState(false);
+
+  /**
+   * Jeff's "Storage full" escape hatch: walk the whole project, upload
+   * every remaining base64 data URL to Supabase, swap localStorage for
+   * the hosted URLs, save. Usually frees 10-30 MB on an active project
+   * and fixes QuotaExceededError going forward.
+   */
+  async function freeUpStorage() {
+    if (compacting) return;
+    setCompacting(true);
+    setLastError(null);
+    try {
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const { uploaded } = await compactProjectImages(fresh);
+      if (uploaded === 0) {
+        toast.info("Already compact — no base64 images found to offload.");
+      } else {
+        saveProject(fresh);
+        onUpdate();
+        toast.success(`Moved ${uploaded} image${uploaded === 1 ? "" : "s"} to cloud storage. localStorage is leaner now.`);
+      }
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Compact failed");
+    } finally {
+      setCompacting(false);
+    }
+  }
 
   const preset = STYLE_PRESETS.find(p => p.id === styleId) ?? STYLE_PRESETS[0];
   const hasScene = !!room.sceneBackgroundUrl;
@@ -252,13 +282,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         throw new Error(`API returned 200 but no imageDataUrl. Raw response: ${raw.slice(0, 400)}`);
       }
 
+      // Offload the big base64 blob to Supabase so localStorage doesn't
+      // fill up after a few renders. Falls back to the data URL if upload
+      // fails for any reason.
+      const hostedUrl = await ensureHostedUrl(imageDataUrl, "scenes");
+
       // Persist immediately so reload survives + Install Guide hero updates
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing in localStorage");
       const t = fresh.rooms.find(r => r.id === room.id);
       if (!t) throw new Error(`Room ${room.id} missing in project`);
-      t.sceneBackgroundUrl = imageDataUrl;
-      t.sceneSnapshot = imageDataUrl;
+      t.sceneBackgroundUrl = hostedUrl;
+      t.sceneSnapshot = hostedUrl;
       saveProject(fresh);
       onUpdate();
 
@@ -470,7 +505,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!stripRes.ok || !stripPayload.imageDataUrl) {
         throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
       }
-      const emptyBackdrop = stripPayload.imageDataUrl;
+      const emptyBackdrop = await ensureHostedUrl(stripPayload.imageDataUrl, "scenes");
 
       // 2. Persist the stripped backdrop + clear any stale items
       const fresh = getProjectFromStore(project.id);
@@ -508,9 +543,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           }).then(r => r.ok ? r.json() as Promise<{ options?: SourcedOption[] }> : null),
         ]);
 
-        const cutoutUrl = cutoutResult.status === "fulfilled" && cutoutResult.value
+        const rawCutoutUrl = cutoutResult.status === "fulfilled" && cutoutResult.value
           ? (cutoutResult.value.imageUrl ?? cutoutResult.value.imageDataUrl ?? item.thumbnailDataUrl)
           : item.thumbnailDataUrl;
+        // Make sure the cutout is a hosted URL, not a giant base64
+        const cutoutUrl = await ensureHostedUrl(rawCutoutUrl, "cutouts");
 
         const opt = sourceResult.status === "fulfilled" && sourceResult.value?.options?.[0]
           ? sourceResult.value.options[0]
@@ -535,7 +572,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           price: opt?.price ?? 0,
           vendor: opt?.vendor ?? "—",
           vendorUrl: opt?.url ?? "",
-          imageUrl: cutoutUrl,
+          imageUrl: cutoutUrl ?? item.thumbnailDataUrl,
           color: "",
           material: "",
           style: preset.designStyle,
@@ -599,7 +636,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!stripRes.ok || !stripPayload.imageDataUrl) {
         throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
       }
-      const emptyBackdrop = stripPayload.imageDataUrl;
+      const emptyBackdrop = await ensureHostedUrl(stripPayload.imageDataUrl, "scenes");
 
       // 2. Source products from the ORIGINAL render (the stripped one has nothing)
       setPhase("sourcing");
@@ -659,6 +696,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         } catch {
           // If cutout fails, fall back to the raw product image URL (proxy will still serve it)
         }
+        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
         const next = getProjectFromStore(project.id);
         if (!next) return;
         const tt = next.rooms.find(r => r.id === room.id);
@@ -723,13 +761,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!res.ok || !payload.imageDataUrl) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 400)}`);
       }
-      // Persist the stripped background
+      // Upload the stripped backdrop before persisting
+      const hostedStrip = await ensureHostedUrl(payload.imageDataUrl, "scenes");
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const t = fresh.rooms.find(r => r.id === room.id);
       if (!t) throw new Error("Room missing");
-      t.sceneBackgroundUrl = payload.imageDataUrl;
-      t.sceneSnapshot = payload.imageDataUrl;
+      t.sceneBackgroundUrl = hostedStrip;
+      t.sceneSnapshot = hostedStrip;
       // Wipe any existing scene cutouts since the underlying image changed
       t.sceneItems = [];
       saveProject(fresh);
@@ -785,13 +824,13 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!res.ok || !payload.imageDataUrl) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
       }
-      // Persist the new edited image
+      const hostedSwap = await ensureHostedUrl(payload.imageDataUrl, "scenes");
       const fresh = getProjectFromStore(project.id);
       if (!fresh) return;
       const t = fresh.rooms.find(r => r.id === room.id);
       if (!t) return;
-      t.sceneBackgroundUrl = payload.imageDataUrl;
-      t.sceneSnapshot = payload.imageDataUrl;
+      t.sceneBackgroundUrl = hostedSwap;
+      t.sceneSnapshot = hostedSwap;
       saveProject(fresh);
       onUpdate();
       toast.success(`Swapped "${payload.identified ?? "item"}" → ${swapTo}`);
@@ -822,12 +861,13 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!res.ok || !payload.imageDataUrl) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
       }
+      const hostedRemove = await ensureHostedUrl(payload.imageDataUrl, "scenes");
       const fresh = getProjectFromStore(project.id);
       if (!fresh) return;
       const t = fresh.rooms.find(r => r.id === room.id);
       if (!t) return;
-      t.sceneBackgroundUrl = payload.imageDataUrl;
-      t.sceneSnapshot = payload.imageDataUrl;
+      t.sceneBackgroundUrl = hostedRemove;
+      t.sceneSnapshot = hostedRemove;
       saveProject(fresh);
       onUpdate();
       toast.success(`Removed "${payload.identified ?? "item"}" from scene`);
@@ -968,6 +1008,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           cutoutUrl = json.imageUrl ?? json.imageDataUrl;
         }
       } catch {}
+      if (cutoutUrl?.startsWith("data:")) {
+        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
+      }
     }
 
     const fresh = getProjectFromStore(project.id);
@@ -1112,6 +1155,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           cutoutUrl = json.imageUrl ?? json.imageDataUrl ?? opt.imageUrl;
         }
       } catch {}
+      if (cutoutUrl?.startsWith("data:")) {
+        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
+      }
 
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
@@ -1220,11 +1266,12 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!res.ok || !payload.imageDataUrl) {
         throw new Error(payload.error || `HTTP ${res.status} — ${raw.slice(0, 300)}`);
       }
+      const hostedWall = await ensureHostedUrl(payload.imageDataUrl, "scenes");
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
       if (!target) throw new Error("Room missing");
-      target.sceneBackgroundUrl = payload.imageDataUrl;
+      target.sceneBackgroundUrl = hostedWall;
       saveProject(fresh);
       toast.success("Walls updated. Rebuild the composite to refresh the deliverable.");
       setWallPrompt("");
@@ -1269,6 +1316,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           cutoutUrl = json.imageUrl ?? json.imageDataUrl;
         }
       } catch {}
+      if (cutoutUrl?.startsWith("data:")) {
+        cutoutUrl = (await ensureHostedUrl(cutoutUrl, "cutouts")) ?? cutoutUrl;
+      }
 
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
@@ -1385,11 +1435,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         tips: room.installTips || defaultTipsForRoom(room.type),
       });
 
+      // The composite is the biggest single blob we produce — upload it
+      // so the Install Guide + masterlist share a small URL, not a
+      // multi-megabyte base64 string.
+      const hostedSnapshot = await ensureHostedUrl(dataUrl, "snapshots");
+
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
       if (!target) throw new Error("Room missing");
-      target.sceneSnapshot = dataUrl;
+      target.sceneSnapshot = hostedSnapshot;
       saveProject(fresh);
       logActivity(project.id, "composite_built", `Built composite for ${target.name} (${placements.length} items)`);
       toast.success(`Composite built — flows into Install Guide + masterlist.`);
@@ -1714,6 +1769,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             ↶ Clear & Restart
           </button>
         )}
+        <button
+          onClick={() => void freeUpStorage()}
+          disabled={compacting}
+          className="rounded-lg border border-brand-900/15 px-3 py-2.5 text-xs font-medium text-brand-700 hover:bg-brand-900/5 disabled:opacity-50"
+          title="Offload base64 images in this project to cloud storage. Run if you hit 'Storage full'."
+        >
+          {compacting ? "Compacting..." : "🧹 Free storage"}
+        </button>
       </div>
       {!referenceImage && hasScene && (
         <div className="mt-2 rounded-lg bg-amber/10 border border-amber/30 px-3 py-2 text-[11px] text-brand-900">
