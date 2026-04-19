@@ -93,28 +93,27 @@ export async function POST(request: Request) {
   let prompt: string;
   if (hasReference) {
     if (effectiveMode === "full-scene") {
-      // Output-focused prompt. Nano Banana tends to echo the input when
-      // prompted with "do X to the input" — framing this as "GENERATE
-      // this new photo" with the input as architectural reference
-      // pushes the model to produce a genuinely new, furnished image.
+      // Original image-to-image prompt that worked reliably in earlier
+      // versions. My "output-focused" rewrite in v9/v10 was a regression
+      // — Nano Banana actually fills rooms better when you frame the
+      // task as "furnish this exact room" with explicit preservation
+      // rules, not as "generate a new photo."
+      //
+      // Keeping echo-skip parsing below as belt-and-suspenders.
       prompt =
-        `Generate a photorealistic, magazine-quality interior design photograph of a fully-FURNISHED ${preset.label}-style ${roomKind}. ` +
-        `Architectural Digest / Dwell photo quality. The room must be visibly furnished with a complete furniture set — empty rooms fail this task.\n\n` +
-        `USE THE INPUT PHOTO AS ARCHITECTURAL REFERENCE ONLY — match its wall paint color, wall texture, window positions + sizes + frame styles, flooring material + color + pattern, baseboards, crown molding, door positions, ceiling height, camera angle, and room perspective. ` +
-        `The furniture and decor in the input (if any) should be REPLACED, not preserved — this is a re-design, not a preservation task.\n\n` +
-        `REQUIRED ELEMENTS in the output image:\n` +
-        `- Hero furniture: ${preset.signaturePieces.join(", ")} — pick a set that fits the ${room.widthFt}' × ${room.lengthFt}' footprint\n` +
-        `- A rug anchoring the main seating/sleeping arrangement\n` +
-        `- Wall art, 2-3 light sources (table lamps, floor lamps, or sconces), potted plants\n` +
-        `- Throw pillows, a throw blanket, styled decor on every surface\n` +
-        `- Style-appropriate ceiling fixture (upgrade any dated builder-grade chandelier visible in the input)\n\n` +
-        `STYLE:\n` +
-        `- Vibe: ${preset.vibe}\n` +
-        `- Primary palette: ${preset.palette.slice(0, 3).join(", ")}\n` +
-        `- Accents: ${preset.palette.slice(3).join(", ")}\n\n` +
-        `Magazine-quality lighting (warm golden-hour daylight through the windows + interior lamp glow). Photorealistic, not illustration. ` +
-        `The input photo is the architectural shell — the output is that same shell, fully furnished and styled.` +
-        (extraNotes ? `\n\nDESIGNER NOTES: ${extraNotes}` : "");
+        `INPUT: a photograph of an empty real-life room. ` +
+        `TASK: photorealistically furnish this exact room in ${preset.label} style. ` +
+        `STRICT RULES — DO NOT CHANGE: the wall paint color, the wall texture/finish, the ceiling ` +
+        `height, the window positions, the window sizes, the window frame style, the existing ` +
+        `chandelier or ceiling fixtures, the flooring material/color/pattern, baseboards, crown ` +
+        `molding, door positions, door styles, any built-ins, the camera angle, the lighting ` +
+        `quality, or the room's perspective. The output room MUST be recognizable as the SAME ROOM ` +
+        `as the input — same walls, same floor, same windows, same chandelier, same trim. ` +
+        `WHAT TO ADD: ${preset.vibe} furniture and decor — ${preset.signaturePieces.join(", ")} — ` +
+        `placed naturally and to scale. Add a rug, art on walls, lamps, plants, throw pillows. ` +
+        `Color palette for furniture only: ${preset.palette.slice(0, 3).join(", ")} (do not repaint walls). ` +
+        `Magazine-quality interior photography. Same daylight from the existing windows. ` +
+        `${extraNotes ?? ""}`.trim();
     } else {
       // Image-to-image EMPTY-ROOM: keep the room's architecture exactly,
       // remove any furniture, return clean empty backdrop ready for cutouts.
