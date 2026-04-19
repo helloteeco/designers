@@ -114,43 +114,116 @@ async function loadCorsImage(src: string): Promise<HTMLImageElement> {
 
 /**
  * Walk a project's rooms and replace any embedded data URLs with hosted
- * URLs. Used by the "Free up storage" action to reclaim localStorage
- * space on projects that were created before scene-storage existed.
+ * URLs. Writes directly to localStorage through the project store,
+ * refusing to overwrite any field whose value has changed while we
+ * were uploading — so a fresh render that completes mid-compact never
+ * gets clobbered by a stale snapshot.
+ *
+ * Returns the number of images uploaded + persisted.
  */
-export async function compactProjectImages(project: {
+export async function compactProjectImages(projectOrId: string | {
+  id: string;
   rooms: Array<{
+    id: string;
     sceneBackgroundUrl?: string;
     sceneSnapshot?: string;
-    furniture: Array<{ item: { imageUrl?: string } }>;
+    furniture: Array<{ item: { id: string; imageUrl?: string } }>;
   }>;
-}): Promise<{ project: typeof project; uploaded: number }> {
-  let uploaded = 0;
+}): Promise<{ uploaded: number }> {
+  // Lazy-import to avoid a circular module-load between store ↔ this lib
+  const { getProject, saveProject } = await import("./store");
+  const projectId = typeof projectOrId === "string" ? projectOrId : projectOrId.id;
 
-  for (const room of project.rooms) {
+  const initial = getProject(projectId);
+  if (!initial) return { uploaded: 0 };
+
+  // Phase 1: collect every data URL that needs lifting + upload each.
+  // We capture the ORIGINAL value so the write phase can bail if
+  // somebody else moved the field on during our upload.
+  interface Upload {
+    roomId: string;
+    kind: "sceneBackgroundUrl" | "sceneSnapshot" | "cutout";
+    itemId?: string;
+    originalValue: string;
+    hostedValue: string;
+  }
+  const uploads: Upload[] = [];
+
+  for (const room of initial.rooms) {
     if (room.sceneBackgroundUrl?.startsWith("data:")) {
       const hosted = await ensureHostedUrl(room.sceneBackgroundUrl, "scenes");
       if (hosted && !hosted.startsWith("data:")) {
-        room.sceneBackgroundUrl = hosted;
-        uploaded++;
+        uploads.push({
+          roomId: room.id,
+          kind: "sceneBackgroundUrl",
+          originalValue: room.sceneBackgroundUrl,
+          hostedValue: hosted,
+        });
       }
     }
     if (room.sceneSnapshot?.startsWith("data:")) {
       const hosted = await ensureHostedUrl(room.sceneSnapshot, "snapshots");
       if (hosted && !hosted.startsWith("data:")) {
-        room.sceneSnapshot = hosted;
-        uploaded++;
+        uploads.push({
+          roomId: room.id,
+          kind: "sceneSnapshot",
+          originalValue: room.sceneSnapshot,
+          hostedValue: hosted,
+        });
       }
     }
     for (const f of room.furniture) {
       if (f.item.imageUrl?.startsWith("data:")) {
         const hosted = await ensureHostedUrl(f.item.imageUrl, "cutouts");
         if (hosted && !hosted.startsWith("data:")) {
-          f.item.imageUrl = hosted;
-          uploaded++;
+          uploads.push({
+            roomId: room.id,
+            kind: "cutout",
+            itemId: f.item.id,
+            originalValue: f.item.imageUrl,
+            hostedValue: hosted,
+          });
         }
       }
     }
   }
 
-  return { project, uploaded };
+  if (uploads.length === 0) return { uploaded: 0 };
+
+  // Phase 2: apply to the LATEST state, skipping any field that changed
+  // during our uploads. This is the critical race fix — if the user
+  // kicked off a fresh render while compact was running, the scene
+  // background is now a fresh hosted URL (not our original data URL),
+  // and we leave it alone.
+  const latest = getProject(projectId);
+  if (!latest) return { uploaded: 0 };
+
+  let applied = 0;
+  for (const up of uploads) {
+    const targetRoom = latest.rooms.find(r => r.id === up.roomId);
+    if (!targetRoom) continue;
+
+    if (up.kind === "sceneBackgroundUrl") {
+      if (targetRoom.sceneBackgroundUrl === up.originalValue) {
+        targetRoom.sceneBackgroundUrl = up.hostedValue;
+        applied++;
+      }
+    } else if (up.kind === "sceneSnapshot") {
+      if (targetRoom.sceneSnapshot === up.originalValue) {
+        targetRoom.sceneSnapshot = up.hostedValue;
+        applied++;
+      }
+    } else if (up.kind === "cutout" && up.itemId) {
+      const f = targetRoom.furniture.find(ff => ff.item.id === up.itemId);
+      if (f && f.item.imageUrl === up.originalValue) {
+        f.item.imageUrl = up.hostedValue;
+        applied++;
+      }
+    }
+  }
+
+  if (applied > 0) {
+    saveProject(latest);
+  }
+  return { uploaded: applied };
 }

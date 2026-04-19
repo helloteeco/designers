@@ -1728,12 +1728,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         </div>
       )}
 
+      {/* Generating spinner — shown when a render is in flight so Jeff
+          doesn't wonder if anything is happening. The existing scene (if
+          any) sits underneath with reduced opacity so the designer has
+          context while waiting. */}
+      {phase === "generating" && (
+        <div className="mt-4 rounded-lg border-2 border-amber bg-amber/10 p-6 text-center">
+          <div className="inline-flex items-center gap-2 text-sm font-semibold text-amber-dark">
+            <span className="inline-block h-4 w-4 rounded-full border-2 border-amber-dark border-t-transparent animate-spin" />
+            Gemini is rendering your {preset.label} version of {room.name}...
+          </div>
+          <div className="mt-2 text-[11px] text-brand-600">
+            Typically 25–45 seconds. The new render will replace whatever&apos;s below when it&apos;s ready.
+          </div>
+        </div>
+      )}
+
       {/* Rendered scene preview + APPROVAL GATE */}
       {hasScene && room.sceneBackgroundUrl && (
-        <div className="mt-4">
+        <div className={`mt-4 ${phase === "generating" ? "opacity-50" : ""}`}>
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
-              {phase === "preview" ? "Preview — approve, refine, or re-roll" : "Rendered scene"}
+              {phase === "generating"
+                ? "Previous render (being replaced)"
+                : phase === "preview"
+                  ? "Preview — approve, refine, or re-roll"
+                  : "Rendered scene"}
             </div>
             {phase === "preview" && (
               <span className="text-[10px] text-amber-dark font-semibold">
