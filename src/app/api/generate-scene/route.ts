@@ -147,10 +147,16 @@ export async function POST(request: Request) {
   // Normalize any URL form (data: OR https://) to inline base64 so Gemini
   // actually sees the architecture instead of generating a random room.
   const userParts: Array<{ text?: string } | { inlineData: { data: string; mimeType: string } }> = [{ text: prompt }];
+  // Captured here so the echo-skip in the model loop below has the REAL
+  // bytes Gemini saw — previously inputHash was computed from
+  // referenceImageDataUrl.split(","), which returned undefined for hosted
+  // URLs, leaving echo-skip inactive whenever the reference was in Supabase.
+  let referenceBase64ForEchoCheck: string | null = null;
   if (hasReference && referenceImageDataUrl) {
     try {
       const inline = await imageToInlineBase64(referenceImageDataUrl);
       userParts.push({ inlineData: { data: inline.data, mimeType: inline.mimeType } });
+      referenceBase64ForEchoCheck = inline.data;
     } catch (err) {
       return NextResponse.json(
         {
@@ -191,15 +197,13 @@ export async function POST(request: Request) {
   const errors: { model: string; error: string }[] = [];
 
   // Capture the input-image SHA so we can detect (and reject) the case
-  // where Nano Banana just echoes our reference back. That's the most
-  // common "the render didn't change anything" failure mode.
+  // where Nano Banana just echoes our reference back. Hash the actual
+  // bytes Gemini received — NOT the URL string — so this works whether
+  // the reference was a data: URL or a Supabase https:// URL.
   let inputHash: string | null = null;
-  if (hasReference && referenceImageDataUrl) {
-    const [, data] = referenceImageDataUrl.split(",");
-    if (data) {
-      const { createHash } = await import("crypto");
-      inputHash = createHash("sha256").update(data).digest("hex");
-    }
+  if (referenceBase64ForEchoCheck) {
+    const { createHash } = await import("crypto");
+    inputHash = createHash("sha256").update(referenceBase64ForEchoCheck).digest("hex");
   }
 
   // ── Attempt 1: Gemini image-via-chat models ──
