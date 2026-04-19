@@ -1091,11 +1091,16 @@ function WindowsSection({ windows, onChange, projectId, roomId, onAfterShop }: W
 
                 {/* Shop button row */}
                 <div className="flex items-center justify-end gap-2 pt-1">
+                  {!roomId && (
+                    <span className="text-[11px] text-amber-dark">
+                      Save the room first ↑ to shop blinds
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => shopBlinds(w)}
-                    disabled={shoppingId === w.id || !canShop}
-                    title={!canShop ? "Enter width and height first" : undefined}
+                    disabled={shoppingId === w.id || !canShop || !roomId}
+                    title={!roomId ? "Save the room first — blinds need a room to attach to" : !canShop ? "Enter width and height first" : undefined}
                     className="text-xs rounded-lg bg-amber/20 px-3 py-1.5 font-semibold text-amber-dark hover:bg-amber/40 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {shoppingId === w.id ? "⏳ Shopping..." : picked ? "✓ Re-shop blinds" : "🛍 Shop blinds"}

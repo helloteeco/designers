@@ -106,6 +106,15 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   // the base architecture + layer real products on top." Designer can still
   // switch back to Realistic if they want a furnished render.
   const sawReferenceRef = useRef<boolean>(!!referenceImage);
+  // Track whether the component is still mounted so Phase 2's background
+  // saveChain doesn't clobber project state after the designer navigates
+  // away. Set to false on unmount; all saveChain steps bail out before
+  // touching localStorage.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
   useEffect(() => {
     if (referenceImage && !sawReferenceRef.current) {
       sawReferenceRef.current = true;
@@ -639,15 +648,21 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       }));
 
       // Save composite board with CUTOUTS — no real product data yet.
-      // Items show extraction descriptions + "🔎 Sourcing..." status.
-      // This is the moment the composite board becomes visible and
-      // interactive (~20-25s from the button click).
-      interface PlacedStub {
-        itemId: string;
-        bb: { x: number; y: number; w: number; h: number };
+      // Items show empty vendor + "alt-pending" status (UI renders a
+      // "🔎 sourcing..." chip); masterlist export treats alt-pending
+      // naturally. NO emoji in any persisted field so nothing leaks
+      // into xlsx / CSV if designer exports mid-sourcing.
+      //
+      // Carry stubId on each cutoutResult so Phase 2 looks up the row
+      // it owns by itemId (not by array index) — if a cutout failed,
+      // indexing into a parallel `stubs` array would shift wrong.
+      interface Phase1Row {
+        item: typeof kept[0];
+        cutoutUrl: string;
+        stubId: string;          // the FurnitureItem.id we can look up later
         idx: number;
       }
-      const stubs: PlacedStub[] = [];
+      const phase1: Phase1Row[] = [];
       const next = getProjectFromStore(project.id);
       if (next) {
         const tt = next.rooms.find(r => r.id === room.id);
@@ -655,14 +670,15 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           if (!tt.sceneItems) tt.sceneItems = [];
           for (const { item, cutoutUrl, idx } of cutoutResults) {
             const category = mapCategory(item.category);
+            const stubId = `ext-${generateId()}`;
             const stubItem: FurnitureItem = {
-              id: `ext-${generateId()}`,
+              id: stubId,
               name: item.description,
               category,
               subcategory: item.category,
               widthIn: 36, depthIn: 36, heightIn: 30,
               price: 0,
-              vendor: "🔎 sourcing...",
+              vendor: "",            // empty — never "🔎 sourcing..." in persisted data
               vendorUrl: "",
               imageUrl: cutoutUrl,
               color: "", material: "",
@@ -670,18 +686,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             };
             const tempRoom = { ...tt, furniture: [...tt.furniture] };
             const placed = placeFurniture(tempRoom, stubItem);
-            placed.status = "specced";
+            placed.status = "alt-pending";   // signals "sourcing in progress" to UI + export
             tt.furniture.push(placed);
             const bb = item.boundingBoxPct;
             tt.sceneItems.push({
               id: `scene-${generateId()}`,
-              itemId: stubItem.id,
+              itemId: stubId,
               x: bb.x + bb.w / 2,
               y: bb.y + bb.h / 2,
               width: bb.w, height: bb.h,
               rotation: 0, zIndex: idx + 1,
             });
-            stubs.push({ itemId: stubItem.id, bb, idx });
+            phase1.push({ item, cutoutUrl, stubId, idx });
           }
           saveProject(next);
           onUpdate();
@@ -695,16 +711,17 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       toast.success(`Composite board ready with ${kept.length} cutouts. Real products sourcing in background...`);
 
       // ── Phase 2 (background ~15-60s): source real products ────────────
-      // Each item gets a source-item call. When it resolves, we update
-      // the matching furniture row with real vendor / price / URL / rating.
-      // Saves are serialized via a promise chain so they don't race.
+      // Each Phase1 row gets a source-item call. As each resolves, we
+      // update the matching furniture row by STUB ID (not array index).
+      // Saves are serialized via a promise chain so two items finishing
+      // at the same time don't race each other's saveProject().
+      //
+      // Safety:
+      //   - isMountedRef check → don't save after designer navigates away
+      //   - "still a stub" check → don't overwrite manual edits the
+      //     designer already made while sourcing was running
       let saveChain = Promise.resolve();
-      for (const { item, idx } of cutoutResults) {
-        const stubId = stubs[idx]?.itemId;
-        if (!stubId) continue;
-
-        // Fire the source call (these run in parallel via the loop — we
-        // don't await here, only the save is serialized).
+      for (const { item, stubId } of phase1) {
         const sourcePromise = fetch("/api/source-item", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -718,26 +735,33 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           .catch(() => null);
 
         saveChain = saveChain.then(async () => {
+          if (!isMountedRef.current) return;           // designer left — abandon update
           const result = await sourcePromise;
-          const opt = result?.options?.[0] ?? null;
-          // Re-read project state (serialized — safe against concurrent saves)
+          if (!isMountedRef.current) return;           // re-check after await
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
           const rr = fresh2.rooms.find(r2 => r2.id === room.id);
           if (!rr) return;
           const furn = rr.furniture.find(f => f.item.id === stubId);
           if (!furn) return;
-          // Overwrite stub with real data (keep cutout image + position)
+          // Only update if the row is STILL a pending stub. If the
+          // designer manually swapped / approved / edited it in the
+          // meantime, leave their work alone.
+          if (furn.status !== "alt-pending" || furn.item.vendor !== "") return;
+
+          const opt = result?.options?.[0] ?? null;
           if (opt) {
-            furn.item.name = opt.name;
+            furn.item.name = opt.name || furn.item.name;
             furn.item.price = opt.price ?? 0;
-            furn.item.vendor = opt.vendor;
-            furn.item.vendorUrl = opt.url;
+            furn.item.vendor = opt.vendor || "—";
+            furn.item.vendorUrl = opt.url || "";
             furn.item.widthIn = parseFirstDim(opt.dimensions) ?? furn.item.widthIn;
             furn.item.depthIn = parseSecondDim(opt.dimensions) ?? furn.item.depthIn;
             furn.item.heightIn = parseThirdDim(opt.dimensions) ?? furn.item.heightIn;
             furn.status = "approved";
           } else {
+            // Sourcing failed — drop the pending flag so it stops showing
+            // "sourcing..." forever. Designer can manually re-source.
             furn.item.vendor = "—";
             furn.status = "specced";
           }
@@ -745,8 +769,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           onUpdate();
         });
       }
-      // Don't await saveChain — it runs in the background. The designer
-      // sees items update one-by-one as each source-item call resolves.
+      // Don't await saveChain — it runs in the background. React re-renders
+      // pick up the background updates as each save resolves.
     } catch (err) {
       setLastError(err instanceof Error ? err.message : "Placement failed");
     } finally {
@@ -2312,8 +2336,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-brand-900 truncate">{row.item.name}</div>
                       <div className="text-[10px] text-brand-600 truncate">
-                        {row.item.vendor}
-                        {row.item.price ? ` · $${row.item.price.toLocaleString()}` : " · $0 (set price)"}
+                        {row.status === "alt-pending" && !row.item.vendor ? (
+                          <span className="text-amber-dark">🔎 sourcing product...</span>
+                        ) : (
+                          <>
+                            {row.item.vendor || "—"}
+                            {row.item.price ? ` · $${row.item.price.toLocaleString()}` : " · $0 (set price)"}
+                          </>
+                        )}
                       </div>
                     </div>
                     {row.item.vendorUrl && (
@@ -3041,8 +3071,11 @@ function ItemReviewRow({
 // invisible when none of the fields are present (e.g. vendor didn't expose
 // review data), so there's no "fake data" appearance.
 function QualityBadges({ opt }: { opt: SourcedOption }) {
-  const hasRating = typeof opt.rating === "number" && opt.rating > 0;
-  const hasReviews = typeof opt.reviewCount === "number" && opt.reviewCount > 0;
+  // Rating is a valid signal even at 0 (some listings literally have zero
+  // reviews) — show whatever number the vendor surfaced. We only hide when
+  // the field was null, meaning the API couldn't find it.
+  const hasRating = typeof opt.rating === "number" && opt.rating >= 0 && opt.rating <= 5;
+  const hasReviews = typeof opt.reviewCount === "number" && opt.reviewCount >= 0;
   const hasDelivery = typeof opt.deliveryEstimate === "string" && opt.deliveryEstimate.length > 0;
   const inStock = opt.inStock;
   if (!hasRating && !hasReviews && !hasDelivery && inStock === null) return null;

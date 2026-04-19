@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
 export const runtime = "nodejs";
-export const maxDuration = 45;
+export const maxDuration = 120;
 
 /**
  * Pick-first sourcing: designer describes what they want in plain English

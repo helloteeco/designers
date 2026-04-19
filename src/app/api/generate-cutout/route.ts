@@ -3,7 +3,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { cacheKey, getCachedCutoutUrl, putCutout } from "@/lib/cutout-cache";
 
 export const runtime = "nodejs";
-export const maxDuration = 45;
+export const maxDuration = 120;
 
 /**
  * Generate a product-cutout image for any sourced item — Spoak-style catalog
