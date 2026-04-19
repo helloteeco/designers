@@ -330,15 +330,148 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }
 
   /**
-   * Take the AI-rendered furnished scene and ask Gemini to strip everything
-   * back to the empty architectural shell — same room, same walls, same
-   * flooring, no furniture. The empty result becomes the new
-   * sceneBackgroundUrl, then we kick off product sourcing so the designer
-   * can layer real-product cutouts back on top.
+   * The connector flow Jeff wants: take the AI's realistic render (which
+   * shows what the room COULD look like — inspiration) and convert it
+   * into an editable composite board (real products layered on the empty
+   * room, each draggable/swappable/removable).
    *
-   * Net: turns a realistic render into a Teeco install-guide style composite
-   * board (empty room + cutouts). Designer keeps the look they liked, but
-   * gets a clean canvas + accurate masterlist.
+   * Three stages run in sequence:
+   *   1. Strip the render → empty architectural backdrop (same walls,
+   *      windows, floor, trim — no furniture)
+   *   2. Source real products by analyzing the ORIGINAL render (not the
+   *      stripped version — it has nothing to identify)
+   *   3. Auto-pick the top option per item, generate a cutout, and place
+   *      it on the scene at a category-based default position
+   *
+   * Designer lands in the Items panel with everything pre-populated, then
+   * drags, swaps, removes, or adds to refine. One-click conversion from
+   * "pretty picture" → "shippable deliverable with matching masterlist."
+   */
+  async function convertRenderToComposite() {
+    if (phase === "generating" || phase === "sourcing") return;
+    const originalRender = room.sceneBackgroundUrl;
+    if (!originalRender) {
+      setLastError("Generate a render first, then convert it.");
+      return;
+    }
+    setLastError(null);
+    setPhase("generating");
+    try {
+      // 1. Strip the original render to an empty backdrop
+      const stripRes = await fetch("/api/strip-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: originalRender }),
+      });
+      const stripRaw = await stripRes.text();
+      let stripPayload: { imageDataUrl?: string; error?: string } = {};
+      try { stripPayload = JSON.parse(stripRaw); } catch {}
+      if (!stripRes.ok || !stripPayload.imageDataUrl) {
+        throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
+      }
+      const emptyBackdrop = stripPayload.imageDataUrl;
+
+      // 2. Source products from the ORIGINAL render (the stripped one has nothing)
+      setPhase("sourcing");
+      const sourceRes = await fetch("/api/source-from-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: originalRender,
+          budget: remainingBudget || undefined,
+          styleHint: preset.id,
+        }),
+      });
+      const sourceRaw = await sourceRes.text();
+      let sourcePayload: { items?: SourcedItem[]; error?: string } = {};
+      try { sourcePayload = JSON.parse(sourceRaw); } catch {}
+      if (!sourceRes.ok) {
+        throw new Error(sourcePayload.error || `Sourcing failed: HTTP ${sourceRes.status}`);
+      }
+      const items = sourcePayload.items ?? [];
+      if (items.length === 0) {
+        throw new Error("AI couldn't identify any items in the render. Try re-rolling the render first.");
+      }
+
+      // 3. Persist the stripped backdrop + clear old scene items
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      target.sceneBackgroundUrl = emptyBackdrop;
+      target.sceneSnapshot = undefined;
+      target.sceneItems = [];
+      saveProject(fresh);
+      onUpdate();
+      toast.info(`Placing ${items.length} real products... (cutouts ~15s each, running in parallel)`);
+
+      // 4. For each sourced item, generate a cutout + place on scene
+      //    Promise.all keeps the wall-clock time reasonable; each save
+      //    re-reads the latest project state so parallel saves don't clobber.
+      await Promise.all(items.map(async item => {
+        const opt = item.options?.[0];
+        if (!opt) return;
+        let cutoutUrl = opt.imageUrl || "";
+        try {
+          const cutRes = await fetch("/api/generate-cutout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: `${opt.name} (${item.category})`,
+              imageUrl: opt.imageUrl || undefined,
+              vendor: opt.vendor || undefined,
+            }),
+          });
+          if (cutRes.ok) {
+            const j = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+            cutoutUrl = j.imageUrl ?? j.imageDataUrl ?? cutoutUrl;
+          }
+        } catch {
+          // If cutout fails, fall back to the raw product image URL (proxy will still serve it)
+        }
+        const next = getProjectFromStore(project.id);
+        if (!next) return;
+        const tt = next.rooms.find(r => r.id === room.id);
+        if (!tt) return;
+        if (!tt.sceneItems) tt.sceneItems = [];
+        const category = mapCategory(item.category);
+        const customItem: FurnitureItem = {
+          id: `auto-${generateId()}`,
+          name: opt.name,
+          category,
+          subcategory: item.category,
+          widthIn: parseFirstDim(opt.dimensions) ?? 36,
+          depthIn: parseSecondDim(opt.dimensions) ?? 36,
+          heightIn: parseThirdDim(opt.dimensions) ?? 30,
+          price: opt.price ?? 0,
+          vendor: opt.vendor,
+          vendorUrl: opt.url,
+          imageUrl: cutoutUrl,
+          color: "",
+          material: "",
+          style: preset.designStyle,
+        };
+        const placed = placeFurniture(tt, customItem);
+        placed.status = "approved";
+        tt.furniture.push(placed);
+        tt.sceneItems.push(defaultSceneItemFor(customItem, tt.sceneItems.length, category));
+        saveProject(next);
+        onUpdate();
+      }));
+
+      setSourcedItems(null);
+      setPhase("ready");
+      logActivity(project.id, "composite_converted", `Converted render to composite: ${items.length} items placed in ${room.name}`);
+      toast.success(`Composite board ready — ${items.length} items placed. Drag, swap, or remove anything.`);
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Conversion failed");
+      setPhase("preview");
+    }
+  }
+
+  /**
+   * Legacy strip-only path kept for the "I just want the empty backdrop"
+   * case. Runs in isolation — no auto-source, no auto-place.
    */
   async function stripToBackground() {
     if (phase === "generating" || phase === "sourcing") return;
@@ -1450,11 +1583,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 </button>
                 {renderMode === "realistic" && (
                   <button
-                    onClick={() => void stripToBackground()}
-                    className="rounded-lg border-2 border-emerald-500 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
-                    title="Remove all furniture, keep walls/floor/windows. Then source real products to layer on top — produces a Teeco install-guide style composite."
+                    onClick={() => void convertRenderToComposite()}
+                    className="rounded-lg border-2 border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+                    title="Strip the render, source 3 real products per identified item, auto-place the top pick on the empty backdrop. Then drag, swap, or remove anything you don't like."
                   >
-                    🪟 Strip to empty backdrop + source cutouts
+                    🎬 Turn this into an editable composite board
                   </button>
                 )}
                 <button
@@ -1475,7 +1608,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </div>
               {renderMode === "realistic" && (
                 <div className="text-[11px] text-brand-600/80 italic">
-                  💡 <strong>Tip:</strong> &ldquo;Strip to empty backdrop&rdquo; turns this realistic render into a clean empty room with the SAME walls/flooring/windows — then layers real-product cutouts on top. That&apos;s how to produce the Teeco install-guide composite look (Living Room board style).
+                  💡 <strong>Workflow:</strong> use the AI render as inspiration. Click <strong>&ldquo;Turn this into an editable composite board&rdquo;</strong> and the system strips it to an empty backdrop, sources real products matching what&apos;s in the render, and auto-places the top pick per item. You then drag, swap, or remove anything — and the masterlist matches 1:1.
                 </div>
               )}
 
