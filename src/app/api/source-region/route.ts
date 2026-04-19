@@ -40,6 +40,10 @@ interface ProductOption {
   url: string;
   imageUrl?: string;
   dimensions?: string;
+  rating?: number | null;
+  reviewCount?: number | null;
+  deliveryEstimate?: string | null;
+  inStock?: boolean | null;
 }
 
 export async function POST(request: Request) {
@@ -138,12 +142,13 @@ export async function POST(request: Request) {
     const sourcePrompt =
       `Find 3 real products a designer could actually buy that match this description: "${searchQuery}". ` +
       (estimatedSize ? `Approximate size: ${estimatedSize}. ` : "") +
-      `Prefer Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel, Article, Anthropologie, AllModern, ` +
-      `Rejuvenation. For each return: exact product name, vendor, current USD price, direct product URL, ` +
-      `dimensions, and the primary product photo URL (imageUrl). ` +
+      `Prefer Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel, Article, Anthropologie, AllModern, Rejuvenation. ` +
+      `RANK best→worst by: (1) price fit${budget ? ` near/under $${Math.round(budget)}` : ""}, (2) review quality (4+ stars with real review counts beat unrated), (3) availability (in-stock / fast ship preferred). ` +
       budgetHint +
-      ` Return strictly as JSON: [{"name":"","vendor":"","price":0,"url":"","dimensions":"","imageUrl":""}] ` +
-      `with exactly 3 entries. No prose.`;
+      ` For each return JSON with: name, vendor, price (number), url, imageUrl, dimensions, ` +
+      `rating (0-5 or null), reviewCount (int or null), deliveryEstimate (string or null), inStock (true/false/null). ` +
+      `CRITICAL: return null for any field NOT clearly visible in search results — never fake ratings/reviews/delivery. ` +
+      `Return strictly as a JSON array of exactly 3 objects. No prose, no markdown fences.`;
 
     const sourceResp = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -156,14 +161,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ identified, searchQuery, estimatedSize, options: [] });
     }
     const parsed = JSON.parse(match[0]) as ProductOption[];
-    const options = (Array.isArray(parsed) ? parsed : []).slice(0, 3).map(o => ({
-      name: String(o.name ?? ""),
-      vendor: String(o.vendor ?? ""),
-      price: typeof o.price === "number" ? o.price : Number(o.price) || null,
-      url: String(o.url ?? ""),
-      dimensions: o.dimensions ? String(o.dimensions) : undefined,
-      imageUrl: o.imageUrl ? String(o.imageUrl) : undefined,
-    }));
+    const toNum = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = typeof v === "number" ? v : Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    const toStr = (v: unknown): string | null => {
+      if (v === null || v === undefined) return null;
+      const s = String(v).trim();
+      return s && s.toLowerCase() !== "null" && s.toLowerCase() !== "unknown" ? s : null;
+    };
+    const toBool = (v: unknown): boolean | null => v === true || v === "true" ? true : v === false || v === "false" ? false : null;
+
+    const options = (Array.isArray(parsed) ? parsed : []).slice(0, 3).map(o => {
+      const rc = toNum((o as unknown as Record<string, unknown>).reviewCount);
+      return {
+        name: String(o.name ?? ""),
+        vendor: String(o.vendor ?? ""),
+        price: toNum(o.price),
+        url: String(o.url ?? ""),
+        dimensions: o.dimensions ? String(o.dimensions) : undefined,
+        imageUrl: o.imageUrl ? String(o.imageUrl) : undefined,
+        rating: toNum((o as unknown as Record<string, unknown>).rating),
+        reviewCount: rc !== null ? Math.round(rc) : null,
+        deliveryEstimate: toStr((o as unknown as Record<string, unknown>).deliveryEstimate),
+        inStock: toBool((o as unknown as Record<string, unknown>).inStock),
+      };
+    });
 
     return NextResponse.json({ identified, searchQuery, estimatedSize, options });
   } catch (err) {

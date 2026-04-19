@@ -49,6 +49,10 @@ interface ProductOption {
   url: string;
   imageUrl?: string;
   dimensions?: string;
+  rating?: number | null;
+  reviewCount?: number | null;
+  deliveryEstimate?: string | null;
+  inStock?: boolean | null;
 }
 
 export async function POST(request: Request) {
@@ -170,9 +174,11 @@ export async function POST(request: Request) {
           `"${item.searchQuery}".`,
           item.estimatedSize ? `Approximate size: ${item.estimatedSize}.` : "",
           `Prefer: Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel, Article, Anthropologie, AllModern, Rejuvenation.`,
-          `For each, return: exact product name, vendor, current price in USD, direct product URL, dimensions, AND the primary product photo URL (imageUrl — the img src shown on the listing or in Google Shopping results).`,
+          `RANK best→worst by: (1) price fit, (2) review quality (4+ stars with real review counts beat unrated), (3) availability (in-stock / fast ship preferred).`,
+          `For each, return: name, vendor, price (number), url, imageUrl, dimensions, rating (0-5 or null), reviewCount (int or null), deliveryEstimate (string or null), inStock (true/false/null).`,
           perItemBudgetHint,
-          `Return strictly as JSON: [{"name": "...", "vendor": "...", "price": 0, "url": "...", "dimensions": "...", "imageUrl": "..."}] with exactly 3 entries. No prose.`,
+          `CRITICAL: null for any field NOT clearly visible — never fake ratings/reviews/delivery.`,
+          `Return strictly as a JSON array of 3 objects. No prose, no markdown fences.`,
         ].filter(Boolean).join(" ");
 
         const sourceResponse = await ai.models.generateContent({
@@ -190,16 +196,35 @@ export async function POST(request: Request) {
         const parsed = JSON.parse(match[0]) as ProductOption[];
         if (!Array.isArray(parsed)) return { item, options: [] };
 
+        const toNum = (v: unknown): number | null => {
+          if (v === null || v === undefined || v === "") return null;
+          const n = typeof v === "number" ? v : Number(v);
+          return Number.isFinite(n) ? n : null;
+        };
+        const toStr = (v: unknown): string | null => {
+          if (v === null || v === undefined) return null;
+          const s = String(v).trim();
+          return s && s.toLowerCase() !== "null" && s.toLowerCase() !== "unknown" ? s : null;
+        };
+        const toBool = (v: unknown): boolean | null => v === true || v === "true" ? true : v === false || v === "false" ? false : null;
+
         return {
           item,
-          options: parsed.slice(0, 3).map(o => ({
-            name: String(o.name ?? ""),
-            vendor: String(o.vendor ?? ""),
-            price: typeof o.price === "number" ? o.price : Number(o.price) || null,
-            url: String(o.url ?? ""),
-            dimensions: o.dimensions ? String(o.dimensions) : undefined,
-            imageUrl: o.imageUrl ? String(o.imageUrl) : undefined,
-          })),
+          options: parsed.slice(0, 3).map(o => {
+            const rc = toNum((o as unknown as Record<string, unknown>).reviewCount);
+            return {
+              name: String(o.name ?? ""),
+              vendor: String(o.vendor ?? ""),
+              price: toNum(o.price),
+              url: String(o.url ?? ""),
+              dimensions: o.dimensions ? String(o.dimensions) : undefined,
+              imageUrl: o.imageUrl ? String(o.imageUrl) : undefined,
+              rating: toNum((o as unknown as Record<string, unknown>).rating),
+              reviewCount: rc !== null ? Math.round(rc) : null,
+              deliveryEstimate: toStr((o as unknown as Record<string, unknown>).deliveryEstimate),
+              inStock: toBool((o as unknown as Record<string, unknown>).inStock),
+            };
+          }),
         };
       } catch {
         return { item, options: [] };

@@ -28,6 +28,17 @@ interface SourcedOption {
   url: string;
   imageUrl?: string;
   dimensions?: string;
+  /** 0-5 from Google Shopping or vendor page. null when uncertain
+   *  — we never fake it. Display only when present. */
+  rating?: number | null;
+  /** Integer review count; null when not exposed by vendor. */
+  reviewCount?: number | null;
+  /** Rough shipping window like "2-5 business days" or "Ships in 1 week".
+   *  Scraped from product page at source time — NOT real-time stock.
+   *  Treat as directional, not a delivery promise. */
+  deliveryEstimate?: string | null;
+  /** True / false / null (unknown). Falls back to "check vendor" when null. */
+  inStock?: boolean | null;
 }
 
 interface SourcedItem {
@@ -2525,6 +2536,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
                       {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
                     </div>
+                    <QualityBadges opt={opt} />
                   </button>
                 ))}
               </div>
@@ -2823,6 +2835,7 @@ function ClickEditPopover({
                       <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
                         {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
                       </div>
+                      <QualityBadges opt={opt} />
                     </div>
                   </div>
                 </button>
@@ -2974,6 +2987,50 @@ function ItemReviewRow({
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Quality badges — surfaces rating / review count / delivery window from
+// the sourcing API so designers can compare 3 options at a glance. Stays
+// invisible when none of the fields are present (e.g. vendor didn't expose
+// review data), so there's no "fake data" appearance.
+function QualityBadges({ opt }: { opt: SourcedOption }) {
+  const hasRating = typeof opt.rating === "number" && opt.rating > 0;
+  const hasReviews = typeof opt.reviewCount === "number" && opt.reviewCount > 0;
+  const hasDelivery = typeof opt.deliveryEstimate === "string" && opt.deliveryEstimate.length > 0;
+  const inStock = opt.inStock;
+  if (!hasRating && !hasReviews && !hasDelivery && inStock === null) return null;
+
+  const reviewLabel = hasReviews
+    ? (opt.reviewCount as number) >= 1000
+      ? `${Math.round((opt.reviewCount as number) / 100) / 10}k`
+      : String(opt.reviewCount)
+    : "";
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1 text-[9px]">
+      {hasRating && (
+        <span className="inline-flex items-center gap-0.5 rounded bg-amber/15 px-1.5 py-0.5 text-amber-dark font-semibold" title={hasReviews ? `${opt.rating}/5 from ${opt.reviewCount} reviews` : `${opt.rating}/5`}>
+          ⭐ {(opt.rating as number).toFixed(1)}
+          {hasReviews && <span className="text-amber-dark/70 font-normal ml-0.5">({reviewLabel})</span>}
+        </span>
+      )}
+      {hasDelivery && (
+        <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-800" title="Shipping estimate from vendor page — directional, not a promise">
+          📦 {opt.deliveryEstimate}
+        </span>
+      )}
+      {inStock === true && !hasDelivery && (
+        <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-800">
+          ✓ In stock
+        </span>
+      )}
+      {inStock === false && (
+        <span className="inline-flex items-center gap-0.5 rounded bg-red-50 border border-red-200 px-1.5 py-0.5 text-red-700">
+          ✕ Out of stock
+        </span>
       )}
     </div>
   );
