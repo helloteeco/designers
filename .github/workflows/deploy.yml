@@ -1,0 +1,47 @@
+name: Deploy to Vercel (production)
+
+# Runs on every push to main. Ships the commit to designers.teeco.co
+# automatically — no more running `vercel --prod --yes` by hand.
+#
+# One-time setup (from your Mac, run once):
+#   1. npm i -g vercel && vercel login
+#   2. In ~/Desktop/designers: vercel link   (picks the design-studio project)
+#   3. cat .vercel/project.json              # shows orgId + projectId
+#   4. vercel tokens create deploy-ci        # creates a token
+#   5. On GitHub → Settings → Secrets → Actions, add:
+#        VERCEL_TOKEN       = <token from step 4>
+#        VERCEL_ORG_ID      = <orgId from step 3>
+#        VERCEL_PROJECT_ID  = <projectId from step 3>
+#
+# After that, every `git push origin main` auto-deploys. Status shows up
+# in the GitHub Actions tab on the repo.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # lets you manually trigger a deploy from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel env + build settings
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt artifact
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
