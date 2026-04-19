@@ -79,9 +79,55 @@ export async function POST(request: Request) {
   const hasReference = !!referenceImageDataUrl && referenceImageDataUrl.startsWith("data:image/");
   const effectiveMode = mode ?? "install-guide-bg";
   const basePrompt = buildScenePrompt(preset, room, extraNotes, effectiveMode);
-  const prompt = hasReference
-    ? `Using this photo of the actual empty room as the base architecture, redesign it in a ${preset.label} style. Preserve the room's real walls, windows, door positions, ceiling height, and flooring layout — do not change the geometry. Add furniture, rugs, art, lighting, and decor in the ${preset.vibe} palette. Photorealistic, natural daylight, editorial magazine quality. Reference room: ${room.widthFt}' × ${room.lengthFt}'. ${extraNotes ?? ""}`
-    : basePrompt;
+
+  // When a reference photo IS provided, the prompt MUST preserve the actual
+  // architecture from that photo (walls, ceiling height, windows + their
+  // exact positions/sizes/styles, door locations, flooring material, trim,
+  // chandeliers, ceiling fans, and any built-ins). Style only affects the
+  // furniture/decor we add (in full-scene mode) or stays as the existing
+  // empty room (in install-guide-bg mode). The previous prompt let Gemini
+  // substitute new walls/windows/floor based on style — that's the bug
+  // Jeff hit (Matterport screenshot of a hardwood living room → AI rendered
+  // an arched-window orange-walled tile-floor "Groovy" room from scratch).
+  let prompt: string;
+  if (hasReference) {
+    if (effectiveMode === "full-scene") {
+      // Image-to-image FURNISH: keep the room's architecture exactly,
+      // ADD furniture in the chosen style.
+      prompt =
+        `INPUT: a photograph of an empty real-life room. ` +
+        `TASK: photorealistically furnish this exact room in ${preset.label} style. ` +
+        `STRICT RULES — DO NOT CHANGE: the wall paint color, the wall texture/finish, the ceiling ` +
+        `height, the window positions, the window sizes, the window frame style, the existing ` +
+        `chandelier or ceiling fixtures, the flooring material/color/pattern, baseboards, crown ` +
+        `molding, door positions, door styles, any built-ins, the camera angle, the lighting ` +
+        `quality, or the room's perspective. The output room MUST be recognizable as the SAME ROOM ` +
+        `as the input — same walls, same floor, same windows, same chandelier, same trim. ` +
+        `WHAT TO ADD: ${preset.vibe} furniture and decor — ${preset.signaturePieces.join(", ")} — ` +
+        `placed naturally and to scale. Add a rug, art on walls, lamps, plants, throw pillows. ` +
+        `Color palette for furniture only: ${preset.palette.slice(0, 3).join(", ")} (do not repaint walls). ` +
+        `Magazine-quality interior photography. Same daylight from the existing windows. ` +
+        `${extraNotes ?? ""}`.trim();
+    } else {
+      // Image-to-image EMPTY-ROOM: keep the room's architecture exactly,
+      // remove any furniture, return clean empty backdrop ready for cutouts.
+      prompt =
+        `INPUT: a photograph of a real-life room (${room.widthFt}' × ${room.lengthFt}'). ` +
+        `TASK: return this EXACT same room as a clean empty design-board backdrop. ` +
+        `STRICT RULES — DO NOT CHANGE: the wall paint color, the wall texture, the ceiling height, ` +
+        `the window positions/sizes/styles, the existing chandelier or ceiling fixtures, the flooring ` +
+        `material/color/pattern, baseboards, crown molding, door positions, door styles, any built-ins, ` +
+        `the camera angle, or the room perspective. The output room MUST be recognizable as the SAME ` +
+        `ROOM as the input. ` +
+        `REMOVE: any furniture, rugs, decor, art, plants, lamps, or freestanding items currently in ` +
+        `the room. Inpaint the empty floor/wall behind anything you remove — do not leave shadows or ` +
+        `outlines. ` +
+        `KEEP THE ARCHITECTURE 100% — only the furniture changes (becomes empty). ` +
+        `${extraNotes ?? ""}`.trim();
+    }
+  } else {
+    prompt = basePrompt;
+  }
 
   // Build message parts — include the reference photo inline when present
   const userParts: Array<{ text?: string } | { inlineData: { data: string; mimeType: string } }> = [{ text: prompt }];

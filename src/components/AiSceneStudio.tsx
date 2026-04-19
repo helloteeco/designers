@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
@@ -73,6 +73,19 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   //   ready     — final state (approved + sourced if applicable)
   const [phase, setPhase] = useState<"idle" | "generating" | "preview" | "sourcing" | "ready">("idle");
   const [refineNotes, setRefineNotes] = useState("");
+
+  // When a reference photo is uploaded for the first time, auto-flip the
+  // mode chooser to Composite — that's the right path for "use my room as
+  // the base architecture + layer real products on top." Designer can still
+  // switch back to Realistic if they want a furnished render.
+  const sawReferenceRef = useRef<boolean>(!!referenceImage);
+  useEffect(() => {
+    if (referenceImage && !sawReferenceRef.current) {
+      sawReferenceRef.current = true;
+      setRenderMode("cutout-bg");
+    }
+    if (!referenceImage) sawReferenceRef.current = false;
+  }, [referenceImage]);
 
   // Click-to-edit on the preview image: when designer clicks a specific
   // item in the rendered scene, a popover opens with swap/source/remove
@@ -876,29 +889,54 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               {renderMode === "realistic" && <span className="text-xs text-amber-dark ml-auto">●</span>}
             </div>
             <div className="text-[11px] text-brand-600 leading-snug">
-              Photorealistic furnished room you can show the client. One image, ~25s. Save as the install-guide hero.
+              {referenceImage
+                ? "AI furnishes YOUR room (keeps walls, windows, chandelier exactly). Single image, ~25s."
+                : "Photorealistic furnished room from text. ~25s. Drop a Matterport screenshot above to anchor it to your real room."}
             </div>
           </button>
 
           <button
             onClick={() => setRenderMode("cutout-bg")}
             disabled={phase === "generating" || phase === "sourcing"}
-            className={`text-left rounded-lg border-2 p-3 transition ${
+            className={`text-left rounded-lg border-2 p-3 transition relative ${
               renderMode === "cutout-bg"
                 ? "border-amber bg-amber/10 shadow-sm"
                 : "border-brand-900/10 bg-white hover:border-amber/40"
             }`}
           >
+            {referenceImage && renderMode !== "cutout-bg" && (
+              <span className="absolute -top-2 right-2 text-[9px] font-bold uppercase tracking-wider bg-emerald-600 text-white px-1.5 py-0.5 rounded">
+                Recommended
+              </span>
+            )}
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-base">🛒</span>
-              <span className="text-sm font-semibold text-brand-900">Design + Source Real Products</span>
+              <span className="text-base">🎬</span>
+              <span className="text-sm font-semibold text-brand-900">Composite Board</span>
               {renderMode === "cutout-bg" && <span className="text-xs text-amber-dark ml-auto">●</span>}
             </div>
             <div className="text-[11px] text-brand-600 leading-snug">
-              Empty-room schematic + 3 real products per piece (Wayfair/CB2/etc). Approve each → masterlist. ~60-90s.
+              {referenceImage
+                ? <>YOUR room kept exactly + 3 real products per piece layered on top as cutouts. The Teeco install-guide style.</>
+                : <>Empty-room schematic + 3 real products per piece. Better with a reference photo above.</>}
+              {" "}~60-90s.
             </div>
           </button>
         </div>
+
+        {/* What is composite — Jeff's definition spelled out so designers know
+            when to pick this mode */}
+        {renderMode === "cutout-bg" && (
+          <div className="mt-2 rounded-lg bg-emerald-50/60 border border-emerald-200 px-3 py-2 text-[11px] text-emerald-900 leading-snug">
+            <strong>Composite board</strong> = your room photo + ideal staging + perfect view + balanced lighting,
+            merged into one cohesive image. Use the refine box on the preview to swap window views (&ldquo;sunny lake view&rdquo;,
+            &ldquo;cherry blossoms&rdquo;), brighten lighting, or stage in custom items.
+            {!referenceImage && (
+              <span className="block mt-1 italic text-emerald-800">
+                💡 Drop a Matterport screenshot up top so the composite anchors to YOUR real room.
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 4 · CTA */}
@@ -911,16 +949,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           {phase === "generating"
             ? renderMode === "realistic"
               ? "📸 Rendering... (~25s)"
-              : "⚡ Rendering empty-room background... (~25s)"
+              : "🎬 Building composite backdrop... (~25s)"
             : phase === "sourcing"
               ? "🛒 Sourcing 3 options per item... (~60s)"
               : hasScene && phase !== "preview"
                 ? renderMode === "realistic"
                   ? `📸 Re-Render (${preset.label})`
-                  : `⚡ Re-Generate Background (${preset.label})`
+                  : `🎬 Re-Build Composite (${preset.label})`
                 : renderMode === "realistic"
                   ? `📸 Generate ${preset.label} Render`
-                  : `⚡ Generate ${preset.label} Background`}
+                  : referenceImage
+                    ? `🎬 Build ${preset.label} Composite from Your Room`
+                    : `🎬 Build ${preset.label} Composite`}
         </button>
         {(hasScene || sourcedItems) && (
           <button
@@ -1037,14 +1077,42 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               {/* Refine box — designer asks for changes in plain English */}
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1">
-                  Or refine — describe what to change
+                  Or refine — describe what to change (composite-style)
                 </div>
+
+                {/* Quick chips for the most common composite operations:
+                    swap views, balance lighting, add wallpaper, etc. Clicking
+                    a chip drops the prompt into the refine box so designer can
+                    edit before submitting. */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    { label: "🌅 Sunny lake view", value: "replace the view through every window with a bright sunny lake at golden hour" },
+                    { label: "🌸 Cherry blossoms", value: "replace the view through every window with cherry blossoms in bloom against a soft blue sky" },
+                    { label: "❄️ Snowy mountains", value: "replace the view through every window with snowy mountain peaks under a clear winter sky" },
+                    { label: "💡 Brighten lighting", value: "balance the lighting — bring up the interior exposure so the room is bright and airy while keeping detail in the window view" },
+                    { label: "🌙 Cozy evening", value: "shift to a warm cozy evening: golden lamp light, sunset through the window, intimate mood" },
+                    { label: "🌿 Wallpaper accent", value: "add a botanical wallpaper accent on the longest wall, keep all other walls in the existing paint color" },
+                    { label: "🪵 Darker walls", value: "make the wall paint two shades darker and warmer" },
+                    { label: "🛋 Curvier furniture", value: "swap any straight-edged furniture for curvier rounded silhouettes, keep colors and materials" },
+                  ].map(chip => (
+                    <button
+                      key={chip.label}
+                      onClick={() => setRefineNotes(chip.value)}
+                      className="text-[10px] rounded-full border border-brand-900/15 px-2 py-1 hover:border-amber/40 hover:bg-amber/5"
+                      title={chip.value}
+                      type="button"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="flex gap-2 flex-wrap">
                   <input
                     type="text"
                     value={refineNotes}
                     onChange={e => setRefineNotes(e.target.value)}
-                    placeholder='e.g. "add a green floral wallpaper accent wall" or "swap the sofa for something curved" or "make the wall paint darker"'
+                    placeholder='e.g. "add a green floral wallpaper accent wall" or "swap the sofa for something curved"'
                     className="input flex-1 text-xs min-w-[260px]"
                     onKeyDown={e => {
                       if (e.key === "Enter" && refineNotes.trim()) {
