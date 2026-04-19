@@ -954,64 +954,151 @@ function WindowsSection({ windows, onChange, projectId, roomId, onAfterShop }: W
       </button>
 
       {expanded && (
-        <div className="mt-2 space-y-2 rounded-lg border border-brand-900/10 p-3 bg-cream/40">
-          <p className="text-[11px] text-brand-600">
-            Enter measurements from the Matterport ruler or a tape measure. Inside-mount
-            subtracts ¼" deadwood; outside-mount adds ~2.5" each side + 2" top overlap automatically.
-          </p>
+        <div className="mt-2 space-y-3 rounded-lg border border-brand-900/10 p-3 bg-cream/40">
+          {/* How to measure — idiot-proof instructions so nobody orders the
+              wrong size. Tall callout with visual separation between the two
+              mount types. */}
+          <div className="rounded-lg border border-amber/30 bg-amber/5 p-3">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-amber-dark mb-2">
+              📐 How to measure
+            </div>
+            <div className="space-y-2 text-xs text-brand-800 leading-relaxed">
+              <div>
+                <strong>Measure the <span className="underline decoration-amber-dark decoration-2 underline-offset-2">INSIDE of the window frame</span></strong> — the actual opening where light comes through. That&apos;s the number to type below.
+              </div>
+              <ul className="ml-4 space-y-1 text-brand-700 list-disc">
+                <li><strong>Width:</strong> measure at top, middle, and bottom — use the <em>narrowest</em> number.</li>
+                <li><strong>Height:</strong> measure left, middle, and right — use the <em>tallest</em> number.</li>
+                <li>Round to the nearest <strong>⅛ inch</strong> (0.125). Don&apos;t round up — let us handle that.</li>
+                <li>Type <em>inches only</em> (e.g. <code className="bg-white px-1 rounded">49.125</code>, not <code className="bg-white px-1 rounded">4&apos; 1-1/8&quot;</code>).</li>
+              </ul>
+              <div className="pt-1 border-t border-amber/20">
+                <strong>Mount type:</strong>
+                <ul className="ml-4 mt-1 space-y-0.5 text-brand-700 list-disc">
+                  <li><strong>Inside mount</strong> (blind sits inside the frame — clean look): we&apos;ll automatically subtract ¼&quot; so the blind fits the opening without binding.</li>
+                  <li><strong>Outside mount</strong> (blind covers the frame — blocks more light, hides ugly trim): we&apos;ll automatically add 5&quot; to width and 2&quot; to height for proper overlap.</li>
+                </ul>
+              </div>
+              <div className="pt-1 text-[11px] text-brand-600">
+                💡 <strong>You only type the opening.</strong> The order size below each window shows exactly what we&apos;ll search for — double-check before shopping.
+              </div>
+            </div>
+          </div>
 
           {/* Window list */}
           {windows.map(w => {
             const picked = !!w.sourcedFurnitureId;
+            // Live preview of the ACTUAL size we'll search for, so the
+            // designer sees the math before hitting Shop. Matches the exact
+            // logic inside shopBlinds() — keep them in sync.
+            const isInside = w.mountType === "inside";
+            const orderW = w.widthIn > 0 ? (isInside ? Math.max(1, w.widthIn - 0.25) : w.widthIn + 5) : 0;
+            const orderH = w.heightIn > 0 ? (isInside ? Math.max(1, w.heightIn - 0.25) : w.heightIn + 2) : 0;
+            const canShop = w.widthIn > 0 && w.heightIn > 0;
             return (
-              <div key={w.id} className="rounded-lg bg-white border border-brand-900/10 p-2.5">
-                <div className="flex flex-wrap items-center gap-2">
+              <div key={w.id} className="rounded-lg bg-white border border-brand-900/10 p-3 space-y-2">
+                {/* Row 1: label + remove */}
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">
+                    Label
+                  </label>
                   <input
-                    className="input py-1 text-xs flex-1 min-w-[120px]"
+                    className="input py-1 text-xs flex-1"
                     value={w.label}
                     onChange={(e) => updateWindow(w.id, { label: e.target.value })}
-                    placeholder="Label"
+                    placeholder='e.g. "Over sink", "North window"'
                   />
-                  <input
-                    type="number"
-                    step="0.25"
-                    className="input py-1 text-xs w-20"
-                    value={w.widthIn || ""}
-                    onChange={(e) => updateWindow(w.id, { widthIn: parseFloat(e.target.value) || 0 })}
-                    placeholder='W "'
-                  />
-                  <span className="text-brand-600 text-xs">×</span>
-                  <input
-                    type="number"
-                    step="0.25"
-                    className="input py-1 text-xs w-20"
-                    value={w.heightIn || ""}
-                    onChange={(e) => updateWindow(w.id, { heightIn: parseFloat(e.target.value) || 0 })}
-                    placeholder='H "'
-                  />
-                  <select
-                    className="select py-1 text-xs w-24"
-                    value={w.mountType}
-                    onChange={(e) => updateWindow(w.id, { mountType: e.target.value as "inside" | "outside" })}
-                  >
-                    <option value="inside">Inside</option>
-                    <option value="outside">Outside</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => shopBlinds(w)}
-                    disabled={shoppingId === w.id}
-                    className="text-xs rounded-lg bg-amber/20 px-2.5 py-1 font-semibold text-amber-dark hover:bg-amber/40 disabled:opacity-50"
-                  >
-                    {shoppingId === w.id ? "⏳ Shopping..." : picked ? "✓ Re-shop" : "🛍 Shop blinds"}
-                  </button>
                   <button
                     type="button"
                     onClick={() => removeWindow(w.id)}
-                    className="text-xs text-red-500 hover:text-red-700"
+                    className="text-xs text-red-500 hover:text-red-700 px-2"
                     title="Remove window"
                   >
                     ✕
+                  </button>
+                </div>
+
+                {/* Row 2: width input */}
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">
+                    Width
+                  </label>
+                  <input
+                    type="number"
+                    step="0.125"
+                    min="0"
+                    className="input py-1 text-xs w-28"
+                    value={w.widthIn || ""}
+                    onChange={(e) => updateWindow(w.id, { widthIn: parseFloat(e.target.value) || 0 })}
+                    placeholder="e.g. 49.125"
+                  />
+                  <span className="text-xs text-brand-600">inches (inside frame, narrowest)</span>
+                </div>
+
+                {/* Row 3: height input */}
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">
+                    Height
+                  </label>
+                  <input
+                    type="number"
+                    step="0.125"
+                    min="0"
+                    className="input py-1 text-xs w-28"
+                    value={w.heightIn || ""}
+                    onChange={(e) => updateWindow(w.id, { heightIn: parseFloat(e.target.value) || 0 })}
+                    placeholder="e.g. 35.25"
+                  />
+                  <span className="text-xs text-brand-600">inches (inside frame, tallest)</span>
+                </div>
+
+                {/* Row 4: mount type */}
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">
+                    Mount
+                  </label>
+                  <select
+                    className="select py-1 text-xs w-36"
+                    value={w.mountType}
+                    onChange={(e) => updateWindow(w.id, { mountType: e.target.value as "inside" | "outside" })}
+                  >
+                    <option value="inside">Inside mount</option>
+                    <option value="outside">Outside mount</option>
+                  </select>
+                  <span className="text-xs text-brand-600">
+                    {isInside ? "blind sits inside the frame (clean)" : "blind covers the frame (more coverage)"}
+                  </span>
+                </div>
+
+                {/* Order-size preview — shows the FINAL size we'll search for,
+                    so the designer catches typos before ordering. */}
+                {canShop && (
+                  <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs">
+                    <span aria-hidden>📐</span>
+                    <span className="text-emerald-900">
+                      We&apos;ll order a <strong>{orderW.toFixed(2)}&quot; × {orderH.toFixed(2)}&quot;</strong> blind
+                      <span className="text-emerald-700 ml-1">
+                        ({isInside ? "opening − ¼\" for fit" : "opening + 5\" width, + 2\" height for overlap"})
+                      </span>
+                    </span>
+                  </div>
+                )}
+                {!canShop && (w.widthIn > 0 || w.heightIn > 0) && (
+                  <div className="text-xs text-amber-dark">
+                    ⚠️ Enter both width and height to see the order size.
+                  </div>
+                )}
+
+                {/* Shop button row */}
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => shopBlinds(w)}
+                    disabled={shoppingId === w.id || !canShop}
+                    title={!canShop ? "Enter width and height first" : undefined}
+                    className="text-xs rounded-lg bg-amber/20 px-3 py-1.5 font-semibold text-amber-dark hover:bg-amber/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {shoppingId === w.id ? "⏳ Shopping..." : picked ? "✓ Re-shop blinds" : "🛍 Shop blinds"}
                   </button>
                 </div>
 
@@ -1081,55 +1168,97 @@ function WindowsSection({ windows, onChange, projectId, roomId, onAfterShop }: W
             );
           })}
 
-          {/* Add new window — inline draft row */}
+          {/* Add new window — inline draft row (same clear layout as saved rows) */}
           {draft ? (
-            <div className="rounded-lg bg-amber/5 border border-amber/30 p-2.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  autoFocus
-                  className="input py-1 text-xs flex-1 min-w-[120px]"
-                  placeholder="Label (e.g. Over sink)"
-                  value={draft.label}
-                  onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-                />
-                <input
-                  type="number"
-                  step="0.25"
-                  className="input py-1 text-xs w-20"
-                  placeholder='W "'
-                  value={draft.widthIn}
-                  onChange={(e) => setDraft({ ...draft, widthIn: e.target.value })}
-                />
-                <span className="text-brand-600 text-xs">×</span>
-                <input
-                  type="number"
-                  step="0.25"
-                  className="input py-1 text-xs w-20"
-                  placeholder='H "'
-                  value={draft.heightIn}
-                  onChange={(e) => setDraft({ ...draft, heightIn: e.target.value })}
-                />
-                <select
-                  className="select py-1 text-xs w-24"
-                  value={draft.mountType}
-                  onChange={(e) => setDraft({ ...draft, mountType: e.target.value as "inside" | "outside" })}
-                >
-                  <option value="inside">Inside</option>
-                  <option value="outside">Outside</option>
-                </select>
-                <button type="button" onClick={addWindow} className="text-xs btn-primary btn-sm">
-                  Add
-                </button>
-                <button type="button" onClick={() => setDraft(null)} className="text-xs text-brand-600 hover:text-brand-900">
-                  Cancel
-                </button>
-              </div>
-            </div>
+            (() => {
+              const w = parseFloat(draft.widthIn) || 0;
+              const h = parseFloat(draft.heightIn) || 0;
+              const isInside = draft.mountType === "inside";
+              const canAdd = w > 0 && h > 0;
+              const orderW = canAdd ? (isInside ? Math.max(1, w - 0.25) : w + 5) : 0;
+              const orderH = canAdd ? (isInside ? Math.max(1, h - 0.25) : h + 2) : 0;
+              return (
+                <div className="rounded-lg bg-amber/5 border border-amber/30 p-3 space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-amber-dark">
+                    New window
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">Label</label>
+                    <input
+                      autoFocus
+                      className="input py-1 text-xs flex-1"
+                      placeholder='e.g. "Over sink", "North window"'
+                      value={draft.label}
+                      onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">Width</label>
+                    <input
+                      type="number"
+                      step="0.125"
+                      min="0"
+                      className="input py-1 text-xs w-28"
+                      placeholder="e.g. 49.125"
+                      value={draft.widthIn}
+                      onChange={(e) => setDraft({ ...draft, widthIn: e.target.value })}
+                    />
+                    <span className="text-xs text-brand-600">inches (inside frame, narrowest)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">Height</label>
+                    <input
+                      type="number"
+                      step="0.125"
+                      min="0"
+                      className="input py-1 text-xs w-28"
+                      placeholder="e.g. 35.25"
+                      value={draft.heightIn}
+                      onChange={(e) => setDraft({ ...draft, heightIn: e.target.value })}
+                    />
+                    <span className="text-xs text-brand-600">inches (inside frame, tallest)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 w-16 shrink-0">Mount</label>
+                    <select
+                      className="select py-1 text-xs w-36"
+                      value={draft.mountType}
+                      onChange={(e) => setDraft({ ...draft, mountType: e.target.value as "inside" | "outside" })}
+                    >
+                      <option value="inside">Inside mount</option>
+                      <option value="outside">Outside mount</option>
+                    </select>
+                    <span className="text-xs text-brand-600">
+                      {isInside ? "sits inside the frame" : "covers the frame"}
+                    </span>
+                  </div>
+                  {canAdd && (
+                    <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs">
+                      <span aria-hidden>📐</span>
+                      <span className="text-emerald-900">
+                        Will order <strong>{orderW.toFixed(2)}&quot; × {orderH.toFixed(2)}&quot;</strong>
+                        <span className="text-emerald-700 ml-1">
+                          ({isInside ? "opening − ¼\" for fit" : "opening + 5\" width, + 2\" height for overlap"})
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button type="button" onClick={() => setDraft(null)} className="text-xs text-brand-600 hover:text-brand-900 px-2">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={addWindow} disabled={!canAdd} className="text-xs btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                      Add window
+                    </button>
+                  </div>
+                </div>
+              );
+            })()
           ) : (
             <button
               type="button"
               onClick={() => setDraft({ label: "", widthIn: "", heightIn: "", mountType: "inside", notes: "" })}
-              className="w-full text-xs rounded-lg border border-dashed border-brand-900/20 py-2 text-brand-600 hover:border-amber/40 hover:text-brand-900"
+              className="w-full text-sm rounded-lg border border-dashed border-brand-900/20 py-3 text-brand-600 hover:border-amber/40 hover:text-brand-900 hover:bg-white transition"
             >
               + Add window
             </button>
