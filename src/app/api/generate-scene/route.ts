@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { getPreset, buildScenePrompt } from "@/lib/style-presets";
+import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -76,7 +77,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const hasReference = !!referenceImageDataUrl && referenceImageDataUrl.startsWith("data:image/");
+  // Accept either a data: URL or a hosted https:// URL. The reference
+  // image is persisted to Supabase now, so it arrives as a public URL
+  // from the client — silently dropping those turns the AI into a
+  // pure text-to-image generator that invents a random room.
+  const hasReference =
+    !!referenceImageDataUrl &&
+    (referenceImageDataUrl.startsWith("data:image/") ||
+      /^https?:\/\//i.test(referenceImageDataUrl));
   const effectiveMode = mode ?? "install-guide-bg";
   const basePrompt = buildScenePrompt(preset, room, extraNotes, effectiveMode);
 
@@ -135,13 +143,21 @@ export async function POST(request: Request) {
     prompt = basePrompt;
   }
 
-  // Build message parts — include the reference photo inline when present
+  // Build message parts — include the reference photo inline when present.
+  // Normalize any URL form (data: OR https://) to inline base64 so Gemini
+  // actually sees the architecture instead of generating a random room.
   const userParts: Array<{ text?: string } | { inlineData: { data: string; mimeType: string } }> = [{ text: prompt }];
   if (hasReference && referenceImageDataUrl) {
-    const [meta, data] = referenceImageDataUrl.split(",");
-    const mimeType = meta.replace(/^data:/, "").replace(/;base64$/, "");
-    if (data) {
-      userParts.push({ inlineData: { data, mimeType: mimeType || "image/png" } });
+    try {
+      const inline = await imageToInlineBase64(referenceImageDataUrl);
+      userParts.push({ inlineData: { data: inline.data, mimeType: inline.mimeType } });
+    } catch (err) {
+      return NextResponse.json(
+        {
+          error: `Could not load reference photo: ${err instanceof Error ? err.message : String(err)}`,
+        },
+        { status: 400 }
+      );
     }
   }
 
