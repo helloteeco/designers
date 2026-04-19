@@ -98,6 +98,7 @@ export async function POST(request: Request) {
   // Jeff hit (Matterport screenshot of a hardwood living room → AI rendered
   // an arched-window orange-walled tile-floor "Groovy" room from scratch).
   const roomKind = room.type.replace(/-/g, " ");
+  const roomFurniture = furnitureListForRoomType(room.type, preset.label);
   let prompt: string;
   if (hasReference) {
     if (effectiveMode === "full-scene") {
@@ -107,18 +108,23 @@ export async function POST(request: Request) {
       // task as "furnish this exact room" with explicit preservation
       // rules, not as "generate a new photo."
       //
-      // Keeping echo-skip parsing below as belt-and-suspenders.
+      // Now room-type aware: signaturePieces are stored per-style (e.g.
+      // Japandi's signaturePieces include "low platform bed") but a bed
+      // doesn't belong in a living room. furnitureListForRoomType narrows
+      // to pieces appropriate for THIS room.
       prompt =
-        `INPUT: a photograph of an empty real-life room. ` +
-        `TASK: photorealistically furnish this exact room in ${preset.label} style. ` +
+        `INPUT: a photograph of an empty real-life ${roomKind}. ` +
+        `TASK: photorealistically furnish this exact ${roomKind} in ${preset.label} style. ` +
+        `ROOM TYPE IS ${roomKind.toUpperCase()} — furniture MUST be appropriate for a ${roomKind}. ` +
+        `Do NOT add a bed to a living room, do NOT add a sofa to a bedroom, etc. ` +
         `STRICT RULES — DO NOT CHANGE: the wall paint color, the wall texture/finish, the ceiling ` +
         `height, the window positions, the window sizes, the window frame style, the existing ` +
         `chandelier or ceiling fixtures, the flooring material/color/pattern, baseboards, crown ` +
         `molding, door positions, door styles, any built-ins, the camera angle, the lighting ` +
         `quality, or the room's perspective. The output room MUST be recognizable as the SAME ROOM ` +
         `as the input — same walls, same floor, same windows, same chandelier, same trim. ` +
-        `WHAT TO ADD: ${preset.vibe} furniture and decor — ${preset.signaturePieces.join(", ")} — ` +
-        `placed naturally and to scale. Add a rug, art on walls, lamps, plants, throw pillows. ` +
+        `WHAT TO ADD (tuned for a ${roomKind}): ${roomFurniture}. ` +
+        `Overall aesthetic: ${preset.vibe}. ` +
         `Color palette for furniture only: ${preset.palette.slice(0, 3).join(", ")} (do not repaint walls). ` +
         `Magazine-quality interior photography. Same daylight from the existing windows. ` +
         `${extraNotes ?? ""}`.trim();
@@ -315,5 +321,85 @@ export async function POST(request: Request) {
       errors,
     },
     { status: 502 }
+  );
+}
+
+/**
+ * Map a room type to a human-readable furniture list. Style presets
+ * hard-code signaturePieces (e.g. Japandi includes "low platform bed"),
+ * but those don't apply uniformly — a bed doesn't belong in a living
+ * room. This keeps the AI's furniture choices appropriate per room.
+ */
+function furnitureListForRoomType(roomType: string, styleLabel: string): string {
+  const t = roomType.toLowerCase();
+  if (t.includes("living") || t.includes("den") || t.includes("media") || t.includes("family")) {
+    return (
+      `a ${styleLabel}-style sofa or sectional, a coffee table, 1-2 accent chairs, side tables, ` +
+      `a rug under the seating, floor and table lamps, wall art above the sofa, potted plants, ` +
+      `throw pillows and a throw blanket`
+    );
+  }
+  if (t.includes("dining")) {
+    return (
+      `a dining table for 4-6, matching dining chairs, a sideboard or buffet, a rug under the table, ` +
+      `wall art, a tablescape (vase + ceramics or candles), potted plant in the corner`
+    );
+  }
+  if (t.includes("kitchen")) {
+    return (
+      `counter-height bar stools if there's an island, pendant lights over the island, ` +
+      `styled decor on open shelves (cookbooks, ceramics, cutting boards), a runner rug, ` +
+      `a bowl of fruit or potted herb on the counter — DO NOT add or rearrange cabinets, ` +
+      `appliances, or countertops, only add decor and bar stools`
+    );
+  }
+  if (t.includes("primary-bedroom") || t.includes("master")) {
+    return (
+      `a king or queen ${styleLabel}-style bed with a headboard, matching nightstands flanking ` +
+      `the bed, a dresser or wardrobe, a rug under the foot of the bed, reading lamps on each ` +
+      `nightstand, art above the bed, an accent chair or bench at the foot of the bed, styled ` +
+      `throw pillows + duvet + throw blanket`
+    );
+  }
+  if (t.includes("bedroom") || t.includes("loft") || t.includes("bonus")) {
+    return (
+      `a ${styleLabel}-style bed with a headboard, matching nightstands flanking the bed, a ` +
+      `dresser, a rug under the foot of the bed, reading lamps, art above the bed, ` +
+      `styled throw pillows + duvet + throw blanket`
+    );
+  }
+  if (t.includes("bath")) {
+    return (
+      `a small plant or floral arrangement, neatly rolled towels, minimal counter decor (a tray ` +
+      `with soap/hand cream), framed art or a statement mirror — DO NOT rearrange the vanity, ` +
+      `toilet, tub, or shower fixtures`
+    );
+  }
+  if (t.includes("office") || t.includes("study")) {
+    return (
+      `a ${styleLabel}-style desk, a task chair, a bookshelf, a rug, a desk lamp, framed art, ` +
+      `potted plants, and a small side chair`
+    );
+  }
+  if (t.includes("entry") || t.includes("foyer") || t.includes("mudroom")) {
+    return (
+      `a console table, a bench with a basket underneath, a runner rug, wall hooks or coat rack, ` +
+      `a statement pendant or sconce, a framed mirror above the console, a potted plant`
+    );
+  }
+  if (t.includes("outdoor") || t.includes("patio") || t.includes("deck")) {
+    return (
+      `outdoor-rated seating (sofa or lounge chairs), a coffee table, an outdoor rug, planters, ` +
+      `string lights, side tables, throw pillows rated for outdoors`
+    );
+  }
+  if (t.includes("hall")) {
+    return (
+      `a runner rug, framed art on the walls, a console table or narrow bench, a pendant or sconce lighting`
+    );
+  }
+  return (
+    `${styleLabel}-style furniture appropriate for this room — seating, surfaces, lighting, ` +
+    `a rug, art, and plants`
   );
 }
