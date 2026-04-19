@@ -150,11 +150,22 @@ export async function POST(request: Request) {
 
 /**
  * Fetch an external image URL and turn it into a Gemini inlineData part.
- * Returns null if the fetch fails (CORS, dead link, bad MIME, etc.) so the
- * caller falls through to text-to-image generation.
+ * Also accepts data: URLs (which extract-to-composite passes for cropped
+ * thumbnails). Returns null on any failure so the caller falls through
+ * to text-to-image generation.
  */
 async function fetchAsInlineData(url: string): Promise<{ inlineData: { data: string; mimeType: string } } | null> {
   try {
+    // Data URLs: decode inline, skip the network call
+    if (url.startsWith("data:")) {
+      const match = url.match(/^data:([^;]+);base64,(.*)$/);
+      if (!match) return null;
+      const mimeType = match[1] || "image/png";
+      if (!mimeType.startsWith("image/")) return null;
+      const data = match[2];
+      if (!data || data.length > 7 * 1024 * 1024) return null; // ~5 MB after base64 overhead
+      return { inlineData: { data, mimeType } };
+    }
     const res = await fetch(url, { headers: { "User-Agent": "TeecoDesignStudio/1.0" } });
     if (!res.ok) return null;
     const contentType = res.headers.get("content-type") || "image/jpeg";
