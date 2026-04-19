@@ -207,6 +207,10 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
   function quickAddRooms() {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
+    // Guard: if rooms already exist, warn before piling on more.
+    if (fresh.rooms.length > 0) {
+      if (!confirm(`This project already has ${fresh.rooms.length} room(s). Quick Setup will add more — continue?`)) return;
+    }
     const bedrooms = Math.max(1, fresh.property.bedrooms || 3);
     const bathrooms = Math.max(1, fresh.property.bathrooms || 2);
     const floors = Math.max(1, fresh.property.floors || 1);
