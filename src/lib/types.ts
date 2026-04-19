@@ -267,6 +267,11 @@ export interface Room {
    *  directly onto the real room photo instead of stripping the AI render. */
   referenceImageUrl?: string;
   sceneBackgroundUrl?: string;  // optional image: room photo, Matterport snap, white/blank
+  /** The raw AI render BEFORE we strip it for the composite backdrop.
+   *  Preserved so the designer can tab between "AI Inspiration (read-only)"
+   *  and "My Composite (editable)" without losing the original render.
+   *  Only set once extraction has run; undefined for fresh projects. */
+  originalRenderUrl?: string;
   sceneItems?: SceneItem[];     // Spoak-style visual scene composition
   /** Install-guide per-room tips (shown on room's install guide page) */
   installTips?: string;

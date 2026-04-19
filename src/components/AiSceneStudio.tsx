@@ -121,6 +121,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   //   "cutout-bg" — empty-room schematic for layering sourced product cutouts
   //                 on top (the install-guide composite workflow)
   const [renderMode, setRenderMode] = useState<"realistic" | "cutout-bg">("realistic");
+  // Tab toggle between the AI inspiration render (read-only) and the
+  // editable composite backdrop + cutouts. Only surfaces when BOTH exist
+  // (i.e. after the designer has extracted items from the render). Defaults
+  // to "composite" because that's where the work happens.
+  const [viewMode, setViewMode] = useState<"composite" | "inspiration">("composite");
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -575,11 +580,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         toast.warning("Cloud upload failed — using local storage. Hit 🧹 Free Storage later to retry.");
       }
 
-      // 2. Persist the stripped backdrop + clear any stale items
+      // 2. Persist the stripped backdrop + clear any stale items.
+      //    ALSO preserve the original render URL so the 2-tab toggle
+      //    (AI Inspiration | My Composite) keeps both views available.
       const fresh = getProjectFromStore(project.id);
       if (!fresh) throw new Error("Project missing");
       const target = fresh.rooms.find(r => r.id === room.id);
       if (!target) throw new Error("Room missing");
+      target.originalRenderUrl = extractionReview.sourceRender;
       target.sceneBackgroundUrl = backdrop;
       target.sceneSnapshot = undefined;
       target.sceneItems = [];
@@ -1885,11 +1893,49 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       )}
 
       {/* Rendered scene preview + APPROVAL GATE */}
-      {hasScene && room.sceneBackgroundUrl && (
+      {hasScene && room.sceneBackgroundUrl && (() => {
+        // Tabs only appear when BOTH an inspiration render AND a composite
+        // backdrop exist — i.e., after the designer ran Extract → Composite.
+        const hasBothViews = !!room.originalRenderUrl && (room.sceneItems?.length ?? 0) > 0;
+        const isInspirationTab = hasBothViews && viewMode === "inspiration";
+        const displayedImage = isInspirationTab
+          ? room.originalRenderUrl!
+          : room.sceneBackgroundUrl!;
+        return (
         <div className={`mt-4 ${phase === "generating" ? "opacity-50" : ""}`}>
+          {/* 2-tab toggle — Inspiration (read-only) | My Composite (editable).
+              Subtle pill row, only shown when both views are available. */}
+          {hasBothViews && (
+            <div className="mb-2 flex items-center gap-1 rounded-lg border border-brand-900/10 bg-white p-1 w-fit">
+              <button
+                type="button"
+                onClick={() => setViewMode("composite")}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                  viewMode === "composite"
+                    ? "bg-brand-900 text-white"
+                    : "text-brand-600 hover:text-brand-900"
+                }`}
+              >
+                🎨 My Composite (editable)
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("inspiration")}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                  viewMode === "inspiration"
+                    ? "bg-brand-900 text-white"
+                    : "text-brand-600 hover:text-brand-900"
+                }`}
+              >
+                📸 AI Inspiration (read-only)
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
-              {phase === "generating"
+              {isInspirationTab
+                ? "AI Inspiration — reference only, not editable"
+                : phase === "generating"
                 ? "Previous render (being replaced)"
                 : phase === "preview"
                   ? "Preview — approve, refine, or re-roll"
@@ -1905,22 +1951,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           </div>
           <div
             data-scene-surface
-            className="relative rounded-lg overflow-hidden border border-brand-900/10 bg-brand-900/5"
+            className={`relative rounded-lg overflow-hidden border bg-brand-900/5 ${
+              isInspirationTab ? "border-amber/30 ring-1 ring-amber/20" : "border-brand-900/10"
+            }`}
             onClick={() => setSelectedPlacedId(null)}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={room.sceneBackgroundUrl}
-              alt={`${room.name} render`}
+              src={displayedImage}
+              alt={isInspirationTab ? `${room.name} AI inspiration` : `${room.name} composite backdrop`}
               className={`w-full h-auto max-h-[520px] object-contain ${
-                (phase === "preview" || phase === "ready") && !clickEdit ? "cursor-crosshair" : ""
+                (phase === "preview" || phase === "ready") && !clickEdit && !isInspirationTab ? "cursor-crosshair" : ""
               }`}
-              onClick={onSceneClick}
+              onClick={isInspirationTab ? undefined : onSceneClick}
+              title={isInspirationTab ? "Switch to My Composite tab to edit" : undefined}
             />
+            {isInspirationTab && (
+              <div className="absolute top-2 left-2 rounded-md bg-amber/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-900 shadow-sm">
+                📸 Reference
+              </div>
+            )}
 
             {/* Placed cutouts — draggable, each represents a real product.
-                Drag to reposition. Click-to-edit still works on empty backdrop. */}
-            {placedItems.map(row => (
+                Drag to reposition. Click-to-edit still works on empty backdrop.
+                Hidden on the Inspiration tab so the original AI render is
+                shown pristine (designer is comparing, not editing). */}
+            {!isInspirationTab && placedItems.map(row => (
               <DraggableCutout
                 key={row.sceneItem.id}
                 sceneItem={row.sceneItem}
@@ -2153,7 +2209,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* The Composite Board — this is where every designer spends most of
           their time. Appears once a backdrop exists. Items get placed here
