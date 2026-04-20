@@ -220,10 +220,22 @@ export interface SelectedFurniture {
   quantity: number;
   roomId: string;
   notes: string;
-  /** Procurement state — defaults to "specced" if unset for backwards compat. */
   status?: FurnitureStatus;
-  /** Backup pick when the primary is unavailable. */
   altItem?: AltItem;
+  alternatives?: SourcedAlternative[];
+}
+
+export interface SourcedAlternative {
+  name: string;
+  vendor: string;
+  price: number | null;
+  url: string;
+  imageUrl?: string;
+  dimensions?: string;
+  rating?: number | null;
+  reviewCount?: number | null;
+  deliveryEstimate?: string | null;
+  inStock?: boolean | null;
 }
 
 export interface RoomAnnotation {

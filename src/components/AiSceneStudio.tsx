@@ -7,7 +7,7 @@ import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
 import { ensureHostedUrl, compactProjectImages, finalizeCutout } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
-import type { Project, Room, FurnitureItem, SceneItem } from "@/lib/types";
+import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
 
 interface HealthCheck {
   ok: boolean;
@@ -697,10 +697,12 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           const tempRoom = { ...rr, furniture: [...rr.furniture] };
           const placed = placeFurniture(tempRoom, customItem);
           placed.status = "approved";
+          const alts = (result?.options ?? []).slice(1).filter(
+            (a: SourcedOption) => a.imageUrl && a.name,
+          ) as SourcedAlternative[];
+          if (alts.length > 0) placed.alternatives = alts;
           rr.furniture.push(placed);
 
-          // Position from the ORIGINAL bounding box so the item lands
-          // roughly where the render showed it. Designer can drag/resize.
           const bb = item.boundingBoxPct;
           rr.sceneItems.push({
             id: `scene-${generateId()}`,
@@ -1245,7 +1247,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
   }
 
-  async function addPickedOption(opt: SourcedOption, descHint: string) {
+  async function addPickedOption(opt: SourcedOption, descHint: string, remainingAlts?: SourcedOption[]) {
     if (pickPhase !== "idle") return;
     setPickPhase("adding");
     setLastError(null);
@@ -1301,6 +1303,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         target.furniture = target.furniture.filter(f => f.item.id !== oldItemId);
         const placed = placeFurniture(target, newItem);
         placed.status = "approved";
+        const swapAlts = (remainingAlts ?? []).filter(a => a.imageUrl && a.name) as SourcedAlternative[];
+        if (swapAlts.length > 0) placed.alternatives = swapAlts;
         target.furniture.push(placed);
         si.itemId = newItem.id;
         saveProject(fresh);
@@ -1326,6 +1330,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         };
         const placed = placeFurniture(target, customItem);
         placed.status = "approved";
+        const addAlts = (remainingAlts ?? []).filter(a => a.imageUrl && a.name) as SourcedAlternative[];
+        if (addAlts.length > 0) placed.alternatives = addAlts;
         target.furniture.push(placed);
         target.sceneItems.push(defaultSceneItemFor(customItem, target.sceneItems.length, category));
         saveProject(fresh);
@@ -1342,6 +1348,53 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     } finally {
       setPickPhase("idle");
     }
+  }
+
+  function quickSwapToAlt(sceneItemId: string, oldItemId: string, alt: SourcedAlternative, remainingAlts: SourcedAlternative[]) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+    const si = (target.sceneItems ?? []).find(s => s.id === sceneItemId);
+    if (!si) return;
+
+    const category = mapCategory(alt.name);
+    const newItem: FurnitureItem = {
+      id: `alt-${generateId()}`,
+      name: alt.name,
+      category,
+      subcategory: alt.name,
+      widthIn: parseFirstDim(alt.dimensions) ?? 36,
+      depthIn: parseSecondDim(alt.dimensions) ?? 36,
+      heightIn: parseThirdDim(alt.dimensions) ?? 30,
+      price: alt.price ?? 0,
+      vendor: alt.vendor || "—",
+      vendorUrl: alt.url || "",
+      imageUrl: alt.imageUrl || "",
+      color: "", material: "",
+      style: preset.designStyle,
+    };
+    target.furniture = target.furniture.filter(f => f.item.id !== oldItemId);
+    const placed = placeFurniture(target, newItem);
+    placed.status = "approved";
+    const oldFurn = room.furniture.find(f => f.item.id === oldItemId);
+    const currentAsAlt: SourcedAlternative = oldFurn ? {
+      name: oldFurn.item.name,
+      vendor: oldFurn.item.vendor,
+      price: oldFurn.item.price,
+      url: oldFurn.item.vendorUrl,
+      imageUrl: oldFurn.item.imageUrl,
+      rating: null, reviewCount: null, deliveryEstimate: null, inStock: null,
+    } : null as unknown as SourcedAlternative;
+    const newAlts = [...remainingAlts];
+    if (currentAsAlt && currentAsAlt.imageUrl) newAlts.push(currentAsAlt);
+    if (newAlts.length > 0) placed.alternatives = newAlts.slice(0, 3);
+    target.furniture.push(placed);
+    si.itemId = newItem.id;
+    saveProject(fresh);
+    onUpdate();
+    toast.success(`Swapped to ${alt.name}`);
+    logActivity(project.id, "alt_swap", `Quick-swapped to ${alt.name} in ${target.name}`);
   }
 
   /**
@@ -2262,9 +2315,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               {placedItems.map(row => {
                 const isSelected = selectedPlacedId === row.sceneItem.id;
                 const isSwapping = swappingId === row.sceneItem.id;
+                const furn = room.furniture.find(f => f.item.id === row.item.id);
+                const alts = furn?.alternatives ?? [];
                 return (
+                  <div key={row.sceneItem.id} className="space-y-1">
                   <div
-                    key={row.sceneItem.id}
                     onClick={() => setSelectedPlacedId(row.sceneItem.id)}
                     className={`flex items-center gap-2 rounded-lg border p-2 cursor-pointer transition ${
                       isSwapping
@@ -2339,6 +2394,33 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     >
                       ✗
                     </button>
+                  </div>
+                  {alts.length > 0 && (
+                    <div className="flex items-center gap-1 pl-1">
+                      <span className="text-[9px] text-brand-500 shrink-0">Alts:</span>
+                      {alts.map((alt, ai) => (
+                        <button
+                          key={ai}
+                          onClick={e => {
+                            e.stopPropagation();
+                            void quickSwapToAlt(row.sceneItem.id, row.item.id, alt, alts.filter((_, j) => j !== ai));
+                          }}
+                          className="group relative h-8 w-8 rounded border border-brand-900/10 bg-white overflow-hidden hover:border-amber/60 shrink-0"
+                          title={`${alt.name} — ${alt.vendor}${alt.price != null ? ` · $${alt.price}` : ""}`}
+                        >
+                          {alt.imageUrl ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={alt.imageUrl} alt="" className="h-full w-full object-contain" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            <span className="text-[8px] text-brand-500">?</span>
+                          )}
+                          {alt.price != null && (
+                            <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[7px] text-white text-center leading-tight">${alt.price}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   </div>
                 );
               })}
@@ -2491,7 +2573,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 disabled={!pickQuery.trim() || pickPhase !== "idle"}
                 className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
               >
-                {pickPhase === "searching" ? "Searching..." : "🔍 Find 3 products"}
+                {pickPhase === "searching" ? "Searching..." : "🔍 Find products"}
               </button>
             </div>
 
@@ -2541,31 +2623,36 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
 
             {pickOptions && pickOptions.options.length > 0 && (
-              <div className="mt-2 grid sm:grid-cols-3 gap-2">
-                {pickOptions.options.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => void addPickedOption(opt, pickOptions.description)}
-                    disabled={pickPhase !== "idle"}
-                    className="text-left rounded-lg border border-brand-900/10 p-2 hover:border-amber/40 hover:bg-amber/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {opt.imageUrl && (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={opt.imageUrl}
-                        alt=""
-                        className="w-full h-24 object-contain bg-white rounded mb-1.5"
-                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    )}
-                    <div className="text-[11px] font-semibold text-brand-900 line-clamp-2">{opt.name}</div>
-                    <div className="text-[9px] text-brand-600 truncate">{opt.vendor}</div>
-                    <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
-                      {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
-                    </div>
-                    <QualityBadges opt={opt} />
-                  </button>
-                ))}
+              <div className="mt-2 grid sm:grid-cols-2 gap-2">
+                {pickOptions.options.map((opt, i) => {
+                  const label = i === 0 ? "Best deal" : i === 1 ? "Budget" : i === 2 ? "Upgrade" : "Alternative";
+                  const labelColor = i === 0 ? "bg-emerald-100 text-emerald-800" : i === 1 ? "bg-sky-100 text-sky-800" : i === 2 ? "bg-amber/20 text-amber-dark" : "bg-brand-900/10 text-brand-700";
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => void addPickedOption(opt, pickOptions.description, pickOptions.options.filter((_, j) => j !== i))}
+                      disabled={pickPhase !== "idle"}
+                      className="text-left rounded-lg border border-brand-900/10 p-2 hover:border-amber/40 hover:bg-amber/5 disabled:opacity-50 disabled:cursor-not-allowed relative"
+                    >
+                      <span className={`absolute top-1 right-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full ${labelColor}`}>{label}</span>
+                      {opt.imageUrl && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={opt.imageUrl}
+                          alt=""
+                          className="w-full h-24 object-contain bg-white rounded mb-1.5"
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                      <div className="text-[11px] font-semibold text-brand-900 line-clamp-2">{opt.name}</div>
+                      <div className="text-[9px] text-brand-600 truncate">{opt.vendor}</div>
+                      <div className="text-[11px] font-semibold text-brand-900 mt-0.5">
+                        {opt.price !== null ? `$${opt.price.toLocaleString()}` : "—"}
+                      </div>
+                      <QualityBadges opt={opt} />
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

@@ -4,33 +4,25 @@ import { GoogleGenAI } from "@google/genai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-/**
- * Pick-first sourcing: designer describes what they want in plain English
- * (or by category), and we return 3 real products a designer could actually
- * buy right now — Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel,
- * Article, Anthropologie, AllModern, Rejuvenation — with vendor, price, URL,
- * dimensions, and primary product photo.
- *
- * Unlike /api/source-from-scene, this does NOT require a scene image — it
- * works from the description alone. That's the whole point of the new
- * pick-first workflow: designer picks the exact product BEFORE any render
- * happens, so the composite image and the masterlist ship the same items
- * by construction.
- *
- * POST body: {
- *   description: string      — "curved boucle sectional sofa for a living room"
- *   styleHint?: string       — e.g. "scandinavian" or "mid-century-modern"
- *   budget?: number          — remaining $ across the project; biases picks
- *   estimatedSize?: string   — e.g. "84\" sofa" or "8x10 rug"
- *   roomType?: string        — e.g. "kitchen" for tighter relevance
- * }
- *
- * Response: {
- *   options: Array<{ name, vendor, price, url, imageUrl?, dimensions? }>
- *   description: string (echoed)
- *   category: string (inferred from description)
- * }
- */
+const PRICE_ANCHORS: Record<string, { min: number; max: number; label: string }> = {
+  sofa:      { min: 400,  max: 1800, label: "sofa / sectional" },
+  bed:       { min: 300,  max: 1200, label: "bed frame / headboard" },
+  mattress:  { min: 200,  max: 900,  label: "mattress" },
+  chair:     { min: 100,  max: 600,  label: "accent chair" },
+  dining:    { min: 80,   max: 350,  label: "dining chair" },
+  table:     { min: 150,  max: 800,  label: "table" },
+  desk:      { min: 120,  max: 500,  label: "desk" },
+  storage:   { min: 150,  max: 700,  label: "dresser / storage" },
+  rug:       { min: 80,   max: 500,  label: "area rug" },
+  lighting:  { min: 40,   max: 300,  label: "lamp / pendant" },
+  art:       { min: 30,   max: 250,  label: "wall art / mirror" },
+  textile:   { min: 20,   max: 150,  label: "curtain / throw / pillow" },
+  decor:     { min: 15,   max: 150,  label: "decorative accessory" },
+  outdoor:   { min: 150,  max: 800,  label: "outdoor furniture" },
+  blind:     { min: 30,   max: 200,  label: "window blind / shade" },
+  nightstand:{ min: 80,   max: 350,  label: "nightstand" },
+  item:      { min: 50,   max: 500,  label: "furniture item" },
+};
 
 interface ProductOption {
   name: string;
@@ -39,10 +31,10 @@ interface ProductOption {
   url: string;
   imageUrl?: string;
   dimensions?: string;
-  rating?: number | null;            // 0-5 (Google Shopping / vendor page)
-  reviewCount?: number | null;       // integer
-  deliveryEstimate?: string | null;  // e.g. "2-5 business days"
-  inStock?: boolean | null;          // null = unknown, don't fake
+  rating?: number | null;
+  reviewCount?: number | null;
+  deliveryEstimate?: string | null;
+  inStock?: boolean | null;
 }
 
 export async function POST(request: Request) {
@@ -84,26 +76,41 @@ export async function POST(request: Request) {
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const category = inferCategory(description);
+  const anchor = PRICE_ANCHORS[category] || PRICE_ANCHORS.item;
+
   const budgetHint = budget
-    ? ` Keep this piece under roughly $${Math.round(budget * 0.25)} to leave room for the rest of the project (budget remaining: $${Math.round(budget)}).`
+    ? ` Project budget remaining: $${Math.round(budget)}. Keep this piece under roughly $${Math.round(budget * 0.25)} to leave room for the rest.`
     : "";
   const styleLine = styleHint ? ` Style direction: ${styleHint}.` : "";
   const roomLine = roomType ? ` Intended for a ${roomType.replace(/-/g, " ")}.` : "";
   const sizeLine = estimatedSize ? ` Approximate size: ${estimatedSize}.` : "";
 
   const prompt = [
-    `Find 3 real, currently-available products a designer could buy right now matching this description:`,
+    `Find 4 real, currently-available products a designer could buy RIGHT NOW matching this description:`,
     `"${description.trim()}".${styleLine}${roomLine}${sizeLine}${budgetHint}`,
-    `Prefer these vendors in order: Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel, Article, Anthropologie, AllModern, Rejuvenation.`,
     ``,
-    `RANK the 3 options by combining (in order):`,
-    ` 1. Price fit — closer to the budget hint is better; never exceed by more than 20%.`,
-    ` 2. Review quality — 4+ stars with substantial review counts beat unrated. If a vendor hides review data, weight lower.`,
-    ` 3. Availability — prefer products marked In Stock / ready-to-ship / fast delivery.`,
-    `Return them ordered best→worst by this combined score.`,
+    `PRICING GUIDANCE — a typical mid-market ${anchor.label} retails for $${anchor.min}–$${anchor.max}.`,
+    `Aim for the best value in this range. Do NOT pick luxury/premium-priced options unless the description explicitly says "luxury" or "high-end".`,
+    `If you find a product priced 2x+ above the range max, skip it in favor of a better deal.`,
     ``,
-    `For each product return as JSON object with these fields:`,
-    ` name — exact product name`,
+    `Prefer these vendors in order: Wayfair, Amazon, Target, West Elm, CB2, Crate & Barrel, Article, Anthropologie, AllModern, Rejuvenation, IKEA, Overstock.`,
+    ``,
+    `Return EXACTLY 4 options, ordered from best to worst by this score:`,
+    ` 1. VALUE — best quality-for-price within the $${anchor.min}–$${anchor.max} range. Closer to the low end is better if quality is comparable.`,
+    ` 2. REVIEWS — 4+ stars with substantial review counts beat unrated. Weight heavily: real customer satisfaction matters.`,
+    ` 3. AVAILABILITY — prefer In Stock / ready-to-ship / fast delivery.`,
+    ` 4. STYLE FIT — matches the described style, color, material.`,
+    ``,
+    `Option 1 = BEST DEAL (highest ROI — great reviews + reasonable price).`,
+    `Option 2 = BUDGET PICK (cheapest that still looks good and has decent reviews).`,
+    `Option 3 = UPGRADE PICK (slightly pricier but noticeably better quality/reviews).`,
+    `Option 4 = ALTERNATIVE (different style/vendor that still fits the brief — broadens the designer's choices).`,
+    ``,
+    `FALLBACK: if the EXACT product described isn't available anywhere, find the closest equivalent that serves the same function, fits the same space, and looks similar. A good substitute is better than no result.`,
+    ``,
+    `For each product return a JSON object with these fields:`,
+    ` name — exact product name from the listing`,
     ` vendor — vendor name`,
     ` price — current USD price as a plain number, no $`,
     ` url — direct product URL (NOT a search page)`,
@@ -116,7 +123,7 @@ export async function POST(request: Request) {
     ``,
     `CRITICAL: if a field is NOT visible in the search results or product page, return null. NEVER hallucinate ratings, review counts, delivery times, or stock status. Null is correct when uncertain.`,
     ``,
-    `Return strictly as a JSON array of 3 objects — no prose, no markdown fences.`,
+    `Return strictly as a JSON array of 4 objects — no prose, no markdown fences.`,
   ].join("\n");
 
   try {
@@ -151,9 +158,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Response JSON was not an array" }, { status: 502 });
     }
 
-    // Parse all fields including the new quality signals. For rating/reviews/
-    // delivery/inStock we respect null (the prompt explicitly says null > hallucination)
-    // and only coerce when the value is clearly present + well-typed.
     const asNumOrNull = (v: unknown): number | null => {
       if (v === null || v === undefined || v === "") return null;
       const n = typeof v === "number" ? v : Number(v);
@@ -170,7 +174,7 @@ export async function POST(request: Request) {
       return null;
     };
 
-    const options: ProductOption[] = parsed.slice(0, 3).map(o => {
+    const options: ProductOption[] = parsed.slice(0, 4).map(o => {
       const obj = o as Record<string, unknown>;
       return {
         name: String(obj.name ?? ""),
@@ -189,7 +193,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       options,
       description: description.trim(),
-      category: inferCategory(description),
+      category,
+      priceRange: { min: anchor.min, max: anchor.max },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -203,14 +208,20 @@ export async function POST(request: Request) {
 function inferCategory(desc: string): string {
   const s = desc.toLowerCase();
   if (/\b(sofa|sectional|loveseat|couch)\b/.test(s)) return "sofa";
-  if (/\b(bed|mattress|headboard|bunk)\b/.test(s)) return "bed";
-  if (/\b(chair|armchair|accent chair|lounge|stool)\b/.test(s)) return "chair";
-  if (/\b(coffee table|side table|dining table|nightstand|desk|console)\b/.test(s)) return "table";
-  if (/\b(dresser|cabinet|shelf|shelving|bookshelf|credenza|storage)\b/.test(s)) return "storage";
+  if (/\b(bed|headboard|bunk)\b/.test(s)) return "bed";
+  if (/\b(mattress)\b/.test(s)) return "mattress";
+  if (/\b(dining\s+chair|bar\s+stool|counter\s+stool)\b/.test(s)) return "dining";
+  if (/\b(chair|armchair|accent chair|lounge|stool|ottoman)\b/.test(s)) return "chair";
+  if (/\b(coffee table|side table|dining table|console)\b/.test(s)) return "table";
+  if (/\b(nightstand|night stand|bedside)\b/.test(s)) return "nightstand";
+  if (/\b(desk)\b/.test(s)) return "desk";
+  if (/\b(dresser|cabinet|shelf|shelving|bookshelf|credenza|storage|wardrobe)\b/.test(s)) return "storage";
   if (/\b(rug|carpet|runner)\b/.test(s)) return "rug";
   if (/\b(lamp|pendant|chandelier|sconce|light)\b/.test(s)) return "lighting";
+  if (/\b(blind|shade|shutter)\b/.test(s)) return "blind";
   if (/\b(art|painting|print|mirror|wall hanging)\b/.test(s)) return "art";
   if (/\b(pillow|throw|curtain|drape|blanket)\b/.test(s)) return "textile";
   if (/\b(plant|vase|bowl|decor|accessory)\b/.test(s)) return "decor";
+  if (/\b(outdoor|patio)\b/.test(s)) return "outdoor";
   return "item";
 }
