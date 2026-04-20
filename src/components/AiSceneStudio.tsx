@@ -613,115 +613,38 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       target.sceneItems = [];
       saveProject(fresh);
       onUpdate();
-      toast.info(`Placing ${kept.length} items on the empty backdrop... (~15s)`);
+      toast.info(`Sourcing ${kept.length} real products — items will appear on the board as each finishes...`);
 
-      // ── Phase 1 (critical path ~20-25s): cutouts only ──────────────────
-      // Get bg-removed cutouts for each kept item in parallel. No sourcing
-      // yet — that runs in the background AFTER the composite board is
-      // visible so the designer can start arranging immediately.
-      interface CutoutResult {
-        item: typeof kept[0];
-        cutoutUrl: string;
-        idx: number;
-      }
-      const cutoutResults: CutoutResult[] = [];
-
-      await Promise.all(kept.map(async (item, idx) => {
-        try {
-          const res = await fetch("/api/generate-cutout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              description: item.description,
-              imageUrl: item.thumbnailDataUrl,
-            }),
-          });
-          const payload = res.ok ? (await res.json()) as { imageUrl?: string; imageDataUrl?: string } : null;
-          const rawUrl = payload
-            ? (payload.imageUrl ?? payload.imageDataUrl ?? item.thumbnailDataUrl)
-            : item.thumbnailDataUrl;
-          const cutoutUrl = await finalizeCutout(rawUrl);
-          cutoutResults.push({ item, cutoutUrl: cutoutUrl ?? item.thumbnailDataUrl, idx });
-        } catch {
-          cutoutResults.push({ item, cutoutUrl: item.thumbnailDataUrl, idx });
-        }
-      }));
-
-      // Save composite board with CUTOUTS — no real product data yet.
-      // Items show empty vendor + "alt-pending" status (UI renders a
-      // "🔎 sourcing..." chip); masterlist export treats alt-pending
-      // naturally. NO emoji in any persisted field so nothing leaks
-      // into xlsx / CSV if designer exports mid-sourcing.
+      // Items-visible scene boot — the empty stripped backdrop is already
+      // saved above. We now source each kept item in parallel via
+      // source-item. When a call resolves, we place the item on the board
+      // using the VENDOR'S PRODUCT PHOTO as the visual (not a half-cropped
+      // fragment of the AI render). Saves are serialized via a promise
+      // chain so parallel resolutions don't race.
       //
-      // Carry stubId on each cutoutResult so Phase 2 looks up the row
-      // it owns by itemId (not by array index) — if a cutout failed,
-      // indexing into a parallel `stubs` array would shift wrong.
-      interface Phase1Row {
-        item: typeof kept[0];
-        cutoutUrl: string;
-        stubId: string;          // the FurnitureItem.id we can look up later
-        idx: number;
-      }
-      const phase1: Phase1Row[] = [];
-      const next = getProjectFromStore(project.id);
-      if (next) {
-        const tt = next.rooms.find(r => r.id === room.id);
-        if (tt) {
-          if (!tt.sceneItems) tt.sceneItems = [];
-          for (const { item, cutoutUrl, idx } of cutoutResults) {
-            const category = mapCategory(item.category);
-            const stubId = `ext-${generateId()}`;
-            const stubItem: FurnitureItem = {
-              id: stubId,
-              name: item.description,
-              category,
-              subcategory: item.category,
-              widthIn: 36, depthIn: 36, heightIn: 30,
-              price: 0,
-              vendor: "",            // empty — never "🔎 sourcing..." in persisted data
-              vendorUrl: "",
-              imageUrl: cutoutUrl,
-              color: "", material: "",
-              style: preset.designStyle,
-            };
-            const tempRoom = { ...tt, furniture: [...tt.furniture] };
-            const placed = placeFurniture(tempRoom, stubItem);
-            placed.status = "alt-pending";   // signals "sourcing in progress" to UI + export
-            tt.furniture.push(placed);
-            const bb = item.boundingBoxPct;
-            tt.sceneItems.push({
-              id: `scene-${generateId()}`,
-              itemId: stubId,
-              x: bb.x + bb.w / 2,
-              y: bb.y + bb.h / 2,
-              width: bb.w, height: bb.h,
-              rotation: 0, zIndex: idx + 1,
-            });
-            phase1.push({ item, cutoutUrl, stubId, idx });
-          }
-          saveProject(next);
-          onUpdate();
-        }
-      }
-
-      // Board is now visible — designer can start dragging items around.
-      setExtractionReview(null);
-      setPhase("ready");
-      logActivity(project.id, "composite_from_render", `Placed ${kept.length} cutouts in ${room.name} — sourcing products in background`);
-      toast.success(`Composite board ready with ${kept.length} cutouts. Real products sourcing in background...`);
-
-      // ── Phase 2 (background ~15-60s): source real products ────────────
-      // Each Phase1 row gets a source-item call. As each resolves, we
-      // update the matching furniture row by STUB ID (not array index).
-      // Saves are serialized via a promise chain so two items finishing
-      // at the same time don't race each other's saveProject().
+      // Why not crop from the render first?
+      //   - Crops are often half-cut, overlap neighbors, and keep
+      //     Matterport watermarks / scene shadows
+      //   - Vendor product photos are studio-quality, white-background,
+      //     exactly what the client will order
+      //   - Removes one Gemini call per item (no generate-cutout) and
+      //     its associated failure modes
+      //
+      // Bounding box from extraction is still used for POSITIONING —
+      // item lands where the render showed it. Designer can drag/resize.
       //
       // Safety:
-      //   - isMountedRef check → don't save after designer navigates away
-      //   - "still a stub" check → don't overwrite manual edits the
-      //     designer already made while sourcing was running
+      //   - isMountedRef: don't save after designer navigates away
+      //   - serialized saveChain: no parallel save races
+      //   - skip items where sourcing returned nothing (no ghost rows)
+
+      // Board is visible (empty). Designer can wait or switch tabs.
+      setExtractionReview(null);
+      setPhase("ready");
+      logActivity(project.id, "composite_from_render", `Stripped backdrop ready — sourcing ${kept.length} products for ${room.name}`);
+
       let saveChain = Promise.resolve();
-      for (const { item, stubId } of phase1) {
+      for (const [idx, item] of kept.entries()) {
         const sourcePromise = fetch("/api/source-item", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -735,42 +658,64 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           .catch(() => null);
 
         saveChain = saveChain.then(async () => {
-          if (!isMountedRef.current) return;           // designer left — abandon update
+          if (!isMountedRef.current) return;
           const result = await sourcePromise;
-          if (!isMountedRef.current) return;           // re-check after await
+          if (!isMountedRef.current) return;
+
+          const opt = result?.options?.[0] ?? null;
+          // If sourcing failed entirely, skip — don't pollute the board
+          // with an empty placeholder. Designer can re-extract or add
+          // manually. Log activity so the absence is auditable.
+          if (!opt || !opt.imageUrl) {
+            logActivity(project.id, "source_skipped", `Couldn't source real product for "${item.description}"`);
+            return;
+          }
+
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
           const rr = fresh2.rooms.find(r2 => r2.id === room.id);
           if (!rr) return;
-          const furn = rr.furniture.find(f => f.item.id === stubId);
-          if (!furn) return;
-          // Only update if the row is STILL a pending stub. If the
-          // designer manually swapped / approved / edited it in the
-          // meantime, leave their work alone.
-          if (furn.status !== "alt-pending" || furn.item.vendor !== "") return;
+          if (!rr.sceneItems) rr.sceneItems = [];
 
-          const opt = result?.options?.[0] ?? null;
-          if (opt) {
-            furn.item.name = opt.name || furn.item.name;
-            furn.item.price = opt.price ?? 0;
-            furn.item.vendor = opt.vendor || "—";
-            furn.item.vendorUrl = opt.url || "";
-            furn.item.widthIn = parseFirstDim(opt.dimensions) ?? furn.item.widthIn;
-            furn.item.depthIn = parseSecondDim(opt.dimensions) ?? furn.item.depthIn;
-            furn.item.heightIn = parseThirdDim(opt.dimensions) ?? furn.item.heightIn;
-            furn.status = "approved";
-          } else {
-            // Sourcing failed — drop the pending flag so it stops showing
-            // "sourcing..." forever. Designer can manually re-source.
-            furn.item.vendor = "—";
-            furn.status = "specced";
-          }
+          const category = mapCategory(item.category);
+          const itemId = `ext-${generateId()}`;
+          const customItem: FurnitureItem = {
+            id: itemId,
+            name: opt.name || item.description,
+            category,
+            subcategory: item.category,
+            widthIn: parseFirstDim(opt.dimensions) ?? 36,
+            depthIn: parseSecondDim(opt.dimensions) ?? 36,
+            heightIn: parseThirdDim(opt.dimensions) ?? 30,
+            price: opt.price ?? 0,
+            vendor: opt.vendor || "—",
+            vendorUrl: opt.url || "",
+            imageUrl: opt.imageUrl,     // clean vendor product photo
+            color: "", material: "",
+            style: preset.designStyle,
+          };
+          const tempRoom = { ...rr, furniture: [...rr.furniture] };
+          const placed = placeFurniture(tempRoom, customItem);
+          placed.status = "approved";
+          rr.furniture.push(placed);
+
+          // Position from the ORIGINAL bounding box so the item lands
+          // roughly where the render showed it. Designer can drag/resize.
+          const bb = item.boundingBoxPct;
+          rr.sceneItems.push({
+            id: `scene-${generateId()}`,
+            itemId,
+            x: bb.x + bb.w / 2,
+            y: bb.y + bb.h / 2,
+            width: bb.w, height: bb.h,
+            rotation: 0, zIndex: idx + 1,
+          });
           saveProject(fresh2);
           onUpdate();
         });
       }
-      // Don't await saveChain — it runs in the background. React re-renders
-      // pick up the background updates as each save resolves.
+      // Board starts empty; items pop in one-by-one as sourcing completes.
+      // Don't await saveChain — it runs in the background.
     } catch (err) {
       setLastError(err instanceof Error ? err.message : "Placement failed");
     } finally {
@@ -3416,6 +3361,11 @@ function DraggableCutout({
       onPointerDown={e => onPointerDown(e, "move")}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      // Stop the click bubbling up to the scene surface (which deselects).
+      // Without this, clicking an item briefly selects it + immediately
+      // deselects from the surface's onClick — transform handles flicker
+      // and disappear before the designer can grab them.
+      onClick={e => e.stopPropagation()}
       className={selected ? "outline outline-2 outline-amber outline-offset-1 rounded" : ""}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
