@@ -1571,7 +1571,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   /** Patch a placed cutout's position/size/orientation. Used by drag + resize + rotate + flip. */
   function updateScenePos(
     sceneItemId: string,
-    patch: Partial<Pick<SceneItem, "x" | "y" | "width" | "height" | "rotation" | "flipX" | "flipY">>
+    patch: Partial<Pick<SceneItem, "x" | "y" | "width" | "height" | "rotation" | "flipX" | "flipY" | "scale" | "tiltX" | "tiltY">>
   ) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
@@ -2008,8 +2008,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 selected={selectedPlacedId === row.sceneItem.id}
                 onSelect={() => setSelectedPlacedId(row.sceneItem.id)}
                 onMove={(x, y) => updateScenePos(row.sceneItem.id, { x, y })}
-                onResize={(w, h) => updateScenePos(row.sceneItem.id, { width: w, height: h })}
+                onScale={s => updateScenePos(row.sceneItem.id, { scale: s })}
                 onRotate={deg => updateScenePos(row.sceneItem.id, { rotation: deg })}
+                onTiltX={deg => updateScenePos(row.sceneItem.id, { tiltX: deg })}
+                onTiltY={deg => updateScenePos(row.sceneItem.id, { tiltY: deg })}
                 onFlip={axis => {
                   const cur = (room.sceneItems ?? []).find(s => s.id === row.sceneItem.id);
                   if (!cur) return;
@@ -2302,6 +2304,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                         view
                       </a>
                     )}
+                    {needsDimensionCheck(row.item.category) && row.item.vendorUrl && (
+                      <span className="text-[9px] text-orange-600 bg-orange-50 border border-orange-200 rounded px-1 py-0.5 whitespace-nowrap" title="Verify the product's actual dimensions fit the room before purchasing">
+                        ⚠ Check size
+                      </span>
+                    )}
                     <button
                       onClick={e => {
                         e.stopPropagation();
@@ -2337,7 +2344,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               })}
               {placedItems.length > 0 && (
                 <div className="text-[10px] text-brand-600/70 italic pl-1">
-                  💡 Drag items directly on the scene above to reposition. Click a placed item to show its resize handle.
+                  💡 Click a placed item: amber corners = scale, blue edges = 3D tilt, green = rotate.
+                  Items with &quot;Check size&quot; — verify actual dimensions on the vendor page before ordering.
                 </div>
               )}
             </div>
@@ -3098,6 +3106,18 @@ function mapCategory(c: string): FurnitureItem["category"] {
   return "decor";
 }
 
+function needsDimensionCheck(category: string): boolean {
+  const c = category.toLowerCase();
+  return (
+    c.includes("bed") || c.includes("mattress") || c.includes("sofa") ||
+    c.includes("table") || c.includes("desk") || c.includes("rug") ||
+    c.includes("cabinet") || c.includes("dresser") || c.includes("shelf") ||
+    c.includes("wardrobe") || c.includes("bookcase") || c.includes("dining") ||
+    c.includes("seating") || c.includes("storage") || c.includes("outdoor") ||
+    c.includes("curtain") || c.includes("blind")
+  );
+}
+
 function parseFirstDim(s?: string): number | null {
   if (!s) return null;
   const m = s.match(/(\d+(?:\.\d+)?)\s*(?:["]|in|inches)?/i);
@@ -3245,10 +3265,14 @@ interface DraggableCutoutProps {
   selected: boolean;
   onSelect: () => void;
   onMove: (xPct: number, yPct: number) => void;
-  onResize: (widthPct: number, heightPct: number) => void;
+  onScale: (scale: number) => void;
   onRotate: (deg: number) => void;
+  onTiltX: (deg: number) => void;
+  onTiltY: (deg: number) => void;
   onFlip: (axis: "x" | "y") => void;
 }
+
+type DragMode = "move" | "scale" | "rotate" | "tiltX" | "tiltY";
 
 function DraggableCutout({
   sceneItem,
@@ -3256,33 +3280,35 @@ function DraggableCutout({
   selected,
   onSelect,
   onMove,
-  onResize,
+  onScale,
   onRotate,
+  onTiltX,
+  onTiltY,
   onFlip,
 }: DraggableCutoutProps) {
   const [drag, setDrag] = useState<null | {
-    mode: "move" | "resize" | "rotate";
+    mode: DragMode;
     startClientX: number;
     startClientY: number;
     startX: number;
     startY: number;
-    startW: number;
-    startH: number;
+    startScale: number;
     startRot: number;
+    startTiltX: number;
+    startTiltY: number;
     centerClientX: number;
     centerClientY: number;
     parentW: number;
     parentH: number;
   }>(null);
 
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, mode: "move" | "resize" | "rotate") {
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, mode: DragMode) {
     e.stopPropagation();
     e.preventDefault();
     onSelect();
     const parent = (e.currentTarget.closest("[data-scene-surface]") as HTMLElement | null);
     if (!parent) return;
     const rect = parent.getBoundingClientRect();
-    // Center of the current item in client coords (needed for rotation math)
     const centerClientX = rect.left + (sceneItem.x / 100) * rect.width;
     const centerClientY = rect.top + (sceneItem.y / 100) * rect.height;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -3292,9 +3318,10 @@ function DraggableCutout({
       startClientY: e.clientY,
       startX: sceneItem.x,
       startY: sceneItem.y,
-      startW: sceneItem.width,
-      startH: sceneItem.height,
+      startScale: sceneItem.scale ?? 1,
       startRot: sceneItem.rotation ?? 0,
+      startTiltX: sceneItem.tiltX ?? 0,
+      startTiltY: sceneItem.tiltY ?? 0,
       centerClientX,
       centerClientY,
       parentW: rect.width,
@@ -3311,15 +3338,26 @@ function DraggableCutout({
         Math.max(2, Math.min(98, drag.startX + dx)),
         Math.max(2, Math.min(98, drag.startY + dy)),
       );
-    } else if (drag.mode === "resize") {
-      const dx = ((e.clientX - drag.startClientX) / drag.parentW) * 100;
-      const dy = ((e.clientY - drag.startClientY) / drag.parentH) * 100;
-      onResize(
-        Math.max(4, Math.min(100, drag.startW + dx * 2)),
-        Math.max(4, Math.min(100, drag.startH + dy * 2)),
+    } else if (drag.mode === "scale") {
+      const startDist = Math.hypot(
+        drag.startClientX - drag.centerClientX,
+        drag.startClientY - drag.centerClientY,
       );
+      const nowDist = Math.hypot(
+        e.clientX - drag.centerClientX,
+        e.clientY - drag.centerClientY,
+      );
+      const ratio = startDist > 10 ? nowDist / startDist : 1;
+      onScale(Math.max(0.2, Math.min(4, drag.startScale * ratio)));
+    } else if (drag.mode === "tiltX") {
+      const dy = e.clientY - drag.startClientY;
+      const deg = drag.startTiltX + (dy / drag.parentH) * 120;
+      onTiltX(Math.max(-60, Math.min(60, deg)));
+    } else if (drag.mode === "tiltY") {
+      const dx = e.clientX - drag.startClientX;
+      const deg = drag.startTiltY + (dx / drag.parentW) * 120;
+      onTiltY(Math.max(-60, Math.min(60, deg)));
     } else {
-      // Rotate: angle between center→start and center→current
       const startAngle = Math.atan2(
         drag.startClientY - drag.centerClientY,
         drag.startClientX - drag.centerClientX,
@@ -3341,15 +3379,20 @@ function DraggableCutout({
   }
 
   const rotDeg = sceneItem.rotation ?? 0;
+  const scaleFactor = sceneItem.scale ?? 1;
+  const tx = sceneItem.tiltX ?? 0;
+  const ty = sceneItem.tiltY ?? 0;
   const sx = sceneItem.flipX ? -1 : 1;
   const sy = sceneItem.flipY ? -1 : 1;
+  const has3D = tx !== 0 || ty !== 0;
+
   const style: React.CSSProperties = {
     position: "absolute",
     left: `${sceneItem.x}%`,
     top: `${sceneItem.y}%`,
     width: `${sceneItem.width}%`,
     height: `${sceneItem.height}%`,
-    transform: `translate(-50%, -50%) rotate(${rotDeg}deg)`,
+    transform: `translate(-50%, -50%) ${has3D ? `perspective(600px) rotateX(${tx}deg) rotateY(${ty}deg)` : ""} rotate(${rotDeg}deg) scale(${scaleFactor})`,
     cursor: drag?.mode === "move" ? "grabbing" : "grab",
     touchAction: "none",
     zIndex: sceneItem.zIndex ?? 1,
@@ -3361,10 +3404,6 @@ function DraggableCutout({
       onPointerDown={e => onPointerDown(e, "move")}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      // Stop the click bubbling up to the scene surface (which deselects).
-      // Without this, clicking an item briefly selects it + immediately
-      // deselects from the surface's onClick — transform handles flicker
-      // and disappear before the designer can grab them.
       onClick={e => e.stopPropagation()}
       className={selected ? "outline outline-2 outline-amber outline-offset-1 rounded" : ""}
     >
@@ -3381,26 +3420,64 @@ function DraggableCutout({
       />
       {selected && (
         <>
-          {/* Resize handle — bottom-right corner */}
+          {/* Scale handle — bottom-right corner (uniform) */}
           <div
-            onPointerDown={e => onPointerDown(e, "resize")}
+            onPointerDown={e => onPointerDown(e, "scale")}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            className="absolute -bottom-1.5 -right-1.5 h-4 w-4 rounded-full bg-amber border-2 border-white shadow cursor-nwse-resize"
-            title="Drag corner to resize"
+            className="absolute -bottom-2 -right-2 h-4 w-4 rounded-full bg-amber border-2 border-white shadow cursor-nwse-resize"
+            title="Drag to scale"
+          />
+          {/* Scale handle — top-left corner (uniform) */}
+          <div
+            onPointerDown={e => onPointerDown(e, "scale")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute -top-2 -left-2 h-4 w-4 rounded-full bg-amber border-2 border-white shadow cursor-nwse-resize"
+            title="Drag to scale"
           />
           {/* Rotation handle — above the top edge */}
           <div
             onPointerDown={e => onPointerDown(e, "rotate")}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            className="absolute -top-5 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white shadow cursor-grab"
+            className="absolute -top-6 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white shadow cursor-grab"
             title="Drag to rotate"
           />
-          {/* Flip buttons — above the rotation handle, as a floating toolbar */}
+          {/* Tilt Y handles — left & right edges (horizontal perspective) */}
+          <div
+            onPointerDown={e => onPointerDown(e, "tiltY")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute top-1/2 -left-2.5 -translate-y-1/2 h-5 w-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ew-resize"
+            title="Drag to tilt left/right"
+          />
+          <div
+            onPointerDown={e => onPointerDown(e, "tiltY")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute top-1/2 -right-2.5 -translate-y-1/2 h-5 w-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ew-resize"
+            title="Drag to tilt left/right"
+          />
+          {/* Tilt X handles — top & bottom edges (vertical perspective) */}
+          <div
+            onPointerDown={e => onPointerDown(e, "tiltX")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute left-1/2 -bottom-2.5 -translate-x-1/2 w-5 h-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ns-resize"
+            title="Drag to tilt up/down"
+          />
+          <div
+            onPointerDown={e => onPointerDown(e, "tiltX")}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="absolute left-1/2 -top-12 -translate-x-1/2 w-5 h-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ns-resize"
+            title="Drag to tilt up/down"
+          />
+          {/* Toolbar: flip + reset 3D */}
           <div
             className="absolute left-1/2 -translate-x-1/2 flex gap-1"
-            style={{ top: "-36px" }}
+            style={{ top: "-52px" }}
             onPointerDown={e => e.stopPropagation()}
           >
             <button
@@ -3421,6 +3498,16 @@ function DraggableCutout({
             >
               ⇅
             </button>
+            {has3D && (
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onTiltX(0); onTiltY(0); }}
+                className="h-5 px-1 rounded bg-white border border-brand-900/20 shadow text-[9px] leading-none hover:bg-brand-900/5"
+                title="Reset 3D tilt"
+              >
+                Reset
+              </button>
+            )}
           </div>
         </>
       )}

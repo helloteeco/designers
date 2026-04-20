@@ -245,6 +245,9 @@ export interface SceneItem {
   zIndex: number;          // display order
   flipX?: boolean;
   flipY?: boolean;
+  scale?: number;
+  tiltX?: number;
+  tiltY?: number;
 }
 
 export interface Room {
