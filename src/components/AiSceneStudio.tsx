@@ -186,6 +186,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }>(null);
   const [extractingReview, setExtractingReview] = useState(false);
   const [placingReviewed, setPlacingReviewed] = useState(false);
+  const [sourcingProgress, setSourcingProgress] = useState<{ done: number; total: number } | null>(null);
   const [compacting, setCompacting] = useState(false);
 
   /**
@@ -639,9 +640,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       //   - serialized saveChain: no parallel save races
       //   - skip items where sourcing returned nothing (no ghost rows)
 
-      // Board is visible (empty). Designer can wait or switch tabs.
       setExtractionReview(null);
       setPhase("ready");
+      setSourcingProgress({ done: 0, total: kept.length });
       logActivity(project.id, "composite_from_render", `Stripped backdrop ready — sourcing ${kept.length} products for ${room.name}`);
 
       let saveChain = Promise.resolve();
@@ -669,6 +670,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           // manually. Log activity so the absence is auditable.
           if (!opt || !opt.imageUrl) {
             logActivity(project.id, "source_skipped", `Couldn't source real product for "${item.description}"`);
+            if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
             return;
           }
 
@@ -715,10 +717,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           });
           saveProject(fresh2);
           onUpdate();
+          if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
         });
       }
-      // Board starts empty; items pop in one-by-one as sourcing completes.
-      // Don't await saveChain — it runs in the background.
+      saveChain.then(() => { if (isMountedRef.current) setSourcingProgress(null); });
     } catch (err) {
       setLastError(err instanceof Error ? err.message : "Placement failed");
     } finally {
@@ -1375,20 +1377,21 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       color: "", material: "",
       style: preset.designStyle,
     };
+    const oldFurn = target.furniture.find(f => f.item.id === oldItemId);
     target.furniture = target.furniture.filter(f => f.item.id !== oldItemId);
     const placed = placeFurniture(target, newItem);
     placed.status = "approved";
-    const oldFurn = room.furniture.find(f => f.item.id === oldItemId);
-    const currentAsAlt: SourcedAlternative = oldFurn ? {
-      name: oldFurn.item.name,
-      vendor: oldFurn.item.vendor,
-      price: oldFurn.item.price,
-      url: oldFurn.item.vendorUrl,
-      imageUrl: oldFurn.item.imageUrl,
-      rating: null, reviewCount: null, deliveryEstimate: null, inStock: null,
-    } : null as unknown as SourcedAlternative;
     const newAlts = [...remainingAlts];
-    if (currentAsAlt && currentAsAlt.imageUrl) newAlts.push(currentAsAlt);
+    if (oldFurn && oldFurn.item.imageUrl) {
+      newAlts.push({
+        name: oldFurn.item.name,
+        vendor: oldFurn.item.vendor,
+        price: oldFurn.item.price,
+        url: oldFurn.item.vendorUrl,
+        imageUrl: oldFurn.item.imageUrl,
+        rating: null, reviewCount: null, deliveryEstimate: null, inStock: null,
+      });
+    }
     if (newAlts.length > 0) placed.alternatives = newAlts.slice(0, 3);
     target.furniture.push(placed);
     si.itemId = newItem.id;
@@ -2045,6 +2048,22 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </span>
             )}
           </div>
+          {sourcingProgress && (
+            <div className="mb-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 flex items-center gap-3">
+              <div className="flex-1">
+                <div className="text-xs font-semibold text-amber-dark">
+                  Sourcing products... {sourcingProgress.done}/{sourcingProgress.total}
+                </div>
+                <div className="mt-1 h-1.5 w-full rounded-full bg-brand-900/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber transition-all duration-500"
+                    style={{ width: `${(sourcingProgress.done / Math.max(1, sourcingProgress.total)) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <span className="text-[10px] text-brand-600">Items appear as they&apos;re found</span>
+            </div>
+          )}
           {isMoodBoardTab ? (
             <MoodBoardView
               placedItems={placedItems}
@@ -3217,16 +3236,69 @@ function MoodBoardView({
           onTiltX={() => {}}
           onTiltY={() => {}}
           onFlip={axis => onFlip(row.sceneItem.id, axis)}
+          hideTilt
         />
       ))}
 
-      {/* Mini floor plan — bottom right */}
-      {hasFloorPlan && (
-        <div className="absolute bottom-3 right-3 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-brand-900/10 shadow-sm p-1.5">
-          <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500 mb-0.5 text-center">Floor Plan</div>
-          <RoomTopDown room={room} size={120} showLabels={false} showTitle={false} floorColor="#f7f5f0" />
-        </div>
-      )}
+      {/* Floor plan — bottom right. Uses the uploaded SVG (cropped to room
+          bbox + context) when available, falls back to the schematic RoomTopDown. */}
+      {(() => {
+        const svgContent = project.property?.floorPlanSvgContent;
+        const bbox = room.svgBBox;
+        if (svgContent && bbox && bbox.width > 0 && bbox.height > 0) {
+          const pad = Math.max(bbox.width, bbox.height) * 0.35;
+          const vx = bbox.x - pad;
+          const vy = bbox.y - pad;
+          const vw = bbox.width + pad * 2;
+          const vh = bbox.height + pad * 2;
+          return (
+            <div className="absolute bottom-3 right-3 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-brand-900/10 shadow-sm p-1.5">
+              <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500 mb-0.5 text-center">
+                {room.name} — Floor Plan
+              </div>
+              <div className="relative" style={{ width: 160, height: 120 }}>
+                <svg
+                  viewBox={`${vx} ${vy} ${vw} ${vh}`}
+                  width={160}
+                  height={120}
+                  className="block"
+                  style={{ background: "#f7f5f0" }}
+                  dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
+                <svg
+                  viewBox={`${vx} ${vy} ${vw} ${vh}`}
+                  width={160}
+                  height={120}
+                  className="absolute inset-0"
+                  style={{ pointerEvents: "none" }}
+                >
+                  <rect
+                    x={bbox.x}
+                    y={bbox.y}
+                    width={bbox.width}
+                    height={bbox.height}
+                    fill="rgba(245, 158, 11, 0.15)"
+                    stroke="#f59e0b"
+                    strokeWidth={Math.max(vw, vh) * 0.01}
+                    rx={2}
+                  />
+                </svg>
+              </div>
+            </div>
+          );
+        }
+        if (hasFloorPlan) {
+          return (
+            <div className="absolute bottom-3 right-3 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-brand-900/10 shadow-sm p-1.5">
+              <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500 mb-0.5 text-center">
+                {room.name} — Layout
+              </div>
+              <RoomTopDown room={room} size={140} showLabels={false} showTitle={false} floorColor="#f7f5f0" />
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Style direction badge — bottom left */}
       {project.designPreset && (
@@ -3486,6 +3558,7 @@ interface DraggableCutoutProps {
   onTiltX: (deg: number) => void;
   onTiltY: (deg: number) => void;
   onFlip: (axis: "x" | "y") => void;
+  hideTilt?: boolean;
 }
 
 type DragMode = "move" | "scale" | "rotate" | "tiltX" | "tiltY";
@@ -3501,6 +3574,7 @@ function DraggableCutout({
   onTiltX,
   onTiltY,
   onFlip,
+  hideTilt,
 }: DraggableCutoutProps) {
   const [drag, setDrag] = useState<null | {
     mode: DragMode;
@@ -3660,36 +3734,40 @@ function DraggableCutout({
             className="absolute -top-6 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white shadow cursor-grab"
             title="Drag to rotate"
           />
-          {/* Tilt Y handles — left & right edges (horizontal perspective) */}
-          <div
-            onPointerDown={e => onPointerDown(e, "tiltY")}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            className="absolute top-1/2 -left-2.5 -translate-y-1/2 h-5 w-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ew-resize"
-            title="Drag to tilt left/right"
-          />
-          <div
-            onPointerDown={e => onPointerDown(e, "tiltY")}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            className="absolute top-1/2 -right-2.5 -translate-y-1/2 h-5 w-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ew-resize"
-            title="Drag to tilt left/right"
-          />
-          {/* Tilt X handles — top & bottom edges (vertical perspective) */}
-          <div
-            onPointerDown={e => onPointerDown(e, "tiltX")}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            className="absolute left-1/2 -bottom-2.5 -translate-x-1/2 w-5 h-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ns-resize"
-            title="Drag to tilt up/down"
-          />
-          <div
-            onPointerDown={e => onPointerDown(e, "tiltX")}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            className="absolute left-1/2 -top-12 -translate-x-1/2 w-5 h-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ns-resize"
-            title="Drag to tilt up/down"
-          />
+          {!hideTilt && (
+            <>
+            {/* Tilt Y handles — left & right edges (horizontal perspective) */}
+            <div
+              onPointerDown={e => onPointerDown(e, "tiltY")}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              className="absolute top-1/2 -left-2.5 -translate-y-1/2 h-5 w-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ew-resize"
+              title="Drag to tilt left/right"
+            />
+            <div
+              onPointerDown={e => onPointerDown(e, "tiltY")}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              className="absolute top-1/2 -right-2.5 -translate-y-1/2 h-5 w-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ew-resize"
+              title="Drag to tilt left/right"
+            />
+            {/* Tilt X handles — top & bottom edges (vertical perspective) */}
+            <div
+              onPointerDown={e => onPointerDown(e, "tiltX")}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              className="absolute left-1/2 -bottom-2.5 -translate-x-1/2 w-5 h-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ns-resize"
+              title="Drag to tilt up/down"
+            />
+            <div
+              onPointerDown={e => onPointerDown(e, "tiltX")}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              className="absolute left-1/2 -top-12 -translate-x-1/2 w-5 h-3 rounded-sm bg-sky-500 border-2 border-white shadow cursor-ns-resize"
+              title="Drag to tilt up/down"
+            />
+            </>
+          )}
           {/* Toolbar: flip + reset 3D */}
           <div
             className="absolute left-1/2 -translate-x-1/2 flex gap-1"

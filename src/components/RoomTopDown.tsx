@@ -30,7 +30,7 @@ export default function RoomTopDown({
   showTitle = false,
   floorColor = "#f0ede6",
 }: Props) {
-  const aspect = room.widthFt / Math.max(0.1, room.lengthFt);
+  const aspect = Math.max(0.1, room.widthFt) / Math.max(0.1, room.lengthFt);
   const width = aspect >= 1 ? size : size * aspect;
   const height = aspect >= 1 ? size / aspect : size;
 
