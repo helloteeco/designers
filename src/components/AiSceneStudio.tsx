@@ -7,6 +7,7 @@ import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
 import { ensureHostedUrl, compactProjectImages, finalizeCutout } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
+import RoomTopDown from "./RoomTopDown";
 import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
 
 interface HealthCheck {
@@ -145,7 +146,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   // editable composite backdrop + cutouts. Only surfaces when BOTH exist
   // (i.e. after the designer has extracted items from the render). Defaults
   // to "composite" because that's where the work happens.
-  const [viewMode, setViewMode] = useState<"composite" | "inspiration">("composite");
+  const [viewMode, setViewMode] = useState<"composite" | "inspiration" | "moodboard">("composite");
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -1974,15 +1975,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         // Tabs only appear when BOTH an inspiration render AND a composite
         // backdrop exist — i.e., after the designer ran Extract → Composite.
         const hasBothViews = !!room.originalRenderUrl && (room.sceneItems?.length ?? 0) > 0;
+        const hasItems = (room.sceneItems?.length ?? 0) > 0;
         const isInspirationTab = hasBothViews && viewMode === "inspiration";
+        const isMoodBoardTab = hasItems && viewMode === "moodboard";
         const displayedImage = isInspirationTab
           ? room.originalRenderUrl!
           : room.sceneBackgroundUrl!;
         return (
         <div className={`mt-4 ${phase === "generating" ? "opacity-50" : ""}`}>
-          {/* 2-tab toggle — Inspiration (read-only) | My Composite (editable).
-              Subtle pill row, only shown when both views are available. */}
-          {hasBothViews && (
+          {/* View toggle — Composite | Mood Board | Inspiration */}
+          {(hasBothViews || hasItems) && (
             <div className="mb-2 flex items-center gap-1 rounded-lg border border-brand-900/10 bg-white p-1 w-fit">
               <button
                 type="button"
@@ -1993,24 +1995,41 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     : "text-brand-600 hover:text-brand-900"
                 }`}
               >
-                🎨 My Composite (editable)
+                🎨 In-Room
               </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("inspiration")}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
-                  viewMode === "inspiration"
-                    ? "bg-brand-900 text-white"
-                    : "text-brand-600 hover:text-brand-900"
-                }`}
-              >
-                📸 AI Inspiration (read-only)
-              </button>
+              {hasItems && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode("moodboard")}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                    viewMode === "moodboard"
+                      ? "bg-brand-900 text-white"
+                      : "text-brand-600 hover:text-brand-900"
+                  }`}
+                >
+                  Mood Board
+                </button>
+              )}
+              {hasBothViews && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode("inspiration")}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                    viewMode === "inspiration"
+                      ? "bg-brand-900 text-white"
+                      : "text-brand-600 hover:text-brand-900"
+                  }`}
+                >
+                  📸 Inspiration
+                </button>
+              )}
             </div>
           )}
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
-              {isInspirationTab
+              {isMoodBoardTab
+                ? "Mood Board — clean flat-lay view for client presentations"
+                : isInspirationTab
                 ? "AI Inspiration — reference only, not editable"
                 : phase === "generating"
                 ? "Previous render (being replaced)"
@@ -2026,6 +2045,24 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </span>
             )}
           </div>
+          {isMoodBoardTab ? (
+            <MoodBoardView
+              placedItems={placedItems}
+              room={room}
+              project={project}
+              selectedPlacedId={selectedPlacedId}
+              onSelectItem={setSelectedPlacedId}
+              onMove={(id, x, y) => updateScenePos(id, { x, y })}
+              onScale={(id, s) => updateScenePos(id, { scale: s })}
+              onRotate={(id, deg) => updateScenePos(id, { rotation: deg })}
+              onFlip={(id, axis) => {
+                const cur = (room.sceneItems ?? []).find(s => s.id === id);
+                if (!cur) return;
+                if (axis === "x") updateScenePos(id, { flipX: !cur.flipX });
+                else updateScenePos(id, { flipY: !cur.flipY });
+              }}
+            />
+          ) : (
           <div
             data-scene-surface
             className={`relative rounded-lg overflow-hidden border bg-brand-900/5 ${
@@ -2049,10 +2086,6 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </div>
             )}
 
-            {/* Placed cutouts — draggable, each represents a real product.
-                Drag to reposition. Click-to-edit still works on empty backdrop.
-                Hidden on the Inspiration tab so the original AI render is
-                shown pristine (designer is comparing, not editing). */}
             {!isInspirationTab && placedItems.map(row => (
               <DraggableCutout
                 key={row.sceneItem.id}
@@ -2074,7 +2107,6 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               />
             ))}
 
-            {/* Click marker — shows where the designer clicked */}
             {clickEdit && (
               <div
                 className="absolute pointer-events-none"
@@ -2088,7 +2120,6 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </div>
             )}
 
-            {/* Action popover */}
             {clickEdit && (
               <ClickEditPopover
                 clickEdit={clickEdit}
@@ -2101,7 +2132,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               />
             )}
           </div>
-          {(phase === "preview" || phase === "ready") && !clickEdit && (
+          )}
+          {(phase === "preview" || phase === "ready") && !clickEdit && !isMoodBoardTab && (
             <div className="mt-1 text-[10px] text-brand-600/70">
               💡 Click any item in the image to swap, source 3 alternatives, or remove it.
             </div>
@@ -3110,6 +3142,103 @@ function ItemReviewRow({
 // the sourcing API so designers can compare 3 options at a glance. Stays
 // invisible when none of the fields are present (e.g. vendor didn't expose
 // review data), so there's no "fake data" appearance.
+interface MoodBoardViewProps {
+  placedItems: { sceneItem: SceneItem; item: FurnitureItem; status?: string }[];
+  room: Room;
+  project: Project;
+  selectedPlacedId: string | null;
+  onSelectItem: (id: string | null) => void;
+  onMove: (id: string, x: number, y: number) => void;
+  onScale: (id: string, s: number) => void;
+  onRotate: (id: string, deg: number) => void;
+  onFlip: (id: string, axis: "x" | "y") => void;
+}
+
+function MoodBoardView({
+  placedItems,
+  room,
+  project,
+  selectedPlacedId,
+  onSelectItem,
+  onMove,
+  onScale,
+  onRotate,
+  onFlip,
+}: MoodBoardViewProps) {
+  const hasFloorPlan = room.widthFt > 0 && room.lengthFt > 0 && room.furniture.length > 0;
+  const totalCost = placedItems.reduce((sum, r) => sum + (r.item.price || 0), 0);
+
+  return (
+    <div
+      data-scene-surface
+      className="relative rounded-lg overflow-hidden border border-brand-900/10"
+      style={{
+        minHeight: 480,
+        background: "linear-gradient(135deg, #fafaf8 0%, #f5f3ef 50%, #edeae4 100%)",
+      }}
+      onClick={() => onSelectItem(null)}
+    >
+      {/* Two-wall corner — subtle L-shaped backdrop */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
+        {/* Floor */}
+        <polygon points="0,45 100,45 100,100 0,100" fill="#ece8e0" />
+        {/* Left wall */}
+        <polygon points="0,0 50,0 50,45 0,45" fill="#f7f5f0" />
+        {/* Right wall */}
+        <polygon points="50,0 100,0 100,45 50,45" fill="#f0ede6" />
+        {/* Corner line */}
+        <line x1="50" y1="0" x2="50" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
+        {/* Floor line */}
+        <line x1="0" y1="45" x2="100" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
+      </svg>
+
+      {/* Room name + cost badge */}
+      <div className="absolute top-3 left-3 z-10">
+        <div className="rounded-md bg-white/90 backdrop-blur-sm border border-brand-900/10 px-3 py-1.5 shadow-sm">
+          <div className="text-xs font-semibold text-brand-900">{room.name}</div>
+          <div className="text-[10px] text-brand-600">
+            {placedItems.length} item{placedItems.length !== 1 ? "s" : ""}
+            {totalCost > 0 ? ` · $${totalCost.toLocaleString()}` : ""}
+          </div>
+        </div>
+      </div>
+
+      {/* Product cutouts on the clean backdrop */}
+      {placedItems.map(row => (
+        <DraggableCutout
+          key={row.sceneItem.id}
+          sceneItem={row.sceneItem}
+          imageUrl={row.item.imageUrl}
+          selected={selectedPlacedId === row.sceneItem.id}
+          onSelect={() => onSelectItem(row.sceneItem.id)}
+          onMove={(x, y) => onMove(row.sceneItem.id, x, y)}
+          onScale={s => onScale(row.sceneItem.id, s)}
+          onRotate={deg => onRotate(row.sceneItem.id, deg)}
+          onTiltX={() => {}}
+          onTiltY={() => {}}
+          onFlip={axis => onFlip(row.sceneItem.id, axis)}
+        />
+      ))}
+
+      {/* Mini floor plan — bottom right */}
+      {hasFloorPlan && (
+        <div className="absolute bottom-3 right-3 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-brand-900/10 shadow-sm p-1.5">
+          <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500 mb-0.5 text-center">Floor Plan</div>
+          <RoomTopDown room={room} size={120} showLabels={false} showTitle={false} floorColor="#f7f5f0" />
+        </div>
+      )}
+
+      {/* Style direction badge — bottom left */}
+      {project.designPreset && (
+        <div className="absolute bottom-3 left-3 z-10 rounded-md bg-white/90 backdrop-blur-sm border border-brand-900/10 px-2 py-1 shadow-sm">
+          <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500">Style</div>
+          <div className="text-[10px] font-medium text-brand-900">{project.designPreset.replace(/-/g, " ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function QualityBadges({ opt }: { opt: SourcedOption }) {
   // Rating is a valid signal even at 0 (some listings literally have zero
   // reviews) — show whatever number the vendor surfaced. We only hide when

@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /**
  * Identify every purchasable furniture/decor item in a scene image and
@@ -66,13 +66,14 @@ export async function POST(request: Request) {
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = [
-    "You are cataloguing furniture and decor items visible in this room scene.",
-    "For each DISTINCT purchasable piece — sofas, chairs, tables, lamps, rugs, art, plants, pillows, throws, window treatments, decorative objects — return:",
+    "You are cataloguing EVERY furniture and decor item visible in this room scene.",
+    "For each DISTINCT purchasable piece — sofas, chairs, tables, desks, lamps, pendants, sconces, rugs, art, mirrors, plants, vases, books, pillows, throws, curtains, blinds, clocks, candles, baskets, trays, bowls, sculptures, decorative objects of any kind — return:",
     "  • description: a 4-10 word description including material, color, and style (e.g. 'rust velvet curved sectional sofa')",
     "  • category: one of: sofa, chair, table, storage, lamp, pendant, rug, art, mirror, plant, textile, decor, window-treatment",
     "  • boundingBox: pixel coordinates {x, y, w, h} in percentages of the image dimensions (0-100, top-left origin). Include a bit of padding around the item so shadows aren't clipped. Make boxes TIGHT — one item per box, no overlaps that obscure the primary item.",
     "Skip built-in architecture (walls, windows, doors, ceilings, floors, baseboards, crown molding).",
-    "Return 5-12 items, largest/most prominent first.",
+    "Be THOROUGH — include small accent items: plants, books on shelves, decorative bowls, throw pillows, candles, vases. These details make the design. Miss nothing.",
+    "Return up to 25 items, largest/most prominent first.",
   ].join(" ");
 
   try {
