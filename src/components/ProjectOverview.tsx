@@ -221,7 +221,6 @@ function Field({ label, value }: { label: string; value: string | number }) {
 
 function HeroImageUploader({ project, onUpdate }: { project: Project; onUpdate: () => void }) {
   const [urlInput, setUrlInput] = useState(project.property.heroImageUrl ?? "");
-  const fileRef = useState<HTMLInputElement | null>(null);
 
   function saveUrl(url: string) {
     const fresh = getProject(project.id);
