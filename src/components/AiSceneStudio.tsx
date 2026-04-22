@@ -3521,28 +3521,33 @@ function MoodBoardView({
               "enclosed";
 
             const accentFill = pattern === "none" ? accentColor : `url(#pat-${pattern})`;
+            // Geometry constants (keep in sync below):
+            //   outer edge at canvas edge (x=0 or x=100), inner edge at x=16 or x=84
+            //   top of wall meets ceiling (y=8), bottom of wall meets floor at y=100
+            //   where outer baseboard meets floor = (0,100), inner baseboard = (16,65)
             return (
               <g>
                 {/* Ceiling */}
-                <rect x="0" y="0" width="100" height="5" fill="#ffffff" />
+                <rect x="0" y="0" width="100" height="8" fill="#ffffff" />
 
-                {/* Left side wall — show unless no-walls */}
+                {/* Left side wall — 1-point perspective: trapezoid with diagonal baseline
+                    that angles UP from canvas bottom-left corner toward the back corner */}
                 {layout !== "no-walls" && layout !== "open-left" && (
-                  <polygon points="0,5 16,8 16,65 0,65" fill={sideColor} />
+                  <polygon points="0,0 16,8 16,65 0,100" fill={sideColor} />
                 )}
-                {/* Right side wall — show unless no-walls or open-right */}
+                {/* Right side wall — mirror */}
                 {layout !== "no-walls" && layout !== "open-right" && (
-                  <polygon points="84,8 100,5 100,65 84,65" fill={sideColor} />
+                  <polygon points="84,8 100,0 100,100 84,65" fill={sideColor} />
                 )}
 
-                {/* Back / accent wall — adjusts width based on open sides */}
+                {/* Back / accent wall */}
                 {layout !== "no-walls" && (
                   <polygon
                     points={
                       layout === "open-right"
-                        ? "16,8 100,5 100,65 16,65"
+                        ? "16,8 100,0 100,100 16,65"
                         : layout === "open-left"
-                          ? "0,5 84,8 84,65 0,65"
+                          ? "0,0 84,8 84,65 0,100"
                           : "16,8 84,8 84,65 16,65"
                     }
                     fill={accentFill}
@@ -3626,38 +3631,52 @@ function MoodBoardView({
                   );
                 })()}
 
-                {/* Crown molding */}
+                {/* Crown molding — angles from ceiling edges to back wall top */}
                 {layout !== "no-walls" && layout !== "open-left" && (
-                  <line x1="0" y1="5" x2="16" y2="8" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+                  <line x1="0" y1="0" x2="16" y2="8" stroke="rgba(0,0,0,0.15)" strokeWidth="0.3" />
                 )}
                 {layout !== "no-walls" && (
                   <line
                     x1={layout === "open-left" ? "0" : "16"}
-                    y1={layout === "open-left" ? "5" : "8"}
+                    y1={layout === "open-left" ? "0" : "8"}
                     x2={layout === "open-right" ? "100" : "84"}
-                    y2={layout === "open-right" ? "5" : "8"}
-                    stroke="rgba(0,0,0,0.12)"
+                    y2={layout === "open-right" ? "0" : "8"}
+                    stroke="rgba(0,0,0,0.15)"
                     strokeWidth="0.3"
                   />
                 )}
                 {layout !== "no-walls" && layout !== "open-right" && (
-                  <line x1="84" y1="8" x2="100" y2="5" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+                  <line x1="84" y1="8" x2="100" y2="0" stroke="rgba(0,0,0,0.15)" strokeWidth="0.3" />
                 )}
 
-                {/* Ceiling horizontal line */}
-                <line x1="0" y1="5" x2="100" y2="5" stroke="rgba(0,0,0,0.06)" strokeWidth="0.2" />
-
-                {/* Inner wall corner lines */}
+                {/* Inner wall corner lines — vertical at the back wall edges */}
                 {layout !== "no-walls" && layout !== "open-left" && (
-                  <line x1="16" y1="8" x2="16" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+                  <line x1="16" y1="8" x2="16" y2="65" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
                 )}
                 {layout !== "no-walls" && layout !== "open-right" && (
-                  <line x1="84" y1="8" x2="84" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+                  <line x1="84" y1="8" x2="84" y2="65" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
                 )}
 
-                {/* Baseboard */}
-                <line x1="0" y1="65" x2="100" y2="65" stroke="rgba(0,0,0,0.2)" strokeWidth="0.4" />
-                <rect x="0" y="63.2" width="100" height="1.8" fill="rgba(255,255,255,0.6)" />
+                {/* Baseboard — follows the diagonal floor edges */}
+                {/* Back wall baseboard (horizontal) */}
+                {layout !== "no-walls" && (
+                  <line
+                    x1={layout === "open-left" ? "0" : "16"}
+                    y1="65"
+                    x2={layout === "open-right" ? "100" : "84"}
+                    y2="65"
+                    stroke="rgba(0,0,0,0.25)"
+                    strokeWidth="0.5"
+                  />
+                )}
+                {/* Left side wall baseboard (diagonal from back corner to front) */}
+                {layout !== "no-walls" && layout !== "open-left" && (
+                  <line x1="16" y1="65" x2="0" y2="100" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5" />
+                )}
+                {/* Right side wall baseboard (diagonal from back corner to front) */}
+                {layout !== "no-walls" && layout !== "open-right" && (
+                  <line x1="84" y1="65" x2="100" y2="100" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5" />
+                )}
               </g>
             );
           })()}
