@@ -333,13 +333,17 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     if (phase === "generating" || phase === "sourcing") return;
     setLastError(null);
     setPhase("generating");
+    toast.info("Generating AI render — this takes 20-40 seconds...");
 
     const notes = extraNotesOverride !== undefined ? extraNotesOverride : refineNotes;
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 110_000);
       const res = await fetch("/api/generate-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           styleId: preset.id,
           room: {
@@ -353,6 +357,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           extraNotes: notes?.trim() || undefined,
         }),
       });
+      clearTimeout(timeout);
       const raw = await res.text();
       let parsed: { imageDataUrl?: string; error?: string; errors?: Array<{ model: string; error: string }> } = {};
       try { parsed = JSON.parse(raw); } catch { /* keep raw */ }
@@ -387,14 +392,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       onUpdate();
 
       setPhase("preview");
-      // Clear any previous sourcing results since the scene changed
       setSourcedItems(null);
+      toast.success("Render ready! Review it below, then extract items to build your composite board.");
     } catch (err) {
-      const msg = err instanceof Error && err.message
-        ? err.message
-        : `Image generation failed (${typeof err === "object" ? JSON.stringify(err).slice(0, 200) : String(err)})`;
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
+      const msg = isAbort
+        ? "Render timed out after ~110 seconds. Try a simpler style or smaller reference photo."
+        : err instanceof Error && err.message
+          ? err.message
+          : `Image generation failed (${typeof err === "object" ? JSON.stringify(err).slice(0, 200) : String(err)})`;
       setLastError(msg);
-      setPhase("idle");
+      toast.error("Render failed — see error details above the Generate button. You can try again.");
+      setPhase(room.sceneBackgroundUrl ? "preview" : "idle");
     }
   }
 
@@ -1756,6 +1765,13 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             <div className="min-w-0">
               <div className="font-semibold mb-0.5">Last call failed</div>
               <div className="break-words whitespace-pre-wrap">{lastError}</div>
+              <button
+                onClick={() => { setLastError(null); void designThisRoom(); }}
+                disabled={phase === "generating" || !referenceImage}
+                className="mt-1.5 rounded bg-amber px-3 py-1 text-[11px] font-semibold text-white hover:bg-amber-dark disabled:opacity-50"
+              >
+                Retry render
+              </button>
             </div>
             <button
               onClick={() => setLastError(null)}
@@ -2102,6 +2118,15 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             {isInspirationTab && (
               <div className="absolute top-2 left-2 rounded-md bg-amber/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-900 shadow-sm">
                 📸 Reference
+              </div>
+            )}
+            {phase === "generating" && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm z-20">
+                <div className="text-center">
+                  <span className="inline-block h-8 w-8 rounded-full border-3 border-amber border-t-transparent animate-spin" />
+                  <div className="mt-2 text-sm font-semibold text-amber-dark">Rendering {preset.label}...</div>
+                  <div className="text-[11px] text-brand-600 mt-1">20-40 seconds</div>
+                </div>
               </div>
             )}
 

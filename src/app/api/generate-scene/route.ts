@@ -4,7 +4,7 @@ import { getPreset, buildScenePrompt } from "@/lib/style-presets";
 import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /**
  * Scene generation via Gemini 2.5 Flash Image Preview ("nano banana").
