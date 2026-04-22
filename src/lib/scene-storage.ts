@@ -42,17 +42,46 @@ export async function ensureHostedUrl(
 }
 
 /**
+ * URL patterns that indicate a vendor "No Image Available" placeholder.
+ * Wayfair, Amazon, IKEA all serve fallback PNGs with these patterns
+ * when the real product image is missing — we MUST reject these so
+ * the composite board doesn't show "No Image Available" graphics
+ * as if they were real products.
+ */
+const PLACEHOLDER_URL_PATTERNS = [
+  /no[-_]?image/i,
+  /placeholder/i,
+  /missing[-_]?image/i,
+  /unavailable/i,
+  /image[-_]?not[-_]?available/i,
+  /default[-_]?(?:image|product)/i,
+  /noimg/i,
+  /\bna\b\.(?:png|jpg|jpeg|webp)/i,
+];
+
+function isPlaceholderUrl(url: string): boolean {
+  return PLACEHOLDER_URL_PATTERNS.some(p => p.test(url));
+}
+
+/**
  * Download an external image URL via the proxy and return a data URL.
- * Uses a chunked base64 conversion that doesn't blow the call stack.
+ * Rejects:
+ *   - URLs matching known placeholder patterns
+ *   - Files <2KB (way too small to be a real product photo)
+ *   - Files >5MB (too big to embed)
+ *   - Non-image content types
  */
 async function downloadAsDataUrl(url: string): Promise<string | null> {
+  if (isPlaceholderUrl(url)) return null;
   try {
     const proxyRes = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
     if (!proxyRes.ok) return null;
     const ct = proxyRes.headers.get("content-type") || "image/png";
     if (!ct.startsWith("image/")) return null;
     const buf = await proxyRes.arrayBuffer();
-    if (buf.byteLength > 5 * 1024 * 1024 || buf.byteLength < 100) return null;
+    // Real product photos are at least ~5KB; vendor "No Image Available"
+    // placeholders are typically 1-3KB grayscale PNGs.
+    if (buf.byteLength > 5 * 1024 * 1024 || buf.byteLength < 2048) return null;
     const bytes = new Uint8Array(buf);
     const chunkSize = 8192;
     let binary = "";
@@ -60,9 +89,58 @@ async function downloadAsDataUrl(url: string): Promise<string | null> {
       const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
       binary += String.fromCharCode.apply(null, slice as unknown as number[]);
     }
-    return `data:${ct};base64,${btoa(binary)}`;
+    const dataUrl = `data:${ct};base64,${btoa(binary)}`;
+    // Pixel-level placeholder detection runs in browser (canvas)
+    if (typeof window !== "undefined" && await looksLikePlaceholder(dataUrl)) {
+      return null;
+    }
+    return dataUrl;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Pixel-level placeholder detection: load the image and check if it's
+ * mostly a single flat color (gray or beige) — vendor "No Image Available"
+ * graphics are typically near-uniform light gray with text, very low color
+ * variance compared to real product photos.
+ */
+async function looksLikePlaceholder(dataUrl: string): Promise<boolean> {
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject();
+      i.src = dataUrl;
+    });
+    // Tiny images are almost always placeholders or icons
+    if (img.naturalWidth < 100 || img.naturalHeight < 100) return true;
+
+    const canvas = document.createElement("canvas");
+    const sample = 64;
+    canvas.width = sample;
+    canvas.height = sample;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    ctx.drawImage(img, 0, 0, sample, sample);
+    const data = ctx.getImageData(0, 0, sample, sample).data;
+
+    // Compute per-channel variance over sampled pixels
+    let rs = 0, gs = 0, bs = 0, n = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      rs += data[i]; gs += data[i + 1]; bs += data[i + 2]; n++;
+    }
+    const rm = rs / n, gm = gs / n, bm = bs / n;
+    let v = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      v += Math.abs(data[i] - rm) + Math.abs(data[i + 1] - gm) + Math.abs(data[i + 2] - bm);
+    }
+    const meanVar = v / n;
+    // Real product photos have meanVar > 30 typically; flat placeholders < 15
+    return meanVar < 15;
+  } catch {
+    return false;
   }
 }
 

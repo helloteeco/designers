@@ -3506,42 +3506,114 @@ function MoodBoardView({
             </pattern>
           </defs>
 
-          {/* Ceiling */}
-          <rect x="0" y="0" width="100" height="5" fill="#ffffff" />
+          {(() => {
+            // Layout adapts to room type:
+            //   - "enclosed": 3 walls (bedrooms, bathrooms, offices, closets)
+            //   - "open-right": no right wall, opens to adjacent room (kitchens
+            //     that flow into living rooms, dining areas open to kitchen)
+            //   - "open-left": no left wall (mirror of open-right)
+            //   - "no-walls": pass-through (entry, hall, outdoor)
+            const t = (room.type || "").toLowerCase();
+            const layout: "enclosed" | "open-right" | "open-left" | "no-walls" =
+              t.includes("kitchen") || t.includes("great") ? "open-right" :
+              t.includes("dining") && t.includes("open") ? "open-right" :
+              t.includes("outdoor") || t.includes("patio") || t.includes("hall") || t.includes("entry") || t.includes("foyer") ? "no-walls" :
+              "enclosed";
 
-          {/* Left side wall — perspective angled */}
-          <polygon points="0,5 16,8 16,65 0,65" fill={sideColor} />
-          {/* Right side wall — perspective angled */}
-          <polygon points="84,8 100,5 100,65 84,65" fill={sideColor} />
-          {/* Back / accent wall */}
-          <polygon
-            points="16,8 84,8 84,65 16,65"
-            fill={pattern === "none" ? accentColor : `url(#pat-${pattern})`}
-          />
+            const accentFill = pattern === "none" ? accentColor : `url(#pat-${pattern})`;
+            return (
+              <g>
+                {/* Ceiling */}
+                <rect x="0" y="0" width="100" height="5" fill="#ffffff" />
 
-          {/* Floor */}
-          <polygon points="0,65 100,65 100,100 0,100" fill={floorColor} />
+                {/* Left side wall — show unless no-walls */}
+                {layout !== "no-walls" && layout !== "open-left" && (
+                  <polygon points="0,5 16,8 16,65 0,65" fill={sideColor} />
+                )}
+                {/* Right side wall — show unless no-walls or open-right */}
+                {layout !== "no-walls" && layout !== "open-right" && (
+                  <polygon points="84,8 100,5 100,65 84,65" fill={sideColor} />
+                )}
 
-          {/* Crown molding */}
-          <line x1="0" y1="5" x2="16" y2="8" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
-          <line x1="16" y1="8" x2="84" y2="8" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
-          <line x1="84" y1="8" x2="100" y2="5" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+                {/* Back / accent wall — adjusts width based on open sides */}
+                {layout !== "no-walls" && (
+                  <polygon
+                    points={
+                      layout === "open-right"
+                        ? "16,8 100,5 100,65 16,65"
+                        : layout === "open-left"
+                          ? "0,5 84,8 84,65 0,65"
+                          : "16,8 84,8 84,65 16,65"
+                    }
+                    fill={accentFill}
+                  />
+                )}
 
-          {/* Ceiling line */}
-          <line x1="0" y1="5" x2="100" y2="5" stroke="rgba(0,0,0,0.06)" strokeWidth="0.2" />
+                {/* Floor — wood grain planks */}
+                <polygon points="0,65 100,65 100,100 0,100" fill={floorColor} />
+                {/* Layered wood planks with slight color variation for realism */}
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const y = 67 + i * 5.5;
+                  return (
+                    <line
+                      key={`plank-${i}`}
+                      x1="0" y1={y} x2="100" y2={y}
+                      stroke="rgba(0,0,0,0.08)"
+                      strokeWidth="0.15"
+                    />
+                  );
+                })}
+                {/* Vertical plank joints — offset rows for brick-lay pattern */}
+                {Array.from({ length: 30 }).map((_, i) => {
+                  const x = (i * 12 + (Math.floor(i / 5) % 2 === 0 ? 0 : 6)) % 100;
+                  const row = Math.floor(i / 8);
+                  const y1 = 65 + row * 8.5;
+                  const y2 = y1 + 8;
+                  return y1 < 100 ? (
+                    <line
+                      key={`joint-${i}`}
+                      x1={x} y1={y1} x2={x} y2={y2}
+                      stroke="rgba(0,0,0,0.1)"
+                      strokeWidth="0.12"
+                    />
+                  ) : null;
+                })}
 
-          {/* Wall corners */}
-          <line x1="16" y1="8" x2="16" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
-          <line x1="84" y1="8" x2="84" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+                {/* Crown molding */}
+                {layout !== "no-walls" && layout !== "open-left" && (
+                  <line x1="0" y1="5" x2="16" y2="8" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+                )}
+                {layout !== "no-walls" && (
+                  <line
+                    x1={layout === "open-left" ? "0" : "16"}
+                    y1={layout === "open-left" ? "5" : "8"}
+                    x2={layout === "open-right" ? "100" : "84"}
+                    y2={layout === "open-right" ? "5" : "8"}
+                    stroke="rgba(0,0,0,0.12)"
+                    strokeWidth="0.3"
+                  />
+                )}
+                {layout !== "no-walls" && layout !== "open-right" && (
+                  <line x1="84" y1="8" x2="100" y2="5" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+                )}
 
-          {/* Baseboard */}
-          <line x1="0" y1="65" x2="100" y2="65" stroke="rgba(0,0,0,0.15)" strokeWidth="0.35" />
-          <rect x="0" y="63.5" width="100" height="1.5" fill="rgba(255,255,255,0.5)" />
+                {/* Ceiling horizontal line */}
+                <line x1="0" y1="5" x2="100" y2="5" stroke="rgba(0,0,0,0.06)" strokeWidth="0.2" />
 
-          {/* Floor wood grain */}
-          <line x1="0" y1="75" x2="100" y2="75" stroke="rgba(0,0,0,0.04)" strokeWidth="0.08" />
-          <line x1="0" y1="85" x2="100" y2="85" stroke="rgba(0,0,0,0.04)" strokeWidth="0.08" />
-          <line x1="0" y1="93" x2="100" y2="93" stroke="rgba(0,0,0,0.03)" strokeWidth="0.08" />
+                {/* Inner wall corner lines */}
+                {layout !== "no-walls" && layout !== "open-left" && (
+                  <line x1="16" y1="8" x2="16" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+                )}
+                {layout !== "no-walls" && layout !== "open-right" && (
+                  <line x1="84" y1="8" x2="84" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+                )}
+
+                {/* Baseboard */}
+                <line x1="0" y1="65" x2="100" y2="65" stroke="rgba(0,0,0,0.2)" strokeWidth="0.4" />
+                <rect x="0" y="63.2" width="100" height="1.8" fill="rgba(255,255,255,0.6)" />
+              </g>
+            );
+          })()}
         </svg>
 
         {/* Product cutouts */}
