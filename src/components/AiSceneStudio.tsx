@@ -652,39 +652,44 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       setExtractionReview(null);
       setPhase("ready");
       setSourcingProgress({ done: 0, total: kept.length });
+      // Persist the expected count so the indicator survives unmount/remount
+      const fp = getProjectFromStore(project.id);
+      if (fp) {
+        const tr = fp.rooms.find(r => r.id === room.id);
+        if (tr) {
+          tr.pendingSourceCount = kept.length;
+          saveProject(fp);
+        }
+      }
       logActivity(project.id, "composite_from_render", `Stripped backdrop ready — sourcing ${kept.length} products for ${room.name}`);
 
-      let saveChain = Promise.resolve();
-      for (const [idx, item] of kept.entries()) {
-        const sourcePromise = fetch("/api/source-item", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            description: item.description,
-            styleHint: preset.id,
-            budget: remainingBudget || undefined,
-            roomType: room.type,
-          }),
-        }).then(r => r.ok ? r.json() as Promise<{ options?: SourcedOption[] }> : null)
-          .catch(() => null);
-
-        saveChain = saveChain.then(async () => {
-          const result = await sourcePromise;
-
+      // Run sourcing with limited concurrency (3 at a time) to avoid
+      // overwhelming the browser's connection pool and Vercel's function
+      // concurrency limits. Each task fully processes one item end-to-end:
+      // source → resolve image → save to localStorage → increment progress.
+      const CONCURRENCY = 3;
+      const processItem = async (item: typeof kept[number], idx: number): Promise<void> => {
+        try {
+          const res = await fetch("/api/source-item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: item.description,
+              styleHint: preset.id,
+              budget: remainingBudget || undefined,
+              roomType: room.type,
+            }),
+          });
+          const result = res.ok ? (await res.json()) as { options?: SourcedOption[] } : null;
           const opt = result?.options?.[0] ?? null;
-          // If sourcing failed entirely, skip — don't pollute the board
-          // with an empty placeholder. Designer can re-extract or add
-          // manually. Log activity so the absence is auditable.
           if (!opt || !opt.imageUrl) {
             logActivity(project.id, "source_skipped", `Couldn't source real product for "${item.description}"`);
-            if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
             return;
           }
 
           const hostedProductImg = await resolveProductImage(opt.imageUrl, item.description, opt.vendor);
           if (!hostedProductImg) {
             logActivity(project.id, "image_failed", `Could not get image for "${item.description}" — skipped`);
-            if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
             return;
           }
 
@@ -731,10 +736,39 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           });
           saveProject(fresh2);
           onUpdate();
+        } catch (err) {
+          logActivity(project.id, "source_error", `Error sourcing "${item.description}": ${err instanceof Error ? err.message : "unknown"}`);
+        } finally {
           if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
-        });
+        }
+      };
+
+      // Simple concurrency pool: workers pull items from the queue until empty
+      const queue = [...kept.entries()];
+      const workers: Promise<void>[] = [];
+      for (let w = 0; w < Math.min(CONCURRENCY, queue.length); w++) {
+        workers.push((async () => {
+          while (queue.length > 0) {
+            const next = queue.shift();
+            if (!next) break;
+            const [i, it] = next;
+            await processItem(it, i);
+          }
+        })());
       }
-      saveChain.then(() => { if (isMountedRef.current) setSourcingProgress(null); });
+
+      // When all workers finish, clear the pending count
+      Promise.all(workers).then(() => {
+        if (isMountedRef.current) setSourcingProgress(null);
+        const fp2 = getProjectFromStore(project.id);
+        if (fp2) {
+          const tr2 = fp2.rooms.find(r => r.id === room.id);
+          if (tr2) {
+            tr2.pendingSourceCount = undefined;
+            saveProject(fp2);
+          }
+        }
+      });
     } catch (err) {
       setLastError(err instanceof Error ? err.message : "Placement failed");
     } finally {
@@ -2137,22 +2171,30 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </span>
             )}
           </div>
-          {sourcingProgress && (
-            <div className="mb-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 flex items-center gap-3">
-              <div className="flex-1">
-                <div className="text-xs font-semibold text-amber-dark">
-                  Sourcing products... {sourcingProgress.done}/{sourcingProgress.total}
+          {(() => {
+            // Show progress from in-memory state, OR from persistent room field
+            // (so the indicator survives component remounts when designer switches rooms).
+            const liveDone = sourcingProgress?.done ?? (room.sceneItems?.length ?? 0);
+            const liveTotal = sourcingProgress?.total ?? room.pendingSourceCount ?? 0;
+            const isActive = liveTotal > 0 && liveDone < liveTotal;
+            if (!isActive) return null;
+            return (
+              <div className="mb-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-amber-dark">
+                    Sourcing products... {liveDone}/{liveTotal}
+                  </div>
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-brand-900/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-amber transition-all duration-500"
+                      style={{ width: `${(liveDone / Math.max(1, liveTotal)) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-1 h-1.5 w-full rounded-full bg-brand-900/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-amber transition-all duration-500"
-                    style={{ width: `${(sourcingProgress.done / Math.max(1, sourcingProgress.total)) * 100}%` }}
-                  />
-                </div>
+                <span className="text-[10px] text-brand-600">Items appear as they&apos;re found</span>
               </div>
-              <span className="text-[10px] text-brand-600">Items appear as they&apos;re found</span>
-            </div>
-          )}
+            );
+          })()}
           {useCleanBackdrop ? (
             <MoodBoardView
               placedItems={placedItems}
