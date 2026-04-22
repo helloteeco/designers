@@ -145,11 +145,21 @@ async function looksLikePlaceholder(dataUrl: string): Promise<boolean> {
 }
 
 /**
- * Try to get a product image for the composite board. Strategy:
- *   1. Download the vendor URL via proxy → upload to Supabase
- *   2. If that fails, generate one with Gemini (generate-cutout API)
- *   3. If that also fails, return null (item will be skipped)
+ * Extract og:image from a product page URL via the /api/og-image endpoint.
+ * Returns the image URL if found, null otherwise.
  */
+async function extractOgImage(pageUrl: string): Promise<string | null> {
+  if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
+  try {
+    const res = await fetch(`/api/og-image?url=${encodeURIComponent(pageUrl)}`);
+    if (!res.ok) return null;
+    const json = (await res.json()) as { imageUrl?: string };
+    return json.imageUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Try to download + host a single product image URL with white bg removal.
  * Returns the hosted Supabase URL on success, null on any failure.
@@ -216,20 +226,36 @@ export interface ProductImageResult {
 export async function resolveProductImage(
   primaryUrl: string | undefined,
   description: string,
-  alternatives: { imageUrl?: string }[] = [],
+  alternatives: { imageUrl?: string; url?: string }[] = [],
 ): Promise<ProductImageResult> {
-  // Attempt 1: primary vendor image
+  // Attempt 1: primary vendor image URL directly
   if (primaryUrl) {
     const hosted = await tryHostVendorImage(primaryUrl);
     if (hosted) return { url: hosted, usedAlternativeIndex: -1, isPlaceholder: false };
   }
 
-  // Attempt 2: try each alternative real product image in order
+  // Attempt 2: try each alternative's direct image URL
   for (let i = 0; i < alternatives.length; i++) {
     const alt = alternatives[i];
     if (!alt.imageUrl) continue;
     const hosted = await tryHostVendorImage(alt.imageUrl);
     if (hosted) return { url: hosted, usedAlternativeIndex: i, isPlaceholder: false };
+  }
+
+  // Attempt 3: extract og:image from product PAGE URLs.
+  // The product page URL (opt.url) from Gemini is always reliable even when
+  // the image URL isn't — og:image meta tags are designed for link previews
+  // and are always direct, hotlinkable image URLs.
+  const pageUrls: { url: string; altIdx: number }[] = [];
+  for (let i = 0; i < alternatives.length; i++) {
+    if (alternatives[i].url) pageUrls.push({ url: alternatives[i].url!, altIdx: i });
+  }
+  for (const { url: pageUrl, altIdx } of pageUrls) {
+    const ogImg = await extractOgImage(pageUrl);
+    if (ogImg) {
+      const hosted = await tryHostVendorImage(ogImg);
+      if (hosted) return { url: hosted, usedAlternativeIndex: altIdx, isPlaceholder: false };
+    }
   }
 
   // Attempt 3: labeled placeholder — designer needs to swap or upload manually

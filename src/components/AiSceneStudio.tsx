@@ -741,7 +741,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           // (real products only — never AI-generated). If all fail, returns a
           // labeled placeholder and isPlaceholder=true.
           const altOptions = (result?.options ?? []).slice(1);
-          const imgResult = await resolveProductImage(opt.imageUrl, item.description, altOptions);
+          // Include the primary product's page URL in case its imageUrl failed
+          // but we can extract og:image from the product page
+          const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
+          const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
 
           // If we used an alternative, promote it to primary so the masterlist
           // shows the actual product the designer can buy (matching the image)
