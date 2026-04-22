@@ -2443,12 +2443,34 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         <div className="mt-4 pt-4 border-t border-brand-900/10">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <div>
-              <h4 className="text-xs font-semibold text-brand-900">🎬 Composite Board <span className="text-brand-600 font-normal">— {placedItems.length} item{placedItems.length === 1 ? "" : "s"}</span></h4>
-              <p className="text-[10px] text-brand-600 mt-0.5">Drag, rotate, flip, resize on the scene above. Swap / add / remove below. Change walls. Build the final composite when ready.</p>
+              <h4 className="text-xs font-semibold text-brand-900">🎬 Composite Board <span className="text-brand-600 font-normal">— {placedItems.length} item{placedItems.length !== 1 ? "s" : ""} in {room.name}</span></h4>
+              <p className="text-[10px] text-brand-600 mt-0.5">Drag, rotate, flip on the board. Swap / add / remove below.</p>
             </div>
             {placedItems.length > 0 && (
-              <div className="text-[10px] text-brand-600">
-                ${placedTotalCost.toLocaleString()} so far
+              <div className="text-right">
+                <div className="text-xs font-semibold text-brand-900">
+                  ${placedTotalCost.toLocaleString()}
+                  {budgetTotal > 0 && (
+                    <span className={`font-normal ${placedTotalCost > budgetTotal ? "text-red-600" : "text-brand-600"}`}>
+                      {" "}/ ${budgetTotal.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {budgetTotal > 0 && (
+                  <>
+                    <div className="mt-1 h-1.5 w-32 rounded-full bg-brand-900/10 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          placedTotalCost > budgetTotal ? "bg-red-500" : placedTotalCost > budgetTotal * 0.8 ? "bg-amber" : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${Math.min(100, (placedTotalCost / budgetTotal) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-[9px] text-brand-500 mt-0.5">
+                      ${Math.max(0, budgetTotal - placedTotalCost).toLocaleString()} remaining
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
