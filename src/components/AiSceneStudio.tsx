@@ -745,6 +745,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           // but we can extract og:image from the product page
           const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
           const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
+          // Remove white background so product floats cleanly on the composite
+          if (!imgResult.isPlaceholder) {
+            const cleaned = await finalizeCutout(imgResult.url);
+            if (cleaned) imgResult.url = cleaned;
+          }
 
           // If we used an alternative, promote it to primary so the masterlist
           // shows the actual product the designer can buy (matching the image)

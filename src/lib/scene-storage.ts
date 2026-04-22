@@ -343,19 +343,18 @@ export async function whiteBgToTransparent(src: string): Promise<string> {
 export async function finalizeCutout(url: string | undefined): Promise<string | null> {
   if (!url) return null;
 
-  // If already hosted, skip processing
-  if (url.includes("supabase.co/")) return url;
-
-  // If it's a data URL, process it
-  if (url.startsWith("data:")) {
+  try {
+    // Always remove white background — products on the composite board
+    // must have transparent backgrounds so they float cleanly on the
+    // backdrop without white rectangles around them.
     const transparent = await whiteBgToTransparent(url);
     const hosted = await ensureHostedUrl(transparent, "cutouts");
     return hosted ?? transparent;
+  } catch {
+    // If bg removal fails (CORS, canvas taint), at least host the original
+    const hosted = await ensureHostedUrl(url, "cutouts");
+    return hosted ?? url;
   }
-
-  // External URL — try to host it
-  const hosted = await ensureHostedUrl(url, "cutouts");
-  return hosted ?? url;
 }
 
 /**
