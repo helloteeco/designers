@@ -72,94 +72,115 @@ async function downloadAsDataUrl(url: string): Promise<string | null> {
  *   2. If that fails, generate one with Gemini (generate-cutout API)
  *   3. If that also fails, return null (item will be skipped)
  */
-export async function resolveProductImage(
-  vendorImageUrl: string | undefined,
-  description: string,
-  vendor?: string,
-): Promise<string | null> {
-  // Attempt 1: vendor image already on Supabase — just remove white bg
-  if (vendorImageUrl && vendorImageUrl.includes("supabase.co/")) {
+/**
+ * Try to download + host a single product image URL with white bg removal.
+ * Returns the hosted Supabase URL on success, null on any failure.
+ */
+async function tryHostVendorImage(url: string): Promise<string | null> {
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+
+  // Already on Supabase — just process the bg
+  if (url.includes("supabase.co/")) {
     try {
-      const transparent = await whiteBgToTransparent(vendorImageUrl);
+      const transparent = await whiteBgToTransparent(url);
       const hosted = await ensureHostedUrl(transparent, "cutouts");
-      return hosted ?? vendorImageUrl;
+      return hosted ?? url;
     } catch {
-      return vendorImageUrl;
+      return url;
     }
   }
 
-  // Attempt 2: download vendor image, remove white bg, host on Supabase
-  if (vendorImageUrl && /^https?:\/\//i.test(vendorImageUrl)) {
-    const downloaded = await downloadAsDataUrl(vendorImageUrl);
-    if (downloaded) {
-      try {
-        // Remove white background BEFORE upload — gives clean cutouts
-        let processed = downloaded;
-        try {
-          processed = await whiteBgToTransparent(downloaded);
-        } catch {}
-        const res = await fetch("/api/upload-scene-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl: processed, folder: "cutouts" }),
-        });
-        if (res.ok) {
-          const json = (await res.json()) as { url?: string };
-          if (json.url) return json.url;
-        }
-        return processed; // last-resort: data URL
-      } catch {}
-    }
-  }
+  const downloaded = await downloadAsDataUrl(url);
+  if (!downloaded) return null;
 
-  // Attempt 3: generate a product image with Gemini
+  let processed = downloaded;
   try {
-    const cutRes = await fetch("/api/generate-cutout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description,
-        imageUrl: vendorImageUrl || undefined,
-        vendor: vendor || undefined,
-      }),
-    });
-    if (cutRes.ok) {
-      const json = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
-      const result = json.imageUrl ?? json.imageDataUrl;
-      if (result) {
-        // Remove white bg from generated image too
-        try {
-          const transparent = await whiteBgToTransparent(result);
-          const hosted = await ensureHostedUrl(transparent, "cutouts");
-          return hosted ?? transparent;
-        } catch {
-          return result;
-        }
-      }
-    }
+    processed = await whiteBgToTransparent(downloaded);
   } catch {}
 
-  // Attempt 4: SVG placeholder so the item never appears as a broken image.
-  // Designer can swap to a real product or upload an image manually.
-  return generatePlaceholderSvg(description);
+  try {
+    const res = await fetch("/api/upload-scene-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataUrl: processed, folder: "cutouts" }),
+    });
+    if (res.ok) {
+      const json = (await res.json()) as { url?: string };
+      if (json.url) return json.url;
+    }
+  } catch {}
+  return processed; // data URL — at least the image works
 }
 
 /**
- * Generate an inline SVG placeholder showing the item description
- * inside a soft beige rectangle. Used when ALL real image sources
- * fail. Designer can swap to a real product later.
+ * Resolve a product image — uses ONLY real product images.
+ * Never generates fake AI cutouts because the masterlist deliverable
+ * needs the client to actually be able to buy what they see.
+ *
+ * Strategy:
+ *   1. Try the primary vendor image
+ *   2. If that fails, try each alternative's vendor image in order
+ *   3. If all real images fail, return a labeled placeholder that
+ *      prompts the designer to manually swap or upload
+ *
+ * Returns: { url, usedAlternativeIndex }
+ *   - url: the resolved image URL (real product OR placeholder)
+ *   - usedAlternativeIndex: -1 if primary, 0+ if a fallback alternative
+ *     was used (so caller can promote that alt to primary on the masterlist)
+ *   - isPlaceholder: true if no real image worked and the designer should swap
+ */
+export interface ProductImageResult {
+  url: string;
+  usedAlternativeIndex: number;
+  isPlaceholder: boolean;
+}
+
+export async function resolveProductImage(
+  primaryUrl: string | undefined,
+  description: string,
+  alternatives: { imageUrl?: string }[] = [],
+): Promise<ProductImageResult> {
+  // Attempt 1: primary vendor image
+  if (primaryUrl) {
+    const hosted = await tryHostVendorImage(primaryUrl);
+    if (hosted) return { url: hosted, usedAlternativeIndex: -1, isPlaceholder: false };
+  }
+
+  // Attempt 2: try each alternative real product image in order
+  for (let i = 0; i < alternatives.length; i++) {
+    const alt = alternatives[i];
+    if (!alt.imageUrl) continue;
+    const hosted = await tryHostVendorImage(alt.imageUrl);
+    if (hosted) return { url: hosted, usedAlternativeIndex: i, isPlaceholder: false };
+  }
+
+  // Attempt 3: labeled placeholder — designer needs to swap or upload manually
+  return {
+    url: generatePlaceholderSvg(description),
+    usedAlternativeIndex: -1,
+    isPlaceholder: true,
+  };
+}
+
+/**
+ * Inline SVG placeholder when no real product image could be sourced.
+ * Calls out to the designer that this item needs manual attention.
+ * Never used as a fake "real" product on the masterlist — the item
+ * is flagged so the designer must swap or upload before sending to client.
  */
 function generatePlaceholderSvg(description: string): string {
   const escapeXml = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  const label = escapeXml(description.slice(0, 40));
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-    <rect x="10" y="10" width="180" height="180" rx="12" fill="#f0ede6" stroke="#d9d4cb" stroke-width="2"/>
-    <text x="100" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#8b8273" font-weight="600">No image</text>
-    <text x="100" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#a39a8b">${label}</text>
-    <text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#a39a8b">click swap to replace</text>
+  const label = escapeXml(description.slice(0, 32));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="220" height="220">
+    <rect x="6" y="6" width="208" height="208" rx="14" fill="#fff7ed" stroke="#fb923c" stroke-width="2.5" stroke-dasharray="6 4"/>
+    <circle cx="110" cy="80" r="20" fill="none" stroke="#fb923c" stroke-width="2.5"/>
+    <text x="110" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#fb923c">!</text>
+    <text x="110" y="125" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#9a3412" font-weight="700">No real image found</text>
+    <text x="110" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#7c2d12">${label}</text>
+    <text x="110" y="172" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8.5" fill="#9a3412" font-weight="600">Tap Swap to find a real product</text>
+    <text x="110" y="186" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8.5" fill="#9a3412" font-weight="600">or paste a vendor URL</text>
   </svg>`;
-  // Browser-safe base64 encoding (no Buffer in client code)
   const b64 = typeof window !== "undefined"
     ? btoa(unescape(encodeURIComponent(svg)))
     : Buffer.from(svg).toString("base64");

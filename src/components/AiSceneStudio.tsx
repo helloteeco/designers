@@ -687,8 +687,20 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             return;
           }
 
-          // resolveProductImage always returns something (vendor → Gemini → SVG placeholder)
-          const hostedProductImg = (await resolveProductImage(opt.imageUrl, item.description, opt.vendor)) || opt.imageUrl;
+          // Resolve image: try primary vendor URL, fall back through alternatives
+          // (real products only — never AI-generated). If all fail, returns a
+          // labeled placeholder and isPlaceholder=true.
+          const altOptions = (result?.options ?? []).slice(1);
+          const imgResult = await resolveProductImage(opt.imageUrl, item.description, altOptions);
+
+          // If we used an alternative, promote it to primary so the masterlist
+          // shows the actual product the designer can buy (matching the image)
+          let primary = opt;
+          let remainingAlts = altOptions;
+          if (imgResult.usedAlternativeIndex >= 0) {
+            primary = altOptions[imgResult.usedAlternativeIndex];
+            remainingAlts = [opt, ...altOptions.filter((_, i) => i !== imgResult.usedAlternativeIndex)];
+          }
 
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
@@ -700,27 +712,35 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           const itemId = `ext-${generateId()}`;
           const customItem: FurnitureItem = {
             id: itemId,
-            name: opt.name || item.description,
+            name: primary.name || item.description,
             category,
             subcategory: item.category,
-            widthIn: parseFirstDim(opt.dimensions) ?? 36,
-            depthIn: parseSecondDim(opt.dimensions) ?? 36,
-            heightIn: parseThirdDim(opt.dimensions) ?? 30,
-            price: opt.price ?? 0,
-            vendor: opt.vendor || "—",
-            vendorUrl: opt.url || "",
-            imageUrl: hostedProductImg,
+            widthIn: parseFirstDim(primary.dimensions) ?? 36,
+            depthIn: parseSecondDim(primary.dimensions) ?? 36,
+            heightIn: parseThirdDim(primary.dimensions) ?? 30,
+            price: primary.price ?? 0,
+            vendor: primary.vendor || "—",
+            vendorUrl: primary.url || "",
+            imageUrl: imgResult.url,
             color: "", material: "",
             style: preset.designStyle,
           };
           const tempRoom = { ...rr, furniture: [...rr.furniture] };
           const placed = placeFurniture(tempRoom, customItem);
-          placed.status = "approved";
-          const alts = (result?.options ?? []).slice(1).filter(
+          // If placeholder, mark as needs-attention so it's flagged in the
+          // masterlist export — designer must swap before sending to client
+          placed.status = imgResult.isPlaceholder ? "alt-pending" : "approved";
+          const alts = remainingAlts.filter(
             (a: SourcedOption) => a.imageUrl && a.name,
           ) as SourcedAlternative[];
           if (alts.length > 0) placed.alternatives = alts;
           rr.furniture.push(placed);
+
+          if (imgResult.isPlaceholder) {
+            logActivity(project.id, "image_placeholder", `No real image for "${item.description}" — needs designer swap`);
+          } else if (imgResult.usedAlternativeIndex >= 0) {
+            logActivity(project.id, "image_fallback_alt", `Used alternative #${imgResult.usedAlternativeIndex + 1} for "${item.description}" (primary image unavailable)`);
+          }
 
           const bb = item.boundingBoxPct;
           rr.sceneItems.push({
