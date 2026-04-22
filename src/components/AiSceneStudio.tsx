@@ -669,9 +669,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           .catch(() => null);
 
         saveChain = saveChain.then(async () => {
-          if (!isMountedRef.current) return;
           const result = await sourcePromise;
-          if (!isMountedRef.current) return;
 
           const opt = result?.options?.[0] ?? null;
           // If sourcing failed entirely, skip — don't pollute the board
