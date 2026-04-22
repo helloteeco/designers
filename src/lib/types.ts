@@ -246,6 +246,13 @@ export interface RoomAnnotation {
   height: number;       // 0-100 (% of plan height)
 }
 
+export interface CompositeBackdrop {
+  accentWallColor?: string;
+  sideWallColor?: string;
+  floorColor?: string;
+  accentWallPattern?: "none" | "shiplap" | "wainscoting" | "board-batten" | "beadboard" | "stripes";
+}
+
 export interface SceneItem {
   id: string;              // unique instance id (one item can appear multiple times)
   itemId: string;          // references a FurnitureItem id (catalog or custom)
@@ -288,6 +295,7 @@ export interface Room {
    *  Only set once extraction has run; undefined for fresh projects. */
   originalRenderUrl?: string;
   sceneItems?: SceneItem[];     // Spoak-style visual scene composition
+  compositeBackdrop?: CompositeBackdrop;
   /** Install-guide per-room tips (shown on room's install guide page) */
   installTips?: string;
   /** Snapshot of the rendered scene as base64 image, for use in install guide

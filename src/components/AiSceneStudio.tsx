@@ -1704,6 +1704,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     onUpdate();
   }
 
+  function updateBackdrop(patch: Partial<NonNullable<Room["compositeBackdrop"]>>) {
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const target = fresh.rooms.find(r => r.id === room.id);
+    if (!target) return;
+    target.compositeBackdrop = { ...(target.compositeBackdrop ?? {}), ...patch };
+    saveProject(fresh);
+    onUpdate();
+  }
+
   async function buildComposite() {
     if (composing) return;
     if (!room.sceneBackgroundUrl) {
@@ -2567,66 +2577,124 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
           )}
 
-          {/* Edit backdrop — ONE collapsed section for walls, floors, lighting */}
-          <details className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2 group">
-            <summary className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 cursor-pointer select-none list-none flex items-center justify-between">
-              <span>🎨 Edit backdrop (walls, floors, lighting)</span>
-              <span className="text-brand-500 group-open:rotate-180 transition-transform text-xs">▼</span>
-            </summary>
-            <div className="mt-2 space-y-2">
+          {/* Edit backdrop — INSTANT wall/floor/pattern controls */}
+          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
+              🎨 Backdrop — walls & floor
+            </div>
+
+            {/* Accent wall color */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 mb-1">Accent wall (back)</div>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { label: "🌿 Forest green walls", value: "rich dark forest green matte paint on all walls" },
-                  { label: "🧱 Wainscoting", value: "add white wainscoting on the lower third of the walls" },
-                  { label: "🪵 Shiplap accent", value: "add horizontal white shiplap on the accent wall" },
-                  { label: "🌸 Botanical wallpaper", value: "botanical floral wallpaper on the accent wall, keep other walls white" },
-                  { label: "💡 Modern pendant", value: "replace the chandelier/ceiling light with a modern pendant" },
-                  { label: "🪵 White oak floors", value: "replace the flooring with wide-plank white oak hardwood" },
-                  { label: "⬛ Matte black hardware", value: "upgrade all cabinet pulls and door handles to matte black" },
-                  { label: "🔲 Board & batten", value: "add board and batten vertical trim on the walls" },
-                ].map(p => (
+                  { c: "#f7f5f0", n: "Off-white" },
+                  { c: "#2d3a2e", n: "Forest" },
+                  { c: "#b8c5b2", n: "Sage" },
+                  { c: "#1a2744", n: "Navy" },
+                  { c: "#8ea4bf", n: "Dusty blue" },
+                  { c: "#2c2c2c", n: "Charcoal" },
+                  { c: "#c17f59", n: "Terracotta" },
+                  { c: "#d4bfb0", n: "Blush" },
+                  { c: "#c5b9a8", n: "Greige" },
+                  { c: "#e8dcc8", n: "Linen" },
+                ].map(s => (
                   <button
-                    key={p.label}
-                    onClick={() => setWallPrompt(p.value)}
-                    disabled={wallBusy || fixturesBusy}
-                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                  >
-                    {p.label}
-                  </button>
+                    key={s.n}
+                    onClick={() => updateBackdrop({ accentWallColor: s.c })}
+                    title={s.n}
+                    className={`h-5 w-5 rounded border shadow-sm hover:ring-2 hover:ring-amber/50 transition ${
+                      (room.compositeBackdrop?.accentWallColor ?? "#f7f5f0") === s.c ? "ring-2 ring-amber" : "border-brand-900/20"
+                    }`}
+                    style={{ backgroundColor: s.c }}
+                  />
                 ))}
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={wallPrompt || fixturesPrompt}
-                  onChange={e => { setWallPrompt(e.target.value); setFixturesPrompt(""); }}
-                  placeholder="Describe any change: walls, paint, wallpaper, floors, lighting, trim..."
-                  className="input flex-1 text-xs"
-                  disabled={wallBusy || fixturesBusy}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && (wallPrompt.trim() || fixturesPrompt.trim())) {
-                      e.preventDefault();
-                      if (fixturesPrompt.trim()) applyFixturesEdit();
-                      else void applyWallTreatment();
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    if (fixturesPrompt.trim()) applyFixturesEdit();
-                    else void applyWallTreatment();
-                  }}
-                  disabled={(!wallPrompt.trim() && !fixturesPrompt.trim()) || wallBusy || fixturesBusy}
-                  className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 hover:bg-brand-700"
-                >
-                  {wallBusy || fixturesBusy ? "Applying..." : "Apply"}
-                </button>
-              </div>
-              <div className="text-[10px] text-brand-600/70">
-                Changes the room backdrop. Your placed items stay where they are.
+            </div>
+
+            {/* Side wall color */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 mb-1">Side walls</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { c: "#f0ede6", n: "Warm white" },
+                  { c: "#e8e4db", n: "Linen" },
+                  { c: "#ece6d8", n: "Cream" },
+                  { c: "#dad4c6", n: "Sand" },
+                  { c: "#c8bfae", n: "Taupe" },
+                  { c: "#f5f5f5", n: "Pure white" },
+                ].map(s => (
+                  <button
+                    key={s.n}
+                    onClick={() => updateBackdrop({ sideWallColor: s.c })}
+                    title={s.n}
+                    className={`h-5 w-5 rounded border shadow-sm hover:ring-2 hover:ring-amber/50 transition ${
+                      (room.compositeBackdrop?.sideWallColor ?? "#f0ede6") === s.c ? "ring-2 ring-amber" : "border-brand-900/20"
+                    }`}
+                    style={{ backgroundColor: s.c }}
+                  />
+                ))}
               </div>
             </div>
-          </details>
+
+            {/* Floor color */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 mb-1">Floor</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { c: "#e8ddc9", n: "White oak" },
+                  { c: "#c9a87a", n: "Natural oak" },
+                  { c: "#8b6b4a", n: "Medium walnut" },
+                  { c: "#4a342b", n: "Dark walnut" },
+                  { c: "#d6ceba", n: "Light concrete" },
+                  { c: "#c4a08a", n: "Terracotta tile" },
+                  { c: "#e8e0d4", n: "Carpet" },
+                ].map(s => (
+                  <button
+                    key={s.n}
+                    onClick={() => updateBackdrop({ floorColor: s.c })}
+                    title={s.n}
+                    className={`h-5 w-5 rounded border shadow-sm hover:ring-2 hover:ring-amber/50 transition ${
+                      (room.compositeBackdrop?.floorColor ?? "#e8ddc9") === s.c ? "ring-2 ring-amber" : "border-brand-900/20"
+                    }`}
+                    style={{ backgroundColor: s.c }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Accent wall pattern */}
+            <div>
+              <div className="text-[9px] text-brand-500 mb-1">Accent wall pattern</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { key: "none" as const, label: "Plain" },
+                  { key: "shiplap" as const, label: "Shiplap" },
+                  { key: "wainscoting" as const, label: "Wainscoting" },
+                  { key: "board-batten" as const, label: "Board & batten" },
+                  { key: "beadboard" as const, label: "Beadboard" },
+                  { key: "stripes" as const, label: "Stripes" },
+                ].map(p => {
+                  const active = (room.compositeBackdrop?.accentWallPattern ?? "none") === p.key;
+                  return (
+                    <button
+                      key={p.key}
+                      onClick={() => updateBackdrop({ accentWallPattern: p.key })}
+                      className={`text-[10px] rounded-full border px-2 py-0.5 transition ${
+                        active ? "border-amber bg-amber/15 text-amber-dark" : "border-brand-900/15 hover:border-amber/40"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-2 text-[10px] text-brand-600/70">
+              Instant — no AI wait. Colors/patterns apply to the Composite Board. Photo Overlay tab is untouched.
+            </div>
+          </div>
 
           {/* Add item — unified drop zone: drag image, paste URL, or search */}
           <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
@@ -3239,8 +3307,13 @@ function MoodBoardView({
   onFlip,
 }: MoodBoardViewProps) {
   const hasFloorPlan = room.widthFt > 0 && room.lengthFt > 0 && room.furniture.length > 0;
-  const strippedPhoto = room.sceneBackgroundUrl;
   const tipLines = (room.installTips ?? "").split("\n").map(l => l.trim()).filter(Boolean);
+
+  const bd = room.compositeBackdrop ?? {};
+  const accentColor = bd.accentWallColor ?? "#f7f5f0";
+  const sideColor = bd.sideWallColor ?? "#f0ede6";
+  const floorColor = bd.floorColor ?? "#e8ddc9";
+  const pattern = bd.accentWallPattern ?? "none";
 
   return (
     <div className="bg-white border border-brand-900/10 rounded-lg overflow-hidden shadow-sm">
@@ -3251,65 +3324,68 @@ function MoodBoardView({
         </h2>
       </div>
 
-      {/* Composite surface */}
+      {/* Composite surface — clean illustrated 3-wall room */}
       <div
         data-scene-surface
         className="relative overflow-hidden"
-        style={{ minHeight: 480, background: "#ffffff" }}
+        style={{ minHeight: 520, background: "#ffffff" }}
         onClick={() => onSelectItem(null)}
       >
-        {/* Backdrop: illustrated 3-wall room */}
-        {strippedPhoto ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={strippedPhoto}
-              alt={`${room.name} room shell`}
-              className="w-full h-auto max-h-[520px] object-contain pointer-events-none select-none"
-              style={{
-                filter: "saturate(0.35) brightness(1.18) contrast(0.95)",
-                opacity: 0.78,
-              }}
-            />
-            {/* Soft paper-like overlay — flattens the photo into an illustration feel */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(ellipse at center, rgba(255,255,255,0) 40%, rgba(255,255,255,0.35) 100%)",
-                mixBlendMode: "lighten",
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <div
-              style={{
-                minHeight: 480,
-                background: "linear-gradient(135deg, #fafaf8 0%, #f5f3ef 50%, #edeae4 100%)",
-              }}
-            />
-            <svg
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              preserveAspectRatio="none"
-              viewBox="0 0 100 100"
-            >
-              {/* Floor */}
-              <polygon points="0,55 100,55 100,100 0,100" fill="#eae5dc" />
-              {/* Left side wall */}
-              <polygon points="0,2 22,12 22,55 0,55" fill="#f0ede6" />
-              {/* Back / accent wall */}
-              <polygon points="22,12 78,12 78,55 22,55" fill="#f7f5f0" />
-              {/* Right side wall */}
-              <polygon points="78,12 100,2 100,55 78,55" fill="#f0ede6" />
-              {/* Corner lines */}
-              <line x1="22" y1="12" x2="22" y2="55" stroke="#d9d4cb" strokeWidth="0.25" />
-              <line x1="78" y1="12" x2="78" y2="55" stroke="#d9d4cb" strokeWidth="0.25" />
-              <line x1="0" y1="55" x2="100" y2="55" stroke="#d9d4cb" strokeWidth="0.25" />
-              <line x1="22" y1="12" x2="78" y2="12" stroke="#d9d4cb" strokeWidth="0.2" />
-            </svg>
-          </>
-        )}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 100"
+        >
+          <defs>
+            {/* Shiplap: horizontal planks */}
+            <pattern id="pat-shiplap" x="0" y="0" width="100" height="4" patternUnits="userSpaceOnUse">
+              <rect width="100" height="4" fill={accentColor} />
+              <line x1="0" y1="0" x2="100" y2="0" stroke="rgba(0,0,0,0.08)" strokeWidth="0.15" />
+            </pattern>
+            {/* Wainscoting: panels on lower half with top rail */}
+            <pattern id="pat-wainscoting" x="0" y="0" width="14" height="100" patternUnits="userSpaceOnUse">
+              <rect width="14" height="100" fill={accentColor} />
+              <rect x="1" y="30" width="12" height="25" fill="none" stroke="rgba(0,0,0,0.09)" strokeWidth="0.2" />
+            </pattern>
+            {/* Board & batten: vertical battens */}
+            <pattern id="pat-board-batten" x="0" y="0" width="10" height="100" patternUnits="userSpaceOnUse">
+              <rect width="10" height="100" fill={accentColor} />
+              <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(0,0,0,0.1)" strokeWidth="0.3" />
+            </pattern>
+            {/* Beadboard: narrow vertical */}
+            <pattern id="pat-beadboard" x="0" y="0" width="3" height="100" patternUnits="userSpaceOnUse">
+              <rect width="3" height="100" fill={accentColor} />
+              <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(0,0,0,0.06)" strokeWidth="0.1" />
+            </pattern>
+            {/* Stripes */}
+            <pattern id="pat-stripes" x="0" y="0" width="8" height="100" patternUnits="userSpaceOnUse">
+              <rect width="8" height="100" fill={accentColor} />
+              <rect x="0" y="0" width="4" height="100" fill="rgba(255,255,255,0.35)" />
+            </pattern>
+          </defs>
+
+          {/* Floor */}
+          <polygon points="0,58 100,58 100,100 0,100" fill={floorColor} />
+          {/* Left side wall */}
+          <polygon points="0,3 20,13 20,58 0,58" fill={sideColor} />
+          {/* Right side wall */}
+          <polygon points="80,13 100,3 100,58 80,58" fill={sideColor} />
+          {/* Back / accent wall — with pattern if set */}
+          <polygon
+            points="20,13 80,13 80,58 20,58"
+            fill={pattern === "none" ? accentColor : `url(#pat-${pattern})`}
+          />
+
+          {/* Soft corner lines */}
+          <line x1="20" y1="13" x2="20" y2="58" stroke="rgba(0,0,0,0.08)" strokeWidth="0.2" />
+          <line x1="80" y1="13" x2="80" y2="58" stroke="rgba(0,0,0,0.08)" strokeWidth="0.2" />
+          <line x1="0" y1="58" x2="100" y2="58" stroke="rgba(0,0,0,0.1)" strokeWidth="0.22" />
+          <line x1="20" y1="13" x2="80" y2="13" stroke="rgba(0,0,0,0.05)" strokeWidth="0.15" />
+
+          {/* Floor wood grain — very subtle horizontal lines */}
+          <line x1="0" y1="72" x2="100" y2="72" stroke="rgba(0,0,0,0.04)" strokeWidth="0.1" />
+          <line x1="0" y1="85" x2="100" y2="85" stroke="rgba(0,0,0,0.04)" strokeWidth="0.1" />
+        </svg>
 
         {/* Product cutouts */}
         {placedItems.map(row => (
