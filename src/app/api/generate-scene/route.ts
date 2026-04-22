@@ -121,7 +121,7 @@ export async function POST(request: Request) {
         `• WALLS: keep the EXACT same paint color — do NOT repaint, do NOT change the hue/saturation/brightness. If the walls are cream, they stay cream. If beige, stay beige.\n` +
         `• CEILING: keep the EXACT same height, texture, and color. Do NOT add or remove crown molding.\n` +
         `• WINDOWS: keep the EXACT same positions, sizes, frame styles, and number. Do NOT add, remove, enlarge, or reshape windows.\n` +
-        `• EXISTING FIXTURES: keep the EXACT same chandelier, ceiling fan, light fixtures. Do NOT replace them — they are hardwired and stay.\n` +
+        `• LIGHTING FIXTURES: DO replace the chandelier, ceiling fan, or pendant with a ${preset.label}-appropriate fixture that matches the style. Designers swap these out during install.\n` +
         `• FLOORING: keep the EXACT same material, color, and pattern (hardwood grain direction, tile pattern, etc.).\n` +
         `• DOORS: keep the EXACT same positions, styles, and hardware.\n` +
         `• BUILT-INS: keep any railings, staircases, built-in shelves, fireplaces, HVAC vents EXACTLY as they are.\n` +
@@ -392,7 +392,20 @@ function furnitureListForRoomType(roomType: string, styleLabel: string): string 
       `slightly on the floor.`
     );
   }
-  if (t.includes("bedroom") || t.includes("loft") || t.includes("bonus") || t.includes("bunk")) {
+  if (t.includes("bunk")) {
+    return (
+      `${styleLabel}-style bunk beds (twin-over-twin or twin-over-full), a dresser, a rug, ` +
+      `reading lights (wall-mounted sconces, NOT floor lamps near bunks), art on the wall, ` +
+      `styled throw pillows + duvet + throw blanket on each bunk. ` +
+      `CEILING FAN SAFETY: if there is a ceiling fan, REMOVE IT and replace with a flush-mount ` +
+      `light fixture — ceiling fans are a head-strike hazard with bunk beds. If the room needs ` +
+      `air circulation, use a floor fan or tower fan instead. ` +
+      `WINDOWS: every window MUST have blackout curtains — hang them HIGH (rod at ceiling height) ` +
+      `and WIDE (rod extends 6-8 inches past the window frame on each side). Floor-length blackout ` +
+      `panels in a neutral fabric that matches the ${styleLabel} style.`
+    );
+  }
+  if (t.includes("bedroom") || t.includes("loft") || t.includes("bonus")) {
     return (
       `a ${styleLabel}-style bed with a headboard, matching nightstands flanking the bed, a ` +
       `dresser, a rug under the foot of the bed, reading lamps, art above the bed, ` +
