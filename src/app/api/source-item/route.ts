@@ -190,6 +190,30 @@ export async function POST(request: Request) {
       };
     });
 
+    // Server-side image verification: for each option, validate the image
+    // URL actually works. If it doesn't, extract og:image from the product
+    // page. This runs on the server (no CORS) so we get reliable results
+    // BEFORE sending to the client.
+    await Promise.all(options.map(async (opt) => {
+      // Step 1: verify the Gemini-provided imageUrl actually loads
+      if (opt.imageUrl) {
+        const ok = await verifyImageUrl(opt.imageUrl);
+        if (ok) return; // image works, done
+      }
+
+      // Step 2: extract og:image from the product page URL
+      if (opt.url) {
+        const ogImg = await extractOgImageServer(opt.url);
+        if (ogImg) {
+          opt.imageUrl = ogImg;
+          return;
+        }
+      }
+
+      // Step 3: no working image found — clear it so client knows
+      opt.imageUrl = undefined;
+    }));
+
     return NextResponse.json({
       options,
       description: description.trim(),
@@ -224,4 +248,88 @@ function inferCategory(desc: string): string {
   if (/\b(plant|vase|bowl|decor|accessory)\b/.test(s)) return "decor";
   if (/\b(outdoor|patio)\b/.test(s)) return "outdoor";
   return "item";
+}
+
+const PLACEHOLDER_URL_PATTERNS = [
+  /no[-_]?image/i, /placeholder/i, /missing/i, /unavailable/i,
+  /default[-_]?(?:image|product)/i, /noimg/i,
+];
+
+async function verifyImageUrl(url: string): Promise<boolean> {
+  if (!url || !/^https?:\/\//i.test(url)) return false;
+  if (PLACEHOLDER_URL_PATTERNS.some(p => p.test(url))) return false;
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
+      },
+      signal: AbortSignal.timeout(5_000),
+      redirect: "follow",
+    });
+    if (!res.ok) return false;
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.startsWith("image/")) return false;
+    const cl = parseInt(res.headers.get("content-length") || "0", 10);
+    if (cl > 0 && cl < 2000) return false; // tiny = placeholder
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function extractOgImageServer(pageUrl: string): Promise<string | null> {
+  if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
+        Accept: "text/html,*/*;q=0.8",
+      },
+      signal: AbortSignal.timeout(8_000),
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    let imageUrl = extractMeta(html, "og:image")
+      ?? extractMeta(html, "twitter:image");
+
+    if (!imageUrl) {
+      const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+      if (ldMatch) {
+        try {
+          const ld = JSON.parse(ldMatch[1]);
+          const img = ld.image ?? ld[0]?.image;
+          if (typeof img === "string") imageUrl = img;
+          else if (Array.isArray(img) && typeof img[0] === "string") imageUrl = img[0];
+        } catch {}
+      }
+    }
+
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith("//")) imageUrl = "https:" + imageUrl;
+    else if (imageUrl.startsWith("/")) {
+      const base = new URL(pageUrl);
+      imageUrl = base.origin + imageUrl;
+    }
+    if (PLACEHOLDER_URL_PATTERNS.some(p => p.test(imageUrl!))) return null;
+
+    const verified = await verifyImageUrl(imageUrl);
+    return verified ? imageUrl : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractMeta(html: string, property: string): string | null {
+  const patterns = [
+    new RegExp(`<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${property}["']`, "i"),
+  ];
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m?.[1]) return m[1];
+  }
+  return null;
 }
