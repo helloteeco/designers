@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     "  • boundingBox: pixel coordinates {x, y, w, h} in percentages of the image dimensions (0-100, top-left origin). Include a bit of padding around the item so shadows aren't clipped. Make boxes TIGHT — one item per box, no overlaps that obscure the primary item.",
     "Skip built-in architecture (walls, windows, doors, ceilings, floors, baseboards, crown molding).",
     "Be THOROUGH — include small accent items: plants, books on shelves, decorative bowls, throw pillows, candles, vases. These details make the design. Miss nothing.",
-    "Return up to 25 items, largest/most prominent first.",
+    "Return up to 50 items, largest/most prominent first.",
   ].join(" ");
 
   try {
