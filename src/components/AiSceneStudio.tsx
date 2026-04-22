@@ -146,7 +146,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   // editable composite backdrop + cutouts. Only surfaces when BOTH exist
   // (i.e. after the designer has extracted items from the render). Defaults
   // to "composite" because that's where the work happens.
-  const [viewMode, setViewMode] = useState<"composite" | "inspiration" | "moodboard">("composite");
+  const [viewMode, setViewMode] = useState<"composite" | "inspiration" | "moodboard">("moodboard");
   const [sourcedItems, setSourcedItems] = useState<SourcedItem[] | null>(null);
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -1996,15 +1996,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         const hasBothViews = !!room.originalRenderUrl && (room.sceneItems?.length ?? 0) > 0;
         const hasItems = (room.sceneItems?.length ?? 0) > 0;
         const isInspirationTab = hasBothViews && viewMode === "inspiration";
-        const isMoodBoardTab = hasItems && viewMode === "moodboard";
+        // When items exist, the composite board defaults to the clean
+        // architectural backdrop (the standard Teeco look). The "photo overlay"
+        // view is a secondary option for designers who want to see items on
+        // the stripped room photo.
+        const useCleanBackdrop = hasItems && viewMode !== "inspiration" && viewMode !== "composite";
         const displayedImage = isInspirationTab
           ? room.originalRenderUrl!
           : room.sceneBackgroundUrl!;
         return (
         <div className={`mt-4 ${phase === "generating" ? "opacity-50" : ""}`}>
-          {/* View toggle — Composite | Mood Board | Inspiration */}
+          {/* View toggle — Composite Board | Photo Overlay | Inspiration */}
           {(hasBothViews || hasItems) && (
             <div className="mb-2 flex items-center gap-1 rounded-lg border border-brand-900/10 bg-white p-1 w-fit">
+              {hasItems && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode("moodboard")}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                    useCleanBackdrop
+                      ? "bg-brand-900 text-white"
+                      : "text-brand-600 hover:text-brand-900"
+                  }`}
+                >
+                  Composite Board
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setViewMode("composite")}
@@ -2014,21 +2031,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     : "text-brand-600 hover:text-brand-900"
                 }`}
               >
-                🎨 In-Room
+                Photo Overlay
               </button>
-              {hasItems && (
-                <button
-                  type="button"
-                  onClick={() => setViewMode("moodboard")}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
-                    viewMode === "moodboard"
-                      ? "bg-brand-900 text-white"
-                      : "text-brand-600 hover:text-brand-900"
-                  }`}
-                >
-                  Mood Board
-                </button>
-              )}
               {hasBothViews && (
                 <button
                   type="button"
@@ -2046,8 +2050,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           )}
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
-              {isMoodBoardTab
-                ? "Mood Board — clean flat-lay view for client presentations"
+              {useCleanBackdrop
+                ? "Composite Board — arrange products on the room backdrop"
                 : isInspirationTab
                 ? "AI Inspiration — reference only, not editable"
                 : phase === "generating"
@@ -2080,7 +2084,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               <span className="text-[10px] text-brand-600">Items appear as they&apos;re found</span>
             </div>
           )}
-          {isMoodBoardTab ? (
+          {useCleanBackdrop ? (
             <MoodBoardView
               placedItems={placedItems}
               room={room}
@@ -2177,7 +2181,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             )}
           </div>
           )}
-          {(phase === "preview" || phase === "ready") && !clickEdit && !isMoodBoardTab && (
+          {(phase === "preview" || phase === "ready") && !clickEdit && !useCleanBackdrop && (
             <div className="mt-1 text-[10px] text-brand-600/70">
               💡 Click any item in the image to swap, source 3 alternatives, or remove it.
             </div>
@@ -3211,30 +3215,44 @@ function MoodBoardView({
 }: MoodBoardViewProps) {
   const hasFloorPlan = room.widthFt > 0 && room.lengthFt > 0 && room.furniture.length > 0;
   const totalCost = placedItems.reduce((sum, r) => sum + (r.item.price || 0), 0);
+  const strippedPhoto = room.sceneBackgroundUrl;
 
   return (
     <div
       data-scene-surface
       className="relative rounded-lg overflow-hidden border border-brand-900/10"
-      style={{
-        minHeight: 480,
-        background: "linear-gradient(135deg, #fafaf8 0%, #f5f3ef 50%, #edeae4 100%)",
-      }}
+      style={{ minHeight: 480 }}
       onClick={() => onSelectItem(null)}
     >
-      {/* Two-wall corner — subtle L-shaped backdrop */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-        {/* Floor */}
-        <polygon points="0,45 100,45 100,100 0,100" fill="#ece8e0" />
-        {/* Left wall */}
-        <polygon points="0,0 50,0 50,45 0,45" fill="#f7f5f0" />
-        {/* Right wall */}
-        <polygon points="50,0 100,0 100,45 50,45" fill="#f0ede6" />
-        {/* Corner line */}
-        <line x1="50" y1="0" x2="50" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
-        {/* Floor line */}
-        <line x1="0" y1="45" x2="100" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
-      </svg>
+      {/* Backdrop: stripped room photo (stylized) or generic 3-wall SVG */}
+      {strippedPhoto ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={strippedPhoto}
+            alt={`${room.name} room shell`}
+            className="w-full h-auto max-h-[520px] object-contain pointer-events-none select-none"
+            style={{
+              filter: "saturate(0.25) brightness(1.15) contrast(0.85)",
+              opacity: 0.55,
+            }}
+          />
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: "linear-gradient(180deg, rgba(250,250,248,0.3) 0%, rgba(236,232,224,0.4) 100%)",
+          }} />
+        </>
+      ) : (
+        <>
+          <div style={{ minHeight: 480, background: "linear-gradient(135deg, #fafaf8 0%, #f5f3ef 50%, #edeae4 100%)" }} />
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
+            <polygon points="0,45 100,45 100,100 0,100" fill="#ece8e0" />
+            <polygon points="0,0 50,0 50,45 0,45" fill="#f7f5f0" />
+            <polygon points="50,0 100,0 100,45 50,45" fill="#f0ede6" />
+            <line x1="50" y1="0" x2="50" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
+            <line x1="0" y1="45" x2="100" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
+          </svg>
+        </>
+      )}
 
       {/* Room name + cost badge */}
       <div className="absolute top-3 left-3 z-10">
