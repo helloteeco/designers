@@ -3239,140 +3239,158 @@ function MoodBoardView({
   onFlip,
 }: MoodBoardViewProps) {
   const hasFloorPlan = room.widthFt > 0 && room.lengthFt > 0 && room.furniture.length > 0;
-  const totalCost = placedItems.reduce((sum, r) => sum + (r.item.price || 0), 0);
   const strippedPhoto = room.sceneBackgroundUrl;
+  const tipLines = (room.installTips ?? "").split("\n").map(l => l.trim()).filter(Boolean);
 
   return (
-    <div
-      data-scene-surface
-      className="relative rounded-lg overflow-hidden border border-brand-900/10"
-      style={{ minHeight: 480 }}
-      onClick={() => onSelectItem(null)}
-    >
-      {/* Backdrop: stripped room photo (stylized) or generic 3-wall SVG */}
-      {strippedPhoto ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={strippedPhoto}
-            alt={`${room.name} room shell`}
-            className="w-full h-auto max-h-[520px] object-contain pointer-events-none select-none"
-            style={{
-              filter: "saturate(0.25) brightness(1.15) contrast(0.85)",
-              opacity: 0.55,
-            }}
-          />
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: "linear-gradient(180deg, rgba(250,250,248,0.3) 0%, rgba(236,232,224,0.4) 100%)",
-          }} />
-        </>
-      ) : (
-        <>
-          <div style={{ minHeight: 480, background: "linear-gradient(135deg, #fafaf8 0%, #f5f3ef 50%, #edeae4 100%)" }} />
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <polygon points="0,45 100,45 100,100 0,100" fill="#ece8e0" />
-            <polygon points="0,0 50,0 50,45 0,45" fill="#f7f5f0" />
-            <polygon points="50,0 100,0 100,45 50,45" fill="#f0ede6" />
-            <line x1="50" y1="0" x2="50" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
-            <line x1="0" y1="45" x2="100" y2="45" stroke="#d9d4cb" strokeWidth="0.3" />
-          </svg>
-        </>
-      )}
-
-      {/* Room name + cost badge */}
-      <div className="absolute top-3 left-3 z-10">
-        <div className="rounded-md bg-white/90 backdrop-blur-sm border border-brand-900/10 px-3 py-1.5 shadow-sm">
-          <div className="text-xs font-semibold text-brand-900">{room.name}</div>
-          <div className="text-[10px] text-brand-600">
-            {placedItems.length} item{placedItems.length !== 1 ? "s" : ""}
-            {totalCost > 0 ? ` · $${totalCost.toLocaleString()}` : ""}
-          </div>
-        </div>
+    <div className="bg-white border border-brand-900/10 rounded-lg overflow-hidden shadow-sm">
+      {/* Title bar — room name centered, Spoak-style */}
+      <div className="py-4 px-6 border-b border-brand-900/5">
+        <h2 className="text-xl font-semibold text-brand-900 text-center tracking-wide uppercase">
+          {room.name}
+        </h2>
       </div>
 
-      {/* Product cutouts on the clean backdrop */}
-      {placedItems.map(row => (
-        <DraggableCutout
-          key={row.sceneItem.id}
-          sceneItem={row.sceneItem}
-          imageUrl={row.item.imageUrl}
-          selected={selectedPlacedId === row.sceneItem.id}
-          onSelect={() => onSelectItem(row.sceneItem.id)}
-          onMove={(x, y) => onMove(row.sceneItem.id, x, y)}
-          onScale={s => onScale(row.sceneItem.id, s)}
-          onRotate={deg => onRotate(row.sceneItem.id, deg)}
-          onTiltX={() => {}}
-          onTiltY={() => {}}
-          onFlip={axis => onFlip(row.sceneItem.id, axis)}
-          hideTilt
-        />
-      ))}
+      {/* Composite surface */}
+      <div
+        data-scene-surface
+        className="relative overflow-hidden"
+        style={{ minHeight: 480, background: "#ffffff" }}
+        onClick={() => onSelectItem(null)}
+      >
+        {/* Backdrop: illustrated 3-wall room */}
+        {strippedPhoto ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={strippedPhoto}
+              alt={`${room.name} room shell`}
+              className="w-full h-auto max-h-[520px] object-contain pointer-events-none select-none"
+              style={{
+                filter: "saturate(0.35) brightness(1.18) contrast(0.95)",
+                opacity: 0.78,
+              }}
+            />
+            {/* Soft paper-like overlay — flattens the photo into an illustration feel */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, rgba(255,255,255,0) 40%, rgba(255,255,255,0.35) 100%)",
+                mixBlendMode: "lighten",
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <div
+              style={{
+                minHeight: 480,
+                background: "linear-gradient(135deg, #fafaf8 0%, #f5f3ef 50%, #edeae4 100%)",
+              }}
+            />
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              preserveAspectRatio="none"
+              viewBox="0 0 100 100"
+            >
+              {/* Floor */}
+              <polygon points="0,55 100,55 100,100 0,100" fill="#eae5dc" />
+              {/* Left side wall */}
+              <polygon points="0,2 22,12 22,55 0,55" fill="#f0ede6" />
+              {/* Back / accent wall */}
+              <polygon points="22,12 78,12 78,55 22,55" fill="#f7f5f0" />
+              {/* Right side wall */}
+              <polygon points="78,12 100,2 100,55 78,55" fill="#f0ede6" />
+              {/* Corner lines */}
+              <line x1="22" y1="12" x2="22" y2="55" stroke="#d9d4cb" strokeWidth="0.25" />
+              <line x1="78" y1="12" x2="78" y2="55" stroke="#d9d4cb" strokeWidth="0.25" />
+              <line x1="0" y1="55" x2="100" y2="55" stroke="#d9d4cb" strokeWidth="0.25" />
+              <line x1="22" y1="12" x2="78" y2="12" stroke="#d9d4cb" strokeWidth="0.2" />
+            </svg>
+          </>
+        )}
 
-      {/* Floor plan — bottom right. Uses the uploaded SVG (cropped to room
-          bbox + context) when available, falls back to the schematic RoomTopDown. */}
-      {(() => {
-        const svgContent = project.property?.floorPlanSvgContent;
-        const bbox = room.svgBBox;
-        if (svgContent && bbox && bbox.width > 0 && bbox.height > 0) {
-          const pad = Math.max(bbox.width, bbox.height) * 0.35;
-          const vx = bbox.x - pad;
-          const vy = bbox.y - pad;
-          const vw = bbox.width + pad * 2;
-          const vh = bbox.height + pad * 2;
-          return (
-            <div className="absolute bottom-3 right-3 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-brand-900/10 shadow-sm p-1.5">
-              <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500 mb-0.5 text-center">
-                {room.name} — Floor Plan
-              </div>
-              <div className="relative" style={{ width: 160, height: 120 }}>
-                <svg
-                  viewBox={`${vx} ${vy} ${vw} ${vh}`}
-                  width={160}
-                  height={120}
-                  className="block"
-                  style={{ background: "#f7f5f0" }}
-                  dangerouslySetInnerHTML={{ __html: svgContent }}
-                />
-                <svg
-                  viewBox={`${vx} ${vy} ${vw} ${vh}`}
-                  width={160}
-                  height={120}
-                  className="absolute inset-0"
-                  style={{ pointerEvents: "none" }}
-                >
-                  <rect
-                    x={bbox.x}
-                    y={bbox.y}
-                    width={bbox.width}
-                    height={bbox.height}
-                    fill="rgba(245, 158, 11, 0.15)"
-                    stroke="#f59e0b"
-                    strokeWidth={Math.max(vw, vh) * 0.01}
-                    rx={2}
+        {/* Product cutouts */}
+        {placedItems.map(row => (
+          <DraggableCutout
+            key={row.sceneItem.id}
+            sceneItem={row.sceneItem}
+            imageUrl={row.item.imageUrl}
+            selected={selectedPlacedId === row.sceneItem.id}
+            onSelect={() => onSelectItem(row.sceneItem.id)}
+            onMove={(x, y) => onMove(row.sceneItem.id, x, y)}
+            onScale={s => onScale(row.sceneItem.id, s)}
+            onRotate={deg => onRotate(row.sceneItem.id, deg)}
+            onTiltX={() => {}}
+            onTiltY={() => {}}
+            onFlip={axis => onFlip(row.sceneItem.id, axis)}
+            hideTilt
+          />
+        ))}
+
+        {/* Floor plan inset — bottom-right */}
+        {(() => {
+          const svgContent = project.property?.floorPlanSvgContent;
+          const bbox = room.svgBBox;
+          if (svgContent && bbox && bbox.width > 0 && bbox.height > 0) {
+            const pad = Math.max(bbox.width, bbox.height) * 0.35;
+            const vx = bbox.x - pad;
+            const vy = bbox.y - pad;
+            const vw = bbox.width + pad * 2;
+            const vh = bbox.height + pad * 2;
+            return (
+              <div className="absolute bottom-3 right-3 z-10 rounded-md bg-white border border-brand-900/10 shadow-sm p-1">
+                <div className="relative" style={{ width: 140, height: 100 }}>
+                  <svg
+                    viewBox={`${vx} ${vy} ${vw} ${vh}`}
+                    width={140}
+                    height={100}
+                    className="block"
+                    style={{ background: "#fbfaf6" }}
+                    dangerouslySetInnerHTML={{ __html: svgContent }}
                   />
-                </svg>
+                  <svg
+                    viewBox={`${vx} ${vy} ${vw} ${vh}`}
+                    width={140}
+                    height={100}
+                    className="absolute inset-0"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    <rect
+                      x={bbox.x}
+                      y={bbox.y}
+                      width={bbox.width}
+                      height={bbox.height}
+                      fill="rgba(245, 158, 11, 0.10)"
+                      stroke="#f59e0b"
+                      strokeWidth={Math.max(vw, vh) * 0.008}
+                    />
+                  </svg>
+                </div>
               </div>
-            </div>
-          );
-        }
-        if (hasFloorPlan) {
-          return (
-            <div className="absolute bottom-3 right-3 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-brand-900/10 shadow-sm p-1.5">
-              <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500 mb-0.5 text-center">
-                {room.name} — Layout
+            );
+          }
+          if (hasFloorPlan) {
+            return (
+              <div className="absolute bottom-3 right-3 z-10 rounded-md bg-white border border-brand-900/10 shadow-sm p-1">
+                <RoomTopDown room={room} size={120} showLabels={false} showTitle={false} floorColor="#fbfaf6" />
               </div>
-              <RoomTopDown room={room} size={140} showLabels={false} showTitle={false} floorColor="#f7f5f0" />
-            </div>
-          );
-        }
-        return null;
-      })()}
+            );
+          }
+          return null;
+        })()}
+      </div>
 
-      {/* Style direction badge — bottom left */}
-      {project.designPreset && (
-        <div className="absolute bottom-3 left-3 z-10 rounded-md bg-white/90 backdrop-blur-sm border border-brand-900/10 px-2 py-1 shadow-sm">
-          <div className="text-[8px] font-semibold uppercase tracking-wider text-brand-500">Style</div>
-          <div className="text-[10px] font-medium text-brand-900">{project.designPreset.replace(/-/g, " ")}</div>
+      {/* TIPS footer — Spoak-style */}
+      {tipLines.length > 0 && (
+        <div className="py-4 px-6 border-t border-brand-900/5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-brand-700 mb-1">Tips</div>
+          <ul className="list-disc list-inside space-y-0.5">
+            {tipLines.map((line, i) => (
+              <li key={i} className="text-[12px] text-brand-800">{line}</li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
