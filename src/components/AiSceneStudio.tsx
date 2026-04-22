@@ -3549,35 +3549,82 @@ function MoodBoardView({
                   />
                 )}
 
-                {/* Floor — wood grain planks */}
-                <polygon points="0,65 100,65 100,100 0,100" fill={floorColor} />
-                {/* Layered wood planks with slight color variation for realism */}
-                {Array.from({ length: 6 }).map((_, i) => {
-                  const y = 67 + i * 5.5;
+                {/* Floor — perspective trapezoid (narrower at back, wider at front).
+                    Plank lines run horizontally and converge toward the back wall
+                    so the floor visually recedes into the room, like Spoak's
+                    composite boards. Open-side rooms get only one converging edge. */}
+                {(() => {
+                  // Back-edge x-coordinates of the floor (where it meets the back wall)
+                  const backLeft = layout === "open-left" ? 0 : 16;
+                  const backRight = layout === "open-right" ? 100 : 84;
+                  // Front-edge x-coordinates (always full canvas width)
+                  const frontLeft = 0;
+                  const frontRight = 100;
+                  const floorTopY = 65;
+                  const floorBotY = 100;
+
+                  // Horizontal plank lines that converge toward the back wall.
+                  // Each line is interpolated between front and back edges based on depth.
+                  const plankCount = 8;
+                  const planks = [];
+                  for (let i = 1; i <= plankCount; i++) {
+                    const t = i / plankCount; // 0 (front) → 1 (back)
+                    const y = floorBotY - (floorBotY - floorTopY) * t;
+                    const xL = frontLeft + (backLeft - frontLeft) * t;
+                    const xR = frontRight + (backRight - frontRight) * t;
+                    planks.push(
+                      <line
+                        key={`plank-${i}`}
+                        x1={xL} y1={y} x2={xR} y2={y}
+                        stroke="rgba(0,0,0,0.09)"
+                        strokeWidth={0.12 + (1 - t) * 0.08}
+                      />
+                    );
+                  }
+
+                  // Plank joints — short vertical marks within each row, brick-lay
+                  // offset. Length scales with row depth for perspective.
+                  const joints = [];
+                  for (let row = 0; row < plankCount; row++) {
+                    const t1 = row / plankCount;
+                    const t2 = (row + 1) / plankCount;
+                    const yTop = floorBotY - (floorBotY - floorTopY) * t2;
+                    const yBot = floorBotY - (floorBotY - floorTopY) * t1;
+                    const offsetEven = row % 2 === 0;
+                    const jointSpacing = 14;
+                    for (let j = 0; j < 8; j++) {
+                      const xFrac = (j * jointSpacing + (offsetEven ? 0 : 7)) / 100;
+                      // Interpolate the x-position at top and bottom y based on
+                      // the floor's perspective edges
+                      const xT = (frontLeft + (frontRight - frontLeft) * xFrac) +
+                        ((backLeft + (backRight - backLeft) * xFrac) -
+                          (frontLeft + (frontRight - frontLeft) * xFrac)) * t2;
+                      const xB = (frontLeft + (frontRight - frontLeft) * xFrac) +
+                        ((backLeft + (backRight - backLeft) * xFrac) -
+                          (frontLeft + (frontRight - frontLeft) * xFrac)) * t1;
+                      if (xT < backLeft - 1 || xT > backRight + 1) continue;
+                      joints.push(
+                        <line
+                          key={`joint-${row}-${j}`}
+                          x1={xB} y1={yBot} x2={xT} y2={yTop}
+                          stroke="rgba(0,0,0,0.08)"
+                          strokeWidth="0.1"
+                        />
+                      );
+                    }
+                  }
+
                   return (
-                    <line
-                      key={`plank-${i}`}
-                      x1="0" y1={y} x2="100" y2={y}
-                      stroke="rgba(0,0,0,0.08)"
-                      strokeWidth="0.15"
-                    />
+                    <g>
+                      <polygon
+                        points={`${backLeft},${floorTopY} ${backRight},${floorTopY} ${frontRight},${floorBotY} ${frontLeft},${floorBotY}`}
+                        fill={floorColor}
+                      />
+                      {planks}
+                      {joints}
+                    </g>
                   );
-                })}
-                {/* Vertical plank joints — offset rows for brick-lay pattern */}
-                {Array.from({ length: 30 }).map((_, i) => {
-                  const x = (i * 12 + (Math.floor(i / 5) % 2 === 0 ? 0 : 6)) % 100;
-                  const row = Math.floor(i / 8);
-                  const y1 = 65 + row * 8.5;
-                  const y2 = y1 + 8;
-                  return y1 < 100 ? (
-                    <line
-                      key={`joint-${i}`}
-                      x1={x} y1={y1} x2={x} y2={y2}
-                      stroke="rgba(0,0,0,0.1)"
-                      strokeWidth="0.12"
-                    />
-                  ) : null;
-                })}
+                })()}
 
                 {/* Crown molding */}
                 {layout !== "no-walls" && layout !== "open-left" && (
