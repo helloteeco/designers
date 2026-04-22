@@ -113,20 +113,30 @@ export async function POST(request: Request) {
       // doesn't belong in a living room. furnitureListForRoomType narrows
       // to pieces appropriate for THIS room.
       prompt =
-        `INPUT: a photograph of an empty real-life ${roomKind}. ` +
-        `TASK: photorealistically furnish this exact ${roomKind} in ${preset.label} style. ` +
-        `ROOM TYPE IS ${roomKind.toUpperCase()} — furniture MUST be appropriate for a ${roomKind}. ` +
-        `Do NOT add a bed to a living room, do NOT add a sofa to a bedroom, etc. ` +
-        `STRICT RULES — DO NOT CHANGE: the wall paint color, the wall texture/finish, the ceiling ` +
-        `height, the window positions, the window sizes, the window frame style, the existing ` +
-        `chandelier or ceiling fixtures, the flooring material/color/pattern, baseboards, crown ` +
-        `molding, door positions, door styles, any built-ins, the camera angle, the lighting ` +
-        `quality, or the room's perspective. The output room MUST be recognizable as the SAME ROOM ` +
-        `as the input — same walls, same floor, same windows, same chandelier, same trim. ` +
-        `WHAT TO ADD (tuned for a ${roomKind}): ${roomFurniture}. ` +
-        `Overall aesthetic: ${preset.vibe}. ` +
-        `Color palette for furniture only: ${preset.palette.slice(0, 3).join(", ")} (do not repaint walls). ` +
-        `Magazine-quality interior photography. Same daylight from the existing windows. ` +
+        `INPUT: a photograph of a REAL room. Study it carefully — memorize every architectural detail. ` +
+        `TASK: add ${preset.label}-style furniture and decor to this EXACT room. ` +
+        `ROOM TYPE: ${roomKind.toUpperCase()} — only add furniture appropriate for a ${roomKind}. ` +
+        `\n\n` +
+        `ABSOLUTE PRESERVATION RULES (violating ANY of these means failure):\n` +
+        `• WALLS: keep the EXACT same paint color — do NOT repaint, do NOT change the hue/saturation/brightness. If the walls are cream, they stay cream. If beige, stay beige.\n` +
+        `• CEILING: keep the EXACT same height, texture, and color. Do NOT add or remove crown molding.\n` +
+        `• WINDOWS: keep the EXACT same positions, sizes, frame styles, and number. Do NOT add, remove, enlarge, or reshape windows.\n` +
+        `• EXISTING FIXTURES: keep the EXACT same chandelier, ceiling fan, light fixtures. Do NOT replace them — they are hardwired and stay.\n` +
+        `• FLOORING: keep the EXACT same material, color, and pattern (hardwood grain direction, tile pattern, etc.).\n` +
+        `• DOORS: keep the EXACT same positions, styles, and hardware.\n` +
+        `• BUILT-INS: keep any railings, staircases, built-in shelves, fireplaces, HVAC vents EXACTLY as they are.\n` +
+        `• BASEBOARDS & TRIM: keep the EXACT same style and color.\n` +
+        `• CAMERA: keep the EXACT same angle, perspective, and focal length. Do NOT re-frame the shot.\n` +
+        `• DAYLIGHT: keep the EXACT same natural light from the existing windows.\n` +
+        `\n` +
+        `The output must be IMMEDIATELY recognizable as the same physical room from the input photo. ` +
+        `A person who lives in this house should look at the render and say "that's my room with new furniture" — ` +
+        `NOT "that's a different room." If you change the wall color, window sizes, or fixtures, you have FAILED.\n` +
+        `\n` +
+        `WHAT TO ADD (${preset.label} style, tuned for a ${roomKind}): ${roomFurniture}.\n` +
+        `Style direction: ${preset.vibe}.\n` +
+        `Color palette FOR FURNITURE AND TEXTILES ONLY (not walls): ${preset.palette.slice(0, 3).join(", ")}.\n` +
+        `Magazine-quality interior photography.\n` +
         `${extraNotes ?? ""}`.trim();
     } else {
       // Image-to-image EMPTY-ROOM: keep the room's architecture exactly,
