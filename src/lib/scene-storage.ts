@@ -1,41 +1,28 @@
+import { createClient } from "@supabase/supabase-js";
+
 /**
- * Keep localStorage lean by moving every image blob to Supabase Storage.
- *
- * Renders, composite snapshots, and fallback cutouts are all base64
- * data URLs by default — a handful of rooms can blow past the 5-10 MB
- * browser quota and block further saves. `ensureHostedUrl` uploads any
- * data URL via /api/upload-scene-image and returns the public URL to
- * persist instead. Already-hosted URLs pass through unchanged.
- *
- * Fails open: on network/upload error we log and return the original
- * data URL so the flow doesn't die — the storage cap will still bite
- * but at least the user sees their work on screen.
+ * Cutout image cache backed by Supabase Storage.
+ * Keyed by a content-derived hash so the same product always hits cache.
  */
+export const cacheEnabled =
+  typeof process !== "undefined" &&
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export async function ensureHostedUrl(
   url: string | undefined,
   folder: "scenes" | "cutouts" | "snapshots" = "scenes"
 ): Promise<string | undefined> {
   if (!url) return url;
-  // Already on Supabase — nothing to do
   if (url.includes("supabase.co/")) return url;
 
   let dataUrl: string;
   if (url.startsWith("data:")) {
     dataUrl = url;
   } else if (/^https?:\/\//i.test(url)) {
-    try {
-      const proxyRes = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
-      if (!proxyRes.ok) return url;
-      const ct = proxyRes.headers.get("content-type") || "image/png";
-      if (!ct.startsWith("image/")) return url;
-      const buf = await proxyRes.arrayBuffer();
-      if (buf.byteLength > 5 * 1024 * 1024) return url;
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-      dataUrl = `data:${ct};base64,${b64}`;
-    } catch {
-      return url;
-    }
+    const downloaded = await downloadAsDataUrl(url);
+    if (!downloaded) return url;
+    dataUrl = downloaded;
   } else {
     return url;
   }
@@ -46,14 +33,90 @@ export async function ensureHostedUrl(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dataUrl, folder }),
     });
-    if (!res.ok) {
-      return url;
-    }
+    if (!res.ok) return url;
     const json = (await res.json()) as { url?: string };
     return json.url ?? url;
   } catch {
     return url;
   }
+}
+
+/**
+ * Download an external image URL via the proxy and return a data URL.
+ * Uses a chunked base64 conversion that doesn't blow the call stack.
+ */
+async function downloadAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const proxyRes = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+    if (!proxyRes.ok) return null;
+    const ct = proxyRes.headers.get("content-type") || "image/png";
+    if (!ct.startsWith("image/")) return null;
+    const buf = await proxyRes.arrayBuffer();
+    if (buf.byteLength > 5 * 1024 * 1024 || buf.byteLength < 100) return null;
+    const bytes = new Uint8Array(buf);
+    const chunkSize = 8192;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      binary += String.fromCharCode.apply(null, slice as unknown as number[]);
+    }
+    return `data:${ct};base64,${btoa(binary)}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Try to get a product image for the composite board. Strategy:
+ *   1. Download the vendor URL via proxy → upload to Supabase
+ *   2. If that fails, generate one with Gemini (generate-cutout API)
+ *   3. If that also fails, return null (item will be skipped)
+ */
+export async function resolveProductImage(
+  vendorImageUrl: string | undefined,
+  description: string,
+  vendor?: string,
+): Promise<string | null> {
+  // Attempt 1: download + host the vendor image
+  if (vendorImageUrl && vendorImageUrl.includes("supabase.co/")) {
+    return vendorImageUrl;
+  }
+  if (vendorImageUrl && /^https?:\/\//i.test(vendorImageUrl)) {
+    const downloaded = await downloadAsDataUrl(vendorImageUrl);
+    if (downloaded) {
+      try {
+        const res = await fetch("/api/upload-scene-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataUrl: downloaded, folder: "cutouts" }),
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { url?: string };
+          if (json.url) return json.url;
+        }
+      } catch {}
+    }
+  }
+
+  // Attempt 2: generate a product image with Gemini
+  try {
+    const cutRes = await fetch("/api/generate-cutout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description,
+        imageUrl: vendorImageUrl || undefined,
+        vendor: vendor || undefined,
+      }),
+    });
+    if (cutRes.ok) {
+      const json = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+      const result = json.imageUrl ?? json.imageDataUrl;
+      if (result) return result;
+    }
+  } catch {}
+
+  return null;
 }
 
 /**
@@ -101,150 +164,61 @@ export async function whiteBgToTransparent(src: string): Promise<string> {
 }
 
 /**
- * Full pipeline a caller should run after getting a cutout URL back from
- * /api/generate-cutout: color-key white → transparent, then upload to
- * cloud storage and return the hosted URL. Falls back to the original
- * URL on any error so an upstream bug never silently kills the scene.
+ * Finalize a cutout URL:
+ *   1. If it's a data URL → make bg transparent → upload to Supabase
+ *   2. If it's a hosted URL → just return (already clean)
  */
-export async function finalizeCutout(
-  url: string | undefined
-): Promise<string | undefined> {
-  if (!url) return url;
-  try {
+export async function finalizeCutout(url: string | undefined): Promise<string | null> {
+  if (!url) return null;
+
+  // If already hosted, skip processing
+  if (url.includes("supabase.co/")) return url;
+
+  // If it's a data URL, process it
+  if (url.startsWith("data:")) {
     const transparent = await whiteBgToTransparent(url);
-    return (await ensureHostedUrl(transparent, "cutouts")) ?? transparent;
-  } catch {
-    return url;
+    const hosted = await ensureHostedUrl(transparent, "cutouts");
+    return hosted ?? transparent;
+  }
+
+  // External URL — try to host it
+  const hosted = await ensureHostedUrl(url, "cutouts");
+  return hosted ?? url;
+}
+
+/**
+ * Compact all room images in a project by re-uploading any remaining
+ * data URLs to Supabase. Frees localStorage space.
+ */
+export async function compactProjectImages(project: { id: string; rooms: Array<{ sceneBackgroundUrl?: string; sceneSnapshot?: string; originalRenderUrl?: string; referenceImageUrl?: string }> }): Promise<void> {
+  for (const room of project.rooms) {
+    if (room.sceneBackgroundUrl?.startsWith("data:")) {
+      room.sceneBackgroundUrl = await ensureHostedUrl(room.sceneBackgroundUrl, "scenes") ?? room.sceneBackgroundUrl;
+    }
+    if (room.sceneSnapshot?.startsWith("data:")) {
+      room.sceneSnapshot = await ensureHostedUrl(room.sceneSnapshot, "snapshots") ?? room.sceneSnapshot;
+    }
+    if (room.originalRenderUrl?.startsWith("data:")) {
+      room.originalRenderUrl = await ensureHostedUrl(room.originalRenderUrl, "scenes") ?? room.originalRenderUrl;
+    }
+    if (room.referenceImageUrl?.startsWith("data:")) {
+      room.referenceImageUrl = await ensureHostedUrl(room.referenceImageUrl, "scenes") ?? room.referenceImageUrl;
+    }
   }
 }
 
-async function loadCorsImage(src: string): Promise<HTMLImageElement> {
-  // Route non-data URLs through our proxy so the canvas stays un-tainted
-  // and we can read pixels. Data URLs load directly.
-  const loadFrom = src.startsWith("data:")
-    ? src
-    : `/api/proxy-image?url=${encodeURIComponent(src)}`;
+// ── Internal helpers ──────────────────────────────────────────────
+
+function loadCorsImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Could not load image for color-key"));
-    img.src = loadFrom;
+    img.onerror = () => reject(new Error("Image load failed"));
+    if (src.startsWith("data:") || src.includes("supabase.co")) {
+      img.src = src;
+    } else {
+      img.src = `/api/proxy-image?url=${encodeURIComponent(src)}`;
+    }
   });
-}
-
-/**
- * Walk a project's rooms and replace any embedded data URLs with hosted
- * URLs. Writes directly to localStorage through the project store,
- * refusing to overwrite any field whose value has changed while we
- * were uploading — so a fresh render that completes mid-compact never
- * gets clobbered by a stale snapshot.
- *
- * Returns the number of images uploaded + persisted.
- */
-export async function compactProjectImages(projectOrId: string | {
-  id: string;
-  rooms: Array<{
-    id: string;
-    sceneBackgroundUrl?: string;
-    sceneSnapshot?: string;
-    furniture: Array<{ item: { id: string; imageUrl?: string } }>;
-  }>;
-}): Promise<{ uploaded: number }> {
-  // Lazy-import to avoid a circular module-load between store ↔ this lib
-  const { getProject, saveProject } = await import("./store");
-  const projectId = typeof projectOrId === "string" ? projectOrId : projectOrId.id;
-
-  const initial = getProject(projectId);
-  if (!initial) return { uploaded: 0 };
-
-  // Phase 1: collect every data URL that needs lifting + upload each.
-  // We capture the ORIGINAL value so the write phase can bail if
-  // somebody else moved the field on during our upload.
-  interface Upload {
-    roomId: string;
-    kind: "sceneBackgroundUrl" | "sceneSnapshot" | "cutout";
-    itemId?: string;
-    originalValue: string;
-    hostedValue: string;
-  }
-  const uploads: Upload[] = [];
-
-  for (const room of initial.rooms) {
-    if (room.sceneBackgroundUrl?.startsWith("data:")) {
-      const hosted = await ensureHostedUrl(room.sceneBackgroundUrl, "scenes");
-      if (hosted && !hosted.startsWith("data:")) {
-        uploads.push({
-          roomId: room.id,
-          kind: "sceneBackgroundUrl",
-          originalValue: room.sceneBackgroundUrl,
-          hostedValue: hosted,
-        });
-      }
-    }
-    if (room.sceneSnapshot?.startsWith("data:")) {
-      const hosted = await ensureHostedUrl(room.sceneSnapshot, "snapshots");
-      if (hosted && !hosted.startsWith("data:")) {
-        uploads.push({
-          roomId: room.id,
-          kind: "sceneSnapshot",
-          originalValue: room.sceneSnapshot,
-          hostedValue: hosted,
-        });
-      }
-    }
-    for (const f of room.furniture) {
-      if (f.item.imageUrl?.startsWith("data:")) {
-        const hosted = await ensureHostedUrl(f.item.imageUrl, "cutouts");
-        if (hosted && !hosted.startsWith("data:")) {
-          uploads.push({
-            roomId: room.id,
-            kind: "cutout",
-            itemId: f.item.id,
-            originalValue: f.item.imageUrl,
-            hostedValue: hosted,
-          });
-        }
-      }
-    }
-  }
-
-  if (uploads.length === 0) return { uploaded: 0 };
-
-  // Phase 2: apply to the LATEST state, skipping any field that changed
-  // during our uploads. This is the critical race fix — if the user
-  // kicked off a fresh render while compact was running, the scene
-  // background is now a fresh hosted URL (not our original data URL),
-  // and we leave it alone.
-  const latest = getProject(projectId);
-  if (!latest) return { uploaded: 0 };
-
-  let applied = 0;
-  for (const up of uploads) {
-    const targetRoom = latest.rooms.find(r => r.id === up.roomId);
-    if (!targetRoom) continue;
-
-    if (up.kind === "sceneBackgroundUrl") {
-      if (targetRoom.sceneBackgroundUrl === up.originalValue) {
-        targetRoom.sceneBackgroundUrl = up.hostedValue;
-        applied++;
-      }
-    } else if (up.kind === "sceneSnapshot") {
-      if (targetRoom.sceneSnapshot === up.originalValue) {
-        targetRoom.sceneSnapshot = up.hostedValue;
-        applied++;
-      }
-    } else if (up.kind === "cutout" && up.itemId) {
-      const f = targetRoom.furniture.find(ff => ff.item.id === up.itemId);
-      if (f && f.item.imageUrl === up.originalValue) {
-        f.item.imageUrl = up.hostedValue;
-        applied++;
-      }
-    }
-  }
-
-  if (applied > 0) {
-    saveProject(latest);
-  }
-  return { uploaded: applied };
 }

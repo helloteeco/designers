@@ -5,7 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
-import { ensureHostedUrl, compactProjectImages, finalizeCutout } from "@/lib/scene-storage";
+import { ensureHostedUrl, compactProjectImages, finalizeCutout, resolveProductImage } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
 import RoomTopDown from "./RoomTopDown";
 import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
@@ -681,7 +681,12 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             return;
           }
 
-          const hostedProductImg = await ensureHostedUrl(opt.imageUrl, "cutouts").catch(() => null) ?? opt.imageUrl;
+          const hostedProductImg = await resolveProductImage(opt.imageUrl, item.description, opt.vendor);
+          if (!hostedProductImg) {
+            logActivity(project.id, "image_failed", `Could not get image for "${item.description}" — skipped`);
+            if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
+            return;
+          }
 
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
