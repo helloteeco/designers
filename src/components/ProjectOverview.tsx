@@ -22,6 +22,7 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
   const [editingProperty, setEditingProperty] = useState(false);
   const [editingClient, setEditingClient] = useState(false);
   const [propertyForm, setPropertyForm] = useState(project.property);
+  const [budgetForm, setBudgetForm] = useState<number>(project.budget || 0);
   const [clientForm, setClientForm] = useState(project.client);
 
   function saveNotes() {
@@ -37,6 +38,7 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
     const fresh = getProject(project.id);
     if (!fresh) return;
     fresh.property = { ...propertyForm };
+    fresh.budget = budgetForm > 0 ? budgetForm : 0;
     saveProject(fresh);
     setEditingProperty(false);
     onUpdate();
@@ -91,7 +93,7 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
           <h2 className="text-lg font-semibold">Property</h2>
           {!editingProperty ? (
             <button
-              onClick={() => { setPropertyForm(project.property); setEditingProperty(true); }}
+              onClick={() => { setPropertyForm(project.property); setBudgetForm(project.budget || 0); setEditingProperty(true); }}
               className="text-xs text-amber-dark hover:underline"
             >
               Edit
@@ -113,6 +115,7 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
             <div><label className="label">Floors</label><input type="number" className="input" min={1} value={propertyForm.floors || ""} onChange={e => setPropertyForm({ ...propertyForm, floors: parseInt(e.target.value) || 1 })} /></div>
             <div><label className="label">Bedrooms</label><input type="number" className="input" min={0} value={propertyForm.bedrooms || ""} onChange={e => setPropertyForm({ ...propertyForm, bedrooms: parseInt(e.target.value) || 0 })} /></div>
             <div><label className="label">Bathrooms</label><input type="number" className="input" min={0} step={0.5} value={propertyForm.bathrooms || ""} onChange={e => setPropertyForm({ ...propertyForm, bathrooms: parseFloat(e.target.value) || 0 })} /></div>
+            <div className="col-span-2"><label className="label">Design Budget ($)</label><input type="number" className="input" min={0} step={100} value={budgetForm || ""} placeholder="e.g. 25000" onChange={e => setBudgetForm(parseInt(e.target.value) || 0)} /></div>
           </div>
         ) : (
           <dl className="grid grid-cols-2 gap-3 text-sm">
