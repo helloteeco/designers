@@ -338,17 +338,24 @@ export async function POST(request: Request) {
  */
 function furnitureListForRoomType(roomType: string, styleLabel: string): string {
   const t = roomType.toLowerCase();
-  if (t.includes("living") || t.includes("den") || t.includes("media") || t.includes("family")) {
+  if (t.includes("living") || t.includes("den") || t.includes("media") || t.includes("family") || t.includes("great")) {
     return (
       `a ${styleLabel}-style sofa or sectional, a coffee table, 1-2 accent chairs, side tables, ` +
       `a rug under the seating, floor and table lamps, wall art above the sofa, potted plants, ` +
-      `throw pillows and a throw blanket`
+      `throw pillows and a throw blanket. ` +
+      `WINDOWS: every window MUST have curtains — hang them HIGH (just below crown molding / ceiling) ` +
+      `and WIDE (rod extends 6-8 inches past each side of the window frame so the fabric stacks off ` +
+      `the glass). Use floor-length light-filtering or blackout curtain panels in a neutral linen or ` +
+      `cotton that complements the ${styleLabel} palette. Curtains should look intentional and designed, ` +
+      `not an afterthought — they frame the window like architectural trim.`
     );
   }
   if (t.includes("dining")) {
     return (
       `a dining table for 4-6, matching dining chairs, a sideboard or buffet, a rug under the table, ` +
-      `wall art, a tablescape (vase + ceramics or candles), potted plant in the corner`
+      `wall art, a tablescape (vase + ceramics or candles), potted plant in the corner. ` +
+      `WINDOWS: hang curtains HIGH and WIDE — rod near the ceiling, panels extending past the window ` +
+      `frame on each side. Floor-length light-filtering panels in a neutral fabric.`
     );
   }
   if (t.includes("kitchen")) {
@@ -356,7 +363,10 @@ function furnitureListForRoomType(roomType: string, styleLabel: string): string 
       `counter-height bar stools if there's an island, pendant lights over the island, ` +
       `styled decor on open shelves (cookbooks, ceramics, cutting boards), a runner rug, ` +
       `a bowl of fruit or potted herb on the counter — DO NOT add or rearrange cabinets, ` +
-      `appliances, or countertops, only add decor and bar stools`
+      `appliances, or countertops, only add decor and bar stools. ` +
+      `WINDOWS: use clean inside-mount roller blinds or roman shades in a neutral woven ` +
+      `fabric — NOT curtains (kitchens need easy-clean, splash-safe window treatments). ` +
+      `If there's a window above the sink, a simple roller shade works best.`
     );
   }
   if (t.includes("primary-bedroom") || t.includes("master")) {
@@ -364,27 +374,39 @@ function furnitureListForRoomType(roomType: string, styleLabel: string): string 
       `a king or queen ${styleLabel}-style bed with a headboard, matching nightstands flanking ` +
       `the bed, a dresser or wardrobe, a rug under the foot of the bed, reading lamps on each ` +
       `nightstand, art above the bed, an accent chair or bench at the foot of the bed, styled ` +
-      `throw pillows + duvet + throw blanket`
+      `throw pillows + duvet + throw blanket. ` +
+      `WINDOWS: every window MUST have blackout curtains — hang them HIGH (rod at ceiling height) ` +
+      `and WIDE (rod extends 8+ inches past the window frame on each side). Floor-length blackout ` +
+      `panels in a ${styleLabel}-appropriate neutral tone. The curtains should look like a ` +
+      `deliberate design element, not just functional — think rich, full fabric that pools ` +
+      `slightly on the floor.`
     );
   }
-  if (t.includes("bedroom") || t.includes("loft") || t.includes("bonus")) {
+  if (t.includes("bedroom") || t.includes("loft") || t.includes("bonus") || t.includes("bunk")) {
     return (
       `a ${styleLabel}-style bed with a headboard, matching nightstands flanking the bed, a ` +
       `dresser, a rug under the foot of the bed, reading lamps, art above the bed, ` +
-      `styled throw pillows + duvet + throw blanket`
+      `styled throw pillows + duvet + throw blanket. ` +
+      `WINDOWS: every window MUST have blackout curtains — hang them HIGH (rod at ceiling height) ` +
+      `and WIDE (rod extends 6-8 inches past the window frame on each side). Floor-length blackout ` +
+      `panels in a neutral fabric that matches the ${styleLabel} style.`
     );
   }
   if (t.includes("bath")) {
     return (
       `a small plant or floral arrangement, neatly rolled towels, minimal counter decor (a tray ` +
       `with soap/hand cream), framed art or a statement mirror — DO NOT rearrange the vanity, ` +
-      `toilet, tub, or shower fixtures`
+      `toilet, tub, or shower fixtures. ` +
+      `WINDOWS: if there's a window, use a clean inside-mount roller blind or roman shade in a ` +
+      `moisture-resistant woven fabric. Light-filtering for privacy. No curtains in bathrooms.`
     );
   }
   if (t.includes("office") || t.includes("study")) {
     return (
       `a ${styleLabel}-style desk, a task chair, a bookshelf, a rug, a desk lamp, framed art, ` +
-      `potted plants, and a small side chair`
+      `potted plants, and a small side chair. ` +
+      `WINDOWS: hang light-filtering curtains HIGH and WIDE — rod near the ceiling, panels ` +
+      `extending past the window frame. Floor-length panels in a neutral fabric.`
     );
   }
   if (t.includes("entry") || t.includes("foyer") || t.includes("mudroom")) {
