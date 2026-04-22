@@ -1610,6 +1610,60 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
   }
 
+  async function addFromDroppedImage(dataUrl: string) {
+    if (pickPhase !== "idle") return;
+    setPickPhase("adding");
+    setLastError(null);
+    try {
+      let cutoutUrl: string | undefined;
+      try {
+        const cutRes = await fetch("/api/generate-cutout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description: "product from dropped image", imageUrl: dataUrl }),
+        });
+        if (cutRes.ok) {
+          const json = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+          cutoutUrl = json.imageUrl ?? json.imageDataUrl;
+        }
+      } catch {}
+      cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
+
+      const fresh = getProjectFromStore(project.id);
+      if (!fresh) throw new Error("Project missing");
+      const target = fresh.rooms.find(r => r.id === room.id);
+      if (!target) throw new Error("Room missing");
+      if (!target.sceneItems) target.sceneItems = [];
+
+      const customItem: FurnitureItem = {
+        id: `drop-${generateId()}`,
+        name: "Dropped product",
+        category: "decor",
+        subcategory: "custom",
+        widthIn: 36, depthIn: 24, heightIn: 30,
+        price: 0,
+        vendor: "",
+        vendorUrl: "",
+        imageUrl: cutoutUrl || dataUrl,
+        color: "", material: "",
+        style: preset.designStyle,
+      };
+      const placed = placeFurniture(target, customItem);
+      placed.status = "specced";
+      target.furniture.push(placed);
+      target.sceneItems.push(defaultSceneItemFor(customItem, target.sceneItems.length, "decor"));
+      saveProject(fresh);
+      logActivity(project.id, "item_dropped", "Added product from dropped image");
+      toast.info("Added! Set the name, price & vendor link in the Items tab so it exports to the masterlist.");
+      setPickQuery("");
+      onUpdate();
+    } catch (err) {
+      setLastError(err instanceof Error ? err.message : "Drop add failed");
+    } finally {
+      setPickPhase("idle");
+    }
+  }
+
   function removePlacedItem(sceneItemId: string) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
@@ -2513,262 +2567,71 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             </div>
           )}
 
-          {/* Wall / wallpaper treatment — AI edits backdrop only, cutouts stay put */}
-          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-              🧱 Walls, trim & wallpaper
-            </div>
-
-            {/* Wall zone selector */}
-            <div className="flex gap-1 mb-2">
-              {[
-                { label: "All walls", zone: "" },
-                { label: "Accent wall", zone: "on the main/back accent wall only, keep other walls as-is" },
-                { label: "Side walls", zone: "on the side walls only, keep the accent/back wall as-is" },
-                { label: "Above chair rail", zone: "above the chair rail / wainscoting line only" },
-                { label: "Below chair rail", zone: "below the chair rail / wainscoting line only" },
-              ].map(z => (
+          {/* Edit backdrop — ONE collapsed section for walls, floors, lighting */}
+          <details className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2 group">
+            <summary className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 cursor-pointer select-none list-none flex items-center justify-between">
+              <span>🎨 Edit backdrop (walls, floors, lighting)</span>
+              <span className="text-brand-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+            </summary>
+            <div className="mt-2 space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: "🌿 Forest green walls", value: "rich dark forest green matte paint on all walls" },
+                  { label: "🧱 Wainscoting", value: "add white wainscoting on the lower third of the walls" },
+                  { label: "🪵 Shiplap accent", value: "add horizontal white shiplap on the accent wall" },
+                  { label: "🌸 Botanical wallpaper", value: "botanical floral wallpaper on the accent wall, keep other walls white" },
+                  { label: "💡 Modern pendant", value: "replace the chandelier/ceiling light with a modern pendant" },
+                  { label: "🪵 White oak floors", value: "replace the flooring with wide-plank white oak hardwood" },
+                  { label: "⬛ Matte black hardware", value: "upgrade all cabinet pulls and door handles to matte black" },
+                  { label: "🔲 Board & batten", value: "add board and batten vertical trim on the walls" },
+                ].map(p => (
+                  <button
+                    key={p.label}
+                    onClick={() => setWallPrompt(p.value)}
+                    disabled={wallBusy || fixturesBusy}
+                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={wallPrompt || fixturesPrompt}
+                  onChange={e => { setWallPrompt(e.target.value); setFixturesPrompt(""); }}
+                  placeholder="Describe any change: walls, paint, wallpaper, floors, lighting, trim..."
+                  className="input flex-1 text-xs"
+                  disabled={wallBusy || fixturesBusy}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && (wallPrompt.trim() || fixturesPrompt.trim())) {
+                      e.preventDefault();
+                      if (fixturesPrompt.trim()) applyFixturesEdit();
+                      else void applyWallTreatment();
+                    }
+                  }}
+                />
                 <button
-                  key={z.label}
-                  onClick={() => setWallPrompt(p => {
-                    const base = p.replace(/ on the (?:main|back|side|accent).*$/i, "").replace(/ (?:above|below) the chair rail.*$/i, "").trim();
-                    return z.zone ? `${base} ${z.zone}` : base;
-                  })}
-                  disabled={wallBusy}
-                  className="text-[9px] rounded border border-brand-900/15 px-1.5 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  onClick={() => {
+                    if (fixturesPrompt.trim()) applyFixturesEdit();
+                    else void applyWallTreatment();
+                  }}
+                  disabled={(!wallPrompt.trim() && !fixturesPrompt.trim()) || wallBusy || fixturesBusy}
+                  className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 hover:bg-brand-700"
                 >
-                  {z.label}
+                  {wallBusy || fixturesBusy ? "Applying..." : "Apply"}
                 </button>
-              ))}
-            </div>
-
-            {/* Paint color swatches */}
-            <div className="mb-2">
-              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Paint colors</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { color: "#2d3a2e", name: "Forest green", prompt: "rich dark forest green matte paint" },
-                  { color: "#1a2744", name: "Navy blue", prompt: "deep navy blue matte paint" },
-                  { color: "#f5f0e8", name: "Warm white", prompt: "warm white with a hint of cream paint" },
-                  { color: "#e8dcc8", name: "Linen", prompt: "soft linen beige paint" },
-                  { color: "#d4c4a8", name: "Sand", prompt: "sandy warm neutral paint" },
-                  { color: "#c17f59", name: "Terracotta", prompt: "soft terracotta matte paint" },
-                  { color: "#8b7355", name: "Mushroom", prompt: "warm mushroom brown paint" },
-                  { color: "#2c2c2c", name: "Charcoal", prompt: "deep charcoal dark gray paint" },
-                  { color: "#b8c5b2", name: "Sage", prompt: "muted sage green paint" },
-                  { color: "#c5b9a8", name: "Greige", prompt: "warm greige (gray-beige) paint" },
-                  { color: "#d4bfb0", name: "Blush", prompt: "soft blush pink paint" },
-                  { color: "#8ea4bf", name: "Dusty blue", prompt: "dusty blue paint with a chalky matte finish" },
-                ].map(s => (
-                  <button
-                    key={s.name}
-                    onClick={() => setWallPrompt(s.prompt)}
-                    disabled={wallBusy}
-                    className="group flex flex-col items-center gap-0.5"
-                    title={s.name}
-                  >
-                    <div
-                      className="h-6 w-6 rounded border border-brand-900/20 shadow-sm group-hover:ring-2 group-hover:ring-amber/50 transition"
-                      style={{ backgroundColor: s.color }}
-                    />
-                    <span className="text-[7px] text-brand-500 leading-tight">{s.name}</span>
-                  </button>
-                ))}
+              </div>
+              <div className="text-[10px] text-brand-600/70">
+                Changes the room backdrop. Your placed items stay where they are.
               </div>
             </div>
+          </details>
 
-            {/* Wallpaper & pattern presets */}
-            <div className="mb-2">
-              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Wallpaper & patterns</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { label: "🌿 Botanical", prompt: "large-scale botanical floral wallpaper with green leaves and soft florals" },
-                  { label: "🪶 Grasscloth", prompt: "natural grasscloth textured wallpaper in warm beige" },
-                  { label: "◆ Geometric", prompt: "modern geometric patterned wallpaper in muted tones" },
-                  { label: "🍃 Tropical", prompt: "tropical palm leaf wallpaper in deep green" },
-                  { label: "〰️ Stripe", prompt: "classic vertical striped wallpaper in subtle cream and white" },
-                  { label: "🌸 Chinoiserie", prompt: "chinoiserie scenic wallpaper with birds and branches" },
-                  { label: "🧱 Limewash", prompt: "limewashed plaster finish with subtle texture variation" },
-                  { label: "🎨 Color block", prompt: "two-tone color block — darker shade on bottom third, lighter shade on top two-thirds" },
-                ].map(w => (
-                  <button
-                    key={w.label}
-                    onClick={() => setWallPrompt(w.prompt)}
-                    disabled={wallBusy}
-                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                  >
-                    {w.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Trim & architectural detail presets */}
-            <div className="mb-2">
-              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Trim & architectural details</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { label: "Wainscoting", prompt: "add classic white wainscoting / raised panel wainscot on the lower third of the walls" },
-                  { label: "Beadboard", prompt: "add white vertical beadboard paneling on the lower half of the walls" },
-                  { label: "Board & batten", prompt: "add board and batten vertical trim on the walls, painted same color as walls" },
-                  { label: "Chair rail", prompt: "add a chair rail molding at 32 inches from the floor, painted white" },
-                  { label: "Picture rail", prompt: "add a picture rail molding near the top of the walls" },
-                  { label: "Shiplap", prompt: "add horizontal shiplap wood planks on the accent wall, painted white" },
-                  { label: "Accent molding", prompt: "add rectangular accent molding / picture frame molding panels on the walls" },
-                  { label: "Coffered ceiling", prompt: "add a coffered ceiling grid with recessed panels" },
-                ].map(t => (
-                  <button
-                    key={t.label}
-                    onClick={() => setWallPrompt(t.prompt)}
-                    disabled={wallBusy}
-                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom prompt + apply */}
-            <div className="flex gap-2 flex-wrap">
-              <input
-                type="text"
-                value={wallPrompt}
-                onChange={e => setWallPrompt(e.target.value)}
-                placeholder="Click a swatch/preset above, or type your own..."
-                className="input flex-1 text-xs min-w-[200px]"
-                disabled={wallBusy}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && wallPrompt.trim()) {
-                    e.preventDefault();
-                    void applyWallTreatment();
-                  }
-                }}
-              />
-              <button
-                onClick={() => void applyWallTreatment()}
-                disabled={!wallPrompt.trim() || wallBusy}
-                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
-              >
-                {wallBusy ? "Applying..." : "Apply to backdrop"}
-              </button>
-            </div>
-            <div className="mt-1 text-[10px] text-brand-600/70">
-              Pick a color/wallpaper/trim above or type a custom instruction. Windows, doors, floor stay. Placed items stay.
-            </div>
-          </div>
-
-          {/* Fixtures / floors / lighting — targets architectural finishes */}
+          {/* Add item — unified drop zone: drag image, paste URL, or search */}
           <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-              💡 Lighting, floors & fixtures
-            </div>
-
-            {/* Lighting category */}
-            <div className="mb-2">
-              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Lighting</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { label: "Chandelier → modern pendant", value: "replace the chandelier/ceiling light with a modern minimalist pendant" },
-                  { label: "Chandelier → rattan", value: "replace the chandelier/ceiling light with a woven rattan pendant" },
-                  { label: "Chandelier → drum shade", value: "replace the chandelier/ceiling light with a clean linen drum shade pendant" },
-                  { label: "Chandelier → sputnik", value: "replace the chandelier/ceiling light with a mid-century sputnik chandelier in brass" },
-                  { label: "Add wall sconces", value: "add matching wall sconces flanking the main wall / either side of the bed or sofa" },
-                  { label: "Recessed lighting", value: "add clean recessed can lights in the ceiling" },
-                  { label: "Remove ceiling fan", value: "remove the ceiling fan entirely — leave a clean flush-mount light" },
-                ].map(l => (
-                  <button
-                    key={l.label}
-                    onClick={() => setFixturesPrompt(l.value)}
-                    disabled={fixturesBusy}
-                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Flooring category */}
-            <div className="mb-2">
-              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Flooring</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { label: "White oak", value: "replace the flooring with wide-plank white oak hardwood" },
-                  { label: "Herringbone", value: "replace the flooring with white oak herringbone pattern" },
-                  { label: "Dark walnut", value: "replace the flooring with dark walnut hardwood planks" },
-                  { label: "Concrete", value: "replace the flooring with polished concrete" },
-                  { label: "Terracotta tile", value: "replace the flooring with terracotta floor tiles" },
-                  { label: "Carpet", value: "replace the flooring with plush wall-to-wall neutral carpet" },
-                ].map(f => (
-                  <button
-                    key={f.label}
-                    onClick={() => setFixturesPrompt(f.value)}
-                    disabled={fixturesBusy}
-                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Hardware & details */}
-            <div className="mb-2">
-              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Hardware & details</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { label: "Brass hardware", value: "upgrade all visible cabinet and door hardware to warm brushed brass" },
-                  { label: "Matte black pulls", value: "upgrade all cabinet pulls and door handles to matte black" },
-                  { label: "Remove popcorn ceiling", value: "remove any popcorn or textured ceiling — smooth flat ceiling" },
-                  { label: "Panel doors", value: "upgrade doors to 5-panel shaker-style doors painted crisp white" },
-                ].map(h => (
-                  <button
-                    key={h.label}
-                    onClick={() => setFixturesPrompt(h.value)}
-                    disabled={fixturesBusy}
-                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                  >
-                    {h.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom + apply */}
-            <div className="flex gap-2 flex-wrap">
-              <input
-                type="text"
-                value={fixturesPrompt}
-                onChange={e => setFixturesPrompt(e.target.value)}
-                placeholder="Click a preset above, or type your own..."
-                className="input flex-1 text-xs min-w-[200px]"
-                disabled={fixturesBusy}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && fixturesPrompt.trim()) {
-                    e.preventDefault();
-                    applyFixturesEdit();
-                  }
-                }}
-              />
-              <button
-                onClick={applyFixturesEdit}
-                disabled={!fixturesPrompt.trim() || fixturesBusy}
-                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
-              >
-                {fixturesBusy ? "Applying..." : "Apply to backdrop"}
-              </button>
-            </div>
-            <div className="mt-1 text-[10px] text-brand-600/70">
-              Changes lighting, flooring, hardware on the backdrop. Walls and placed items stay.
-            </div>
-          </div>
-
-          {/* Add by description — AI suggests 3 real products.
-              Doubles as the swap panel when swappingId is set. */}
-          <div className={`rounded-lg bg-white border p-2.5 mb-2 ${swappingId ? "border-amber" : "border-brand-900/10"}`}>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5 flex items-center justify-between">
-              <span>{swappingId ? "🔄 Swap for..." : "Add by description"}</span>
+              <span>{swappingId ? "🔄 Swap item" : "➕ Add item to board"}</span>
               {swappingId && (
                 <button
                   onClick={() => { setSwappingId(null); setPickOptions(null); setPickQuery(""); }}
@@ -2778,40 +2641,88 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 </button>
               )}
             </div>
-            <div className="flex gap-2 flex-wrap">
+
+            {/* Drop zone for images / URLs */}
+            <div
+              className={`rounded-lg border-2 border-dashed p-3 mb-2 text-center transition ${
+                pickPhase !== "idle"
+                  ? "border-brand-900/10 bg-brand-900/5 opacity-50"
+                  : "border-brand-900/20 hover:border-amber/40 hover:bg-amber/5 cursor-pointer"
+              }`}
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("text/uri-list");
+                if (text && /^https?:\/\//i.test(text.trim())) {
+                  setUrlQuery(text.trim());
+                  return;
+                }
+                const file = e.dataTransfer.files?.[0];
+                if (file && file.type.startsWith("image/")) {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const dataUrl = reader.result as string;
+                    setPickQuery(`Custom product from dropped image`);
+                    setUrlQuery("");
+                    void addFromDroppedImage(dataUrl);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            >
+              <div className="text-[11px] text-brand-600">
+                Drag a product image or link here
+              </div>
+              <div className="text-[9px] text-brand-500 mt-0.5">
+                or search / paste a URL below
+              </div>
+            </div>
+
+            {/* Search + URL in one row */}
+            <div className="flex gap-2 flex-wrap mb-1.5">
               <input
                 type="text"
-                value={pickQuery}
-                onChange={e => setPickQuery(e.target.value)}
-                placeholder='e.g. "curved boucle sectional sofa in cream"'
-                className="input flex-1 text-xs min-w-[240px]"
+                value={urlQuery || pickQuery}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (/^https?:\/\//i.test(v.trim())) {
+                    setUrlQuery(v);
+                    setPickQuery("");
+                  } else {
+                    setPickQuery(v);
+                    setUrlQuery("");
+                  }
+                }}
+                placeholder='Search "cream boucle sofa" or paste a product URL...'
+                className="input flex-1 text-xs min-w-[200px]"
                 disabled={pickPhase !== "idle"}
                 onKeyDown={e => {
-                  if (e.key === "Enter" && pickQuery.trim()) {
-                    e.preventDefault();
-                    void searchForItem();
-                  }
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  if (urlQuery.trim()) void addFromUrl();
+                  else if (pickQuery.trim()) void searchForItem();
                 }}
               />
               <button
-                onClick={() => void searchForItem()}
-                disabled={!pickQuery.trim() || pickPhase !== "idle"}
-                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
+                onClick={() => {
+                  if (urlQuery.trim()) void addFromUrl();
+                  else if (pickQuery.trim()) void searchForItem();
+                }}
+                disabled={(!pickQuery.trim() && !urlQuery.trim()) || pickPhase !== "idle"}
+                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 hover:bg-brand-700"
               >
-                {pickPhase === "searching" ? "Searching..." : "🔍 Find products"}
+                {pickPhase === "searching" ? "Searching..." : pickPhase === "adding" ? "Adding..." : urlQuery.trim() ? "+ Add from URL" : "Find products"}
               </button>
             </div>
 
-            {/* STR-oriented descriptor chips — append useful qualifiers that
-                boost guest capacity and reduce wear. Click to tack on to
-                your current description; click again to remove. */}
-            <div className="flex flex-wrap gap-1 mt-1.5">
+            {/* Quick descriptor chips */}
+            <div className="flex flex-wrap gap-1 mb-1.5">
               {[
-                { label: "🛏 Sleeper / pullout", qualifier: "with pullout sleeper bed for extra guests" },
-                { label: "🫧 Performance fabric", qualifier: "in stain-resistant performance fabric" },
-                { label: "🐶 Pet-friendly", qualifier: "pet-friendly and kid-friendly" },
+                { label: "🛏 Sleeper", qualifier: "with pullout sleeper bed" },
+                { label: "🫧 Performance", qualifier: "in stain-resistant performance fabric" },
+                { label: "🐶 Pet-friendly", qualifier: "pet-friendly" },
                 { label: "📏 Under 80\"", qualifier: "under 80 inches wide" },
-                { label: "🧼 Easy to clean", qualifier: "easy-clean, durable for short-term rental use" },
               ].map(chip => {
                 const active = pickQuery.includes(chip.qualifier);
                 return (
@@ -2821,25 +2732,19 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     disabled={pickPhase !== "idle"}
                     onClick={() => {
                       if (active) {
-                        // Remove the qualifier
                         setPickQuery(
                           pickQuery
                             .replace(new RegExp(",?\\s*" + chip.qualifier.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "i"), "")
                             .trim()
-                            .replace(/\s+/g, " ")
                         );
                       } else {
-                        // Add the qualifier
                         const base = pickQuery.trim();
                         setPickQuery(base ? `${base}, ${chip.qualifier}` : chip.qualifier);
                       }
                     }}
-                    className={`text-[10px] rounded-full border px-2 py-0.5 transition ${
-                      active
-                        ? "border-amber bg-amber/15 text-amber-dark"
-                        : "border-brand-900/15 hover:border-amber/40 hover:bg-amber/5"
+                    className={`text-[9px] rounded-full border px-1.5 py-0.5 ${
+                      active ? "border-amber bg-amber/15 text-amber-dark" : "border-brand-900/15 hover:border-amber/40"
                     }`}
-                    title={`Adds "${chip.qualifier}" to your search — useful for short-term rental sourcing`}
                   >
                     {chip.label}{active ? " ✓" : ""}
                   </button>
@@ -2847,8 +2752,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               })}
             </div>
 
+            {/* Search results — 2x2 grid */}
             {pickOptions && pickOptions.options.length > 0 && (
-              <div className="mt-2 grid sm:grid-cols-2 gap-2">
+              <div className="grid sm:grid-cols-2 gap-2">
                 {pickOptions.options.map((opt, i) => {
                   const label = i === 0 ? "Best deal" : i === 1 ? "Budget" : i === 2 ? "Upgrade" : "Alternative";
                   const labelColor = i === 0 ? "bg-emerald-100 text-emerald-800" : i === 1 ? "bg-sky-100 text-sky-800" : i === 2 ? "bg-amber/20 text-amber-dark" : "bg-brand-900/10 text-brand-700";
@@ -2857,7 +2763,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                       key={i}
                       onClick={() => void addPickedOption(opt, pickOptions.description, pickOptions.options.filter((_, j) => j !== i))}
                       disabled={pickPhase !== "idle"}
-                      className="text-left rounded-lg border border-brand-900/10 p-2 hover:border-amber/40 hover:bg-amber/5 disabled:opacity-50 disabled:cursor-not-allowed relative"
+                      className="text-left rounded-lg border border-brand-900/10 p-2 hover:border-amber/40 hover:bg-amber/5 disabled:opacity-50 relative"
                     >
                       <span className={`absolute top-1 right-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full ${labelColor}`}>{label}</span>
                       {opt.imageUrl && (
@@ -2880,35 +2786,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 })}
               </div>
             )}
-          </div>
 
-          {/* Add by URL — paste a direct product link */}
-          <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-              Or paste a product URL
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <input
-                type="url"
-                value={urlQuery}
-                onChange={e => setUrlQuery(e.target.value)}
-                placeholder="https://www.wayfair.com/..."
-                className="input flex-1 text-xs min-w-[240px]"
-                disabled={pickPhase !== "idle"}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && urlQuery.trim()) {
-                    e.preventDefault();
-                    void addFromUrl();
-                  }
-                }}
-              />
-              <button
-                onClick={() => void addFromUrl()}
-                disabled={!urlQuery.trim() || pickPhase !== "idle"}
-                className="rounded-lg border border-brand-900 px-3 py-2 text-xs font-medium text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-900/5"
-              >
-                {pickPhase === "adding" ? "Adding..." : "+ Add from URL"}
-              </button>
+            <div className="text-[9px] text-brand-600/60 mt-1">
+              Items land on the board with vendor + price for the masterlist/Excel export.
             </div>
           </div>
 
