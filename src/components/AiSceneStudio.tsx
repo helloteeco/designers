@@ -683,6 +683,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             return;
           }
 
+          const hostedProductImg = await ensureHostedUrl(opt.imageUrl, "cutouts").catch(() => null) ?? opt.imageUrl;
+
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
           const rr = fresh2.rooms.find(r2 => r2.id === room.id);
@@ -702,7 +704,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             price: opt.price ?? 0,
             vendor: opt.vendor || "—",
             vendorUrl: opt.url || "",
-            imageUrl: opt.imageUrl,     // clean vendor product photo
+            imageUrl: hostedProductImg,
             color: "", material: "",
             style: preset.designStyle,
           };
@@ -3364,27 +3366,42 @@ function MoodBoardView({
             </pattern>
           </defs>
 
-          {/* Floor */}
-          <polygon points="0,58 100,58 100,100 0,100" fill={floorColor} />
-          {/* Left side wall */}
-          <polygon points="0,3 20,13 20,58 0,58" fill={sideColor} />
-          {/* Right side wall */}
-          <polygon points="80,13 100,3 100,58 80,58" fill={sideColor} />
-          {/* Back / accent wall — with pattern if set */}
+          {/* Ceiling */}
+          <rect x="0" y="0" width="100" height="5" fill="#ffffff" />
+
+          {/* Left side wall — perspective angled */}
+          <polygon points="0,5 16,8 16,65 0,65" fill={sideColor} />
+          {/* Right side wall — perspective angled */}
+          <polygon points="84,8 100,5 100,65 84,65" fill={sideColor} />
+          {/* Back / accent wall */}
           <polygon
-            points="20,13 80,13 80,58 20,58"
+            points="16,8 84,8 84,65 16,65"
             fill={pattern === "none" ? accentColor : `url(#pat-${pattern})`}
           />
 
-          {/* Soft corner lines */}
-          <line x1="20" y1="13" x2="20" y2="58" stroke="rgba(0,0,0,0.08)" strokeWidth="0.2" />
-          <line x1="80" y1="13" x2="80" y2="58" stroke="rgba(0,0,0,0.08)" strokeWidth="0.2" />
-          <line x1="0" y1="58" x2="100" y2="58" stroke="rgba(0,0,0,0.1)" strokeWidth="0.22" />
-          <line x1="20" y1="13" x2="80" y2="13" stroke="rgba(0,0,0,0.05)" strokeWidth="0.15" />
+          {/* Floor */}
+          <polygon points="0,65 100,65 100,100 0,100" fill={floorColor} />
 
-          {/* Floor wood grain — very subtle horizontal lines */}
-          <line x1="0" y1="72" x2="100" y2="72" stroke="rgba(0,0,0,0.04)" strokeWidth="0.1" />
-          <line x1="0" y1="85" x2="100" y2="85" stroke="rgba(0,0,0,0.04)" strokeWidth="0.1" />
+          {/* Crown molding */}
+          <line x1="0" y1="5" x2="16" y2="8" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+          <line x1="16" y1="8" x2="84" y2="8" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+          <line x1="84" y1="8" x2="100" y2="5" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
+
+          {/* Ceiling line */}
+          <line x1="0" y1="5" x2="100" y2="5" stroke="rgba(0,0,0,0.06)" strokeWidth="0.2" />
+
+          {/* Wall corners */}
+          <line x1="16" y1="8" x2="16" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+          <line x1="84" y1="8" x2="84" y2="65" stroke="rgba(0,0,0,0.1)" strokeWidth="0.25" />
+
+          {/* Baseboard */}
+          <line x1="0" y1="65" x2="100" y2="65" stroke="rgba(0,0,0,0.15)" strokeWidth="0.35" />
+          <rect x="0" y="63.5" width="100" height="1.5" fill="rgba(255,255,255,0.5)" />
+
+          {/* Floor wood grain */}
+          <line x1="0" y1="75" x2="100" y2="75" stroke="rgba(0,0,0,0.04)" strokeWidth="0.08" />
+          <line x1="0" y1="85" x2="100" y2="85" stroke="rgba(0,0,0,0.04)" strokeWidth="0.08" />
+          <line x1="0" y1="93" x2="100" y2="93" stroke="rgba(0,0,0,0.03)" strokeWidth="0.08" />
         </svg>
 
         {/* Product cutouts */}
