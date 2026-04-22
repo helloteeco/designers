@@ -1773,6 +1773,40 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
   }
 
+  const [repairing, setRepairing] = useState(false);
+  async function repairBrokenImages() {
+    if (repairing) return;
+    setRepairing(true);
+    toast.info("Repairing images — this may take a minute...");
+    let fixed = 0;
+    const items = placedItems.filter(
+      p => !p.item.imageUrl || p.item.imageUrl.includes("no-image") || p.item.imageUrl.startsWith("data:image/svg") || !p.item.imageUrl.includes("supabase.co")
+    );
+    for (const p of items) {
+      try {
+        const furn = room.furniture.find(f => f.item.id === p.item.id);
+        const alts = (furn?.alternatives ?? []).map(a => ({ imageUrl: a.imageUrl, url: a.url }));
+        alts.unshift({ imageUrl: undefined, url: furn?.item.vendorUrl });
+        const result = await resolveProductImage(p.item.imageUrl, p.item.name, alts);
+        if (!result.isPlaceholder && result.url !== p.item.imageUrl) {
+          const fresh = getProjectFromStore(project.id);
+          if (!fresh) continue;
+          const target = fresh.rooms.find(r => r.id === room.id);
+          if (!target) continue;
+          const fi = target.furniture.find(f => f.item.id === p.item.id);
+          if (fi) {
+            fi.item.imageUrl = result.url;
+            saveProject(fresh);
+            onUpdate();
+            fixed++;
+          }
+        }
+      } catch {}
+    }
+    setRepairing(false);
+    toast.success(`Repaired ${fixed} of ${items.length} broken images.`);
+  }
+
   function removePlacedItem(sceneItemId: string) {
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
@@ -2562,7 +2596,18 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         <div className="mt-4 pt-4 border-t border-brand-900/10">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <div>
-              <h4 className="text-xs font-semibold text-brand-900">🎬 Composite Board <span className="text-brand-600 font-normal">— {placedItems.length} item{placedItems.length !== 1 ? "s" : ""} in {room.name}</span></h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-semibold text-brand-900">🎬 Composite Board <span className="text-brand-600 font-normal">— {placedItems.length} item{placedItems.length !== 1 ? "s" : ""} in {room.name}</span></h4>
+                {placedItems.some(p => !p.item.imageUrl || p.item.imageUrl.startsWith("data:image/svg") || !p.item.imageUrl.includes("supabase.co")) && (
+                  <button
+                    onClick={() => void repairBrokenImages()}
+                    disabled={repairing}
+                    className="text-[10px] rounded bg-amber/15 border border-amber/30 px-2 py-0.5 text-amber-dark font-semibold hover:bg-amber/25 disabled:opacity-50"
+                  >
+                    {repairing ? "Repairing..." : "🔧 Fix broken images"}
+                  </button>
+                )}
+              </div>
               <p className="text-[10px] text-brand-600 mt-0.5">Drag, rotate, flip on the board. Swap / add / remove below.</p>
             </div>
             {placedItems.length > 0 && (
@@ -2832,8 +2877,36 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </div>
             </div>
 
+            {/* Wall layout — match the actual room shape */}
+            <div className="mt-2">
+              <div className="text-[9px] text-brand-500 mb-1">Room layout (match your photo)</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { key: "enclosed" as const, label: "3 walls (enclosed)", desc: "Bedroom, bath, office" },
+                  { key: "open-right" as const, label: "Open right", desc: "Kitchen → living room" },
+                  { key: "open-left" as const, label: "Open left", desc: "Open plan, railing on left" },
+                  { key: "one-wall" as const, label: "1 wall (flat)", desc: "Just the accent wall" },
+                ].map(l => {
+                  const current = room.compositeBackdrop?.wallLayout;
+                  const active = current === l.key || (!current && l.key === "enclosed");
+                  return (
+                    <button
+                      key={l.key}
+                      onClick={() => updateBackdrop({ wallLayout: l.key })}
+                      title={l.desc}
+                      className={`text-[10px] rounded-full border px-2 py-0.5 transition ${
+                        active ? "border-amber bg-amber/15 text-amber-dark font-semibold" : "border-brand-900/15 hover:border-amber/40"
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="mt-2 text-[10px] text-brand-600/70">
-              Instant — no AI wait. Colors/patterns apply to the Composite Board. Photo Overlay tab is untouched.
+              Instant — no AI wait. Match the layout to your room photo.
             </div>
           </div>
 
@@ -3517,11 +3590,12 @@ function MoodBoardView({
             //   - "open-left": no left wall (mirror of open-right)
             //   - "no-walls": pass-through (entry, hall, outdoor)
             const t = (room.type || "").toLowerCase();
-            const layout: "enclosed" | "open-right" | "open-left" | "no-walls" =
+            const manualLayout = bd.wallLayout;
+            const autoLayout: typeof manualLayout =
               t.includes("kitchen") || t.includes("great") ? "open-right" :
-              t.includes("dining") && t.includes("open") ? "open-right" :
               t.includes("outdoor") || t.includes("patio") || t.includes("hall") || t.includes("entry") || t.includes("foyer") ? "no-walls" :
               "enclosed";
+            const layout = manualLayout || autoLayout;
 
             const accentFill = pattern === "none" ? accentColor : `url(#pat-${pattern})`;
             // Geometry constants (keep in sync below):
@@ -3535,11 +3609,11 @@ function MoodBoardView({
 
                 {/* Left side wall — 1-point perspective: trapezoid with diagonal baseline
                     that angles UP from canvas bottom-left corner toward the back corner */}
-                {layout !== "no-walls" && layout !== "open-left" && (
+                {layout !== "no-walls" && layout !== "open-left" && layout !== "one-wall" && (
                   <polygon points="0,0 16,8 16,65 0,100" fill={sideColor} />
                 )}
                 {/* Right side wall — mirror */}
-                {layout !== "no-walls" && layout !== "open-right" && (
+                {layout !== "no-walls" && layout !== "open-right" && layout !== "one-wall" && (
                   <polygon points="84,8 100,0 100,100 84,65" fill={sideColor} />
                 )}
 
@@ -3635,7 +3709,7 @@ function MoodBoardView({
                 })()}
 
                 {/* Crown molding — angles from ceiling edges to back wall top */}
-                {layout !== "no-walls" && layout !== "open-left" && (
+                {layout !== "no-walls" && layout !== "open-left" && layout !== "one-wall" && (
                   <line x1="0" y1="0" x2="16" y2="8" stroke="rgba(0,0,0,0.15)" strokeWidth="0.3" />
                 )}
                 {layout !== "no-walls" && (
@@ -3648,15 +3722,15 @@ function MoodBoardView({
                     strokeWidth="0.3"
                   />
                 )}
-                {layout !== "no-walls" && layout !== "open-right" && (
+                {layout !== "no-walls" && layout !== "open-right" && layout !== "one-wall" && (
                   <line x1="84" y1="8" x2="100" y2="0" stroke="rgba(0,0,0,0.15)" strokeWidth="0.3" />
                 )}
 
                 {/* Inner wall corner lines — vertical at the back wall edges */}
-                {layout !== "no-walls" && layout !== "open-left" && (
+                {layout !== "no-walls" && layout !== "open-left" && layout !== "one-wall" && (
                   <line x1="16" y1="8" x2="16" y2="65" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
                 )}
-                {layout !== "no-walls" && layout !== "open-right" && (
+                {layout !== "no-walls" && layout !== "open-right" && layout !== "one-wall" && (
                   <line x1="84" y1="8" x2="84" y2="65" stroke="rgba(0,0,0,0.12)" strokeWidth="0.3" />
                 )}
 
@@ -3673,11 +3747,11 @@ function MoodBoardView({
                   />
                 )}
                 {/* Left side wall baseboard (diagonal from back corner to front) */}
-                {layout !== "no-walls" && layout !== "open-left" && (
+                {layout !== "no-walls" && layout !== "open-left" && layout !== "one-wall" && (
                   <line x1="16" y1="65" x2="0" y2="100" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5" />
                 )}
                 {/* Right side wall baseboard (diagonal from back corner to front) */}
-                {layout !== "no-walls" && layout !== "open-right" && (
+                {layout !== "no-walls" && layout !== "open-right" && layout !== "one-wall" && (
                   <line x1="84" y1="65" x2="100" y2="100" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5" />
                 )}
               </g>
