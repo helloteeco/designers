@@ -17,13 +17,34 @@ export async function ensureHostedUrl(
   folder: "scenes" | "cutouts" | "snapshots" = "scenes"
 ): Promise<string | undefined> {
   if (!url) return url;
-  if (!url.startsWith("data:")) return url;
+  // Already on Supabase — nothing to do
+  if (url.includes("supabase.co/")) return url;
+
+  let dataUrl: string;
+  if (url.startsWith("data:")) {
+    dataUrl = url;
+  } else if (/^https?:\/\//i.test(url)) {
+    try {
+      const proxyRes = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+      if (!proxyRes.ok) return url;
+      const ct = proxyRes.headers.get("content-type") || "image/png";
+      if (!ct.startsWith("image/")) return url;
+      const buf = await proxyRes.arrayBuffer();
+      if (buf.byteLength > 5 * 1024 * 1024) return url;
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      dataUrl = `data:${ct};base64,${b64}`;
+    } catch {
+      return url;
+    }
+  } else {
+    return url;
+  }
 
   try {
     const res = await fetch("/api/upload-scene-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dataUrl: url, folder }),
+      body: JSON.stringify({ dataUrl, folder }),
     });
     if (!res.ok) {
       return url;
