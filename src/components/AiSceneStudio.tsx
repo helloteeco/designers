@@ -2882,36 +2882,30 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               </div>
             </div>
 
-            {/* Wall layout — match the actual room shape */}
+            {/* Wall sides — toggle each independently */}
             <div className="mt-2">
-              <div className="text-[9px] text-brand-500 mb-1">Room layout (match your photo)</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { key: "enclosed" as const, label: "3 walls (enclosed)", desc: "Bedroom, bath, office" },
-                  { key: "open-right" as const, label: "Open right", desc: "Kitchen → living room" },
-                  { key: "open-left" as const, label: "Open left", desc: "Open plan, railing on left" },
-                  { key: "one-wall" as const, label: "1 wall (flat)", desc: "Just the accent wall" },
-                ].map(l => {
-                  const current = room.compositeBackdrop?.wallLayout;
-                  const active = current === l.key || (!current && l.key === "enclosed");
-                  return (
-                    <button
-                      key={l.key}
-                      onClick={() => updateBackdrop({ wallLayout: l.key })}
-                      title={l.desc}
-                      className={`text-[10px] rounded-full border px-2 py-0.5 transition ${
-                        active ? "border-amber bg-amber/15 text-amber-dark font-semibold" : "border-brand-900/15 hover:border-amber/40"
-                      }`}
-                    >
-                      {l.label}
-                    </button>
-                  );
-                })}
+              <div className="text-[9px] text-brand-500 mb-1">Side walls (toggle to match your room photo)</div>
+              <div className="flex gap-3">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={room.compositeBackdrop?.showLeftWall !== false}
+                    onChange={e => updateBackdrop({ showLeftWall: e.target.checked })}
+                    className="rounded border-brand-900/30 text-amber focus:ring-amber h-3.5 w-3.5"
+                  />
+                  <span className="text-[10px] text-brand-700">Left wall</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={room.compositeBackdrop?.showRightWall !== false}
+                    onChange={e => updateBackdrop({ showRightWall: e.target.checked })}
+                    className="rounded border-brand-900/30 text-amber focus:ring-amber h-3.5 w-3.5"
+                  />
+                  <span className="text-[10px] text-brand-700">Right wall</span>
+                </label>
               </div>
-            </div>
-
-            <div className="mt-2 text-[10px] text-brand-600/70">
-              Instant — no AI wait. Match the layout to your room photo.
+              <div className="text-[9px] text-brand-500 mt-1">Uncheck a side if the room opens to another space (kitchen → living, railing, hallway)</div>
             </div>
           </div>
 
@@ -3595,12 +3589,17 @@ function MoodBoardView({
             //   - "open-left": no left wall (mirror of open-right)
             //   - "no-walls": pass-through (entry, hall, outdoor)
             const t = (room.type || "").toLowerCase();
-            const manualLayout = bd.wallLayout;
-            const autoLayout: typeof manualLayout =
-              t.includes("kitchen") || t.includes("great") ? "open-right" :
-              t.includes("outdoor") || t.includes("patio") || t.includes("hall") || t.includes("entry") || t.includes("foyer") ? "no-walls" :
+            const isOutdoor = t.includes("outdoor") || t.includes("patio") || t.includes("hall") || t.includes("entry") || t.includes("foyer");
+            // Use explicit checkbox values; fall back to room-type auto-detection
+            const showLeft = isOutdoor ? false : (bd.showLeftWall !== false);
+            const showRight = isOutdoor ? false : (bd.showRightWall !== false);
+            // Map to layout string for the SVG renderer
+            const layout: "enclosed" | "open-right" | "open-left" | "one-wall" | "no-walls" =
+              isOutdoor ? "no-walls" :
+              !showLeft && !showRight ? "one-wall" :
+              !showLeft && showRight ? "open-left" :
+              showLeft && !showRight ? "open-right" :
               "enclosed";
-            const layout = manualLayout || autoLayout;
 
             const accentFill = pattern === "none" ? accentColor : `url(#pat-${pattern})`;
             // Geometry constants (keep in sync below):

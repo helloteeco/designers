@@ -252,6 +252,8 @@ export interface CompositeBackdrop {
   floorColor?: string;
   accentWallPattern?: "none" | "shiplap" | "wainscoting" | "board-batten" | "beadboard" | "stripes";
   wallLayout?: "enclosed" | "open-right" | "open-left" | "one-wall" | "no-walls";
+  showLeftWall?: boolean;
+  showRightWall?: boolean;
 }
 
 export interface SceneItem {
