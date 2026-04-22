@@ -687,11 +687,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             return;
           }
 
-          const hostedProductImg = await resolveProductImage(opt.imageUrl, item.description, opt.vendor);
-          if (!hostedProductImg) {
-            logActivity(project.id, "image_failed", `Could not get image for "${item.description}" — skipped`);
-            return;
-          }
+          // resolveProductImage always returns something (vendor → Gemini → SVG placeholder)
+          const hostedProductImg = (await resolveProductImage(opt.imageUrl, item.description, opt.vendor)) || opt.imageUrl;
 
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
@@ -2205,6 +2202,8 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               onMove={(id, x, y) => updateScenePos(id, { x, y })}
               onScale={(id, s) => updateScenePos(id, { scale: s })}
               onRotate={(id, deg) => updateScenePos(id, { rotation: deg })}
+              onTiltX={(id, deg) => updateScenePos(id, { tiltX: deg })}
+              onTiltY={(id, deg) => updateScenePos(id, { tiltY: deg })}
               onFlip={(id, axis) => {
                 const cur = (room.sceneItems ?? []).find(s => s.id === id);
                 if (!cur) return;
@@ -3361,6 +3360,8 @@ interface MoodBoardViewProps {
   onMove: (id: string, x: number, y: number) => void;
   onScale: (id: string, s: number) => void;
   onRotate: (id: string, deg: number) => void;
+  onTiltX: (id: string, deg: number) => void;
+  onTiltY: (id: string, deg: number) => void;
   onFlip: (id: string, axis: "x" | "y") => void;
 }
 
@@ -3373,6 +3374,8 @@ function MoodBoardView({
   onMove,
   onScale,
   onRotate,
+  onTiltX,
+  onTiltY,
   onFlip,
 }: MoodBoardViewProps) {
   const hasFloorPlan = room.widthFt > 0 && room.lengthFt > 0 && room.furniture.length > 0;
@@ -3482,10 +3485,9 @@ function MoodBoardView({
             onMove={(x, y) => onMove(row.sceneItem.id, x, y)}
             onScale={s => onScale(row.sceneItem.id, s)}
             onRotate={deg => onRotate(row.sceneItem.id, deg)}
-            onTiltX={() => {}}
-            onTiltY={() => {}}
+            onTiltX={deg => onTiltX(row.sceneItem.id, deg)}
+            onTiltY={deg => onTiltY(row.sceneItem.id, deg)}
             onFlip={axis => onFlip(row.sceneItem.id, axis)}
-            hideTilt
           />
         ))}
 

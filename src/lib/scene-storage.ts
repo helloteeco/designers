@@ -77,28 +77,42 @@ export async function resolveProductImage(
   description: string,
   vendor?: string,
 ): Promise<string | null> {
-  // Attempt 1: download + host the vendor image
+  // Attempt 1: vendor image already on Supabase — just remove white bg
   if (vendorImageUrl && vendorImageUrl.includes("supabase.co/")) {
-    return vendorImageUrl;
+    try {
+      const transparent = await whiteBgToTransparent(vendorImageUrl);
+      const hosted = await ensureHostedUrl(transparent, "cutouts");
+      return hosted ?? vendorImageUrl;
+    } catch {
+      return vendorImageUrl;
+    }
   }
+
+  // Attempt 2: download vendor image, remove white bg, host on Supabase
   if (vendorImageUrl && /^https?:\/\//i.test(vendorImageUrl)) {
     const downloaded = await downloadAsDataUrl(vendorImageUrl);
     if (downloaded) {
       try {
+        // Remove white background BEFORE upload — gives clean cutouts
+        let processed = downloaded;
+        try {
+          processed = await whiteBgToTransparent(downloaded);
+        } catch {}
         const res = await fetch("/api/upload-scene-image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl: downloaded, folder: "cutouts" }),
+          body: JSON.stringify({ dataUrl: processed, folder: "cutouts" }),
         });
         if (res.ok) {
           const json = (await res.json()) as { url?: string };
           if (json.url) return json.url;
         }
+        return processed; // last-resort: data URL
       } catch {}
     }
   }
 
-  // Attempt 2: generate a product image with Gemini
+  // Attempt 3: generate a product image with Gemini
   try {
     const cutRes = await fetch("/api/generate-cutout", {
       method: "POST",
@@ -112,11 +126,44 @@ export async function resolveProductImage(
     if (cutRes.ok) {
       const json = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
       const result = json.imageUrl ?? json.imageDataUrl;
-      if (result) return result;
+      if (result) {
+        // Remove white bg from generated image too
+        try {
+          const transparent = await whiteBgToTransparent(result);
+          const hosted = await ensureHostedUrl(transparent, "cutouts");
+          return hosted ?? transparent;
+        } catch {
+          return result;
+        }
+      }
     }
   } catch {}
 
-  return null;
+  // Attempt 4: SVG placeholder so the item never appears as a broken image.
+  // Designer can swap to a real product or upload an image manually.
+  return generatePlaceholderSvg(description);
+}
+
+/**
+ * Generate an inline SVG placeholder showing the item description
+ * inside a soft beige rectangle. Used when ALL real image sources
+ * fail. Designer can swap to a real product later.
+ */
+function generatePlaceholderSvg(description: string): string {
+  const escapeXml = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const label = escapeXml(description.slice(0, 40));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+    <rect x="10" y="10" width="180" height="180" rx="12" fill="#f0ede6" stroke="#d9d4cb" stroke-width="2"/>
+    <text x="100" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#8b8273" font-weight="600">No image</text>
+    <text x="100" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#a39a8b">${label}</text>
+    <text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#a39a8b">click swap to replace</text>
+  </svg>`;
+  // Browser-safe base64 encoding (no Buffer in client code)
+  const b64 = typeof window !== "undefined"
+    ? btoa(unescape(encodeURIComponent(svg)))
+    : Buffer.from(svg).toString("base64");
+  return `data:image/svg+xml;base64,${b64}`;
 }
 
 /**
