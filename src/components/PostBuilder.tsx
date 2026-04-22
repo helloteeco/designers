@@ -127,7 +127,10 @@ export default function PostBuilder() {
       const images: string[] = [];
       for (const url of data.result.imageUrls) {
         try {
-          const r = await fetch(url);
+          // IG CDN blocks browser CORS — proxy through our server.
+          const r = await fetch(
+            `/api/proxy-image?url=${encodeURIComponent(url)}`,
+          );
           const blob = await r.blob();
           const dataUrl = await new Promise<string>((resolve, reject) => {
             const fr = new FileReader();
