@@ -96,6 +96,14 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   //   • sceneBackgroundUrl present      → render exists but not extracted → "preview"
   //   • otherwise                       → "idle"
   const [phase, setPhase] = useState<"idle" | "generating" | "preview" | "sourcing" | "ready">(() => {
+    // Pending render that started <3 min ago — resume the loading indicator.
+    // Stale flags (older) are ignored in case a previous render crashed.
+    if (room.pendingRenderStartedAt) {
+      const startedMs = new Date(room.pendingRenderStartedAt).getTime();
+      if (Number.isFinite(startedMs) && Date.now() - startedMs < 3 * 60 * 1000) {
+        return "generating";
+      }
+    }
     if (room.sceneItems && room.sceneItems.length > 0) return "ready";
     if (room.sceneBackgroundUrl) return "preview";
     return "idle";
@@ -123,6 +131,19 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     }
     if (!referenceImage) sawReferenceRef.current = false;
   }, [referenceImage]);
+
+  // Sync phase to room state — handles two cases:
+  //   1. Designer came back from another room while a background render was
+  //      running, and it just finished → phase needs to flip generating→preview
+  //   2. Designer left during render and came back BEFORE it finished →
+  //      keep showing "generating" while we wait
+  // Only flips OUT of "generating" — designer-driven transitions
+  // (preview→ready via extract, etc.) aren't overridden here.
+  useEffect(() => {
+    if (phase === "generating" && !room.pendingRenderStartedAt && room.sceneBackgroundUrl) {
+      setPhase((room.sceneItems?.length ?? 0) > 0 ? "ready" : "preview");
+    }
+  }, [phase, room.pendingRenderStartedAt, room.sceneBackgroundUrl, room.sceneItems]);
 
   // Click-to-edit on the preview image: when designer clicks a specific
   // item in the rendered scene, a popover opens with swap/source/remove
@@ -335,6 +356,20 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     setPhase("generating");
     toast.info("Generating AI render — this takes 20-40 seconds...");
 
+    // Persist "in progress" flag so the loading state survives if designer
+    // switches to another room and comes back. Stale flags (>3 min old) are
+    // ignored on remount in case a previous render crashed mid-flight.
+    {
+      const fp = getProjectFromStore(project.id);
+      if (fp) {
+        const tr = fp.rooms.find(r => r.id === room.id);
+        if (tr) {
+          tr.pendingRenderStartedAt = new Date().toISOString();
+          saveProject(fp);
+        }
+      }
+    }
+
     const notes = extraNotesOverride !== undefined ? extraNotesOverride : refineNotes;
 
     try {
@@ -388,22 +423,37 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       if (!t) throw new Error(`Room ${room.id} missing in project`);
       t.sceneBackgroundUrl = hostedUrl;
       t.sceneSnapshot = hostedUrl;
+      t.pendingRenderStartedAt = undefined;
       saveProject(fresh);
       onUpdate();
 
-      setPhase("preview");
-      setSourcedItems(null);
-      toast.success("Render ready! Review it below, then extract items to build your composite board.");
+      if (isMountedRef.current) {
+        setPhase("preview");
+        setSourcedItems(null);
+      }
+      toast.success(`Render ready for ${room.name}! Switch back to it to review.`);
     } catch (err) {
+      // Clear the pending flag so the room doesn't get stuck in "generating"
+      const fpe = getProjectFromStore(project.id);
+      if (fpe) {
+        const tre = fpe.rooms.find(r => r.id === room.id);
+        if (tre) {
+          tre.pendingRenderStartedAt = undefined;
+          saveProject(fpe);
+          onUpdate();
+        }
+      }
       const isAbort = err instanceof DOMException && err.name === "AbortError";
       const msg = isAbort
         ? "Render timed out after ~110 seconds. Try a simpler style or smaller reference photo."
         : err instanceof Error && err.message
           ? err.message
           : `Image generation failed (${typeof err === "object" ? JSON.stringify(err).slice(0, 200) : String(err)})`;
-      setLastError(msg);
-      toast.error("Render failed — see error details above the Generate button. You can try again.");
-      setPhase(room.sceneBackgroundUrl ? "preview" : "idle");
+      if (isMountedRef.current) {
+        setLastError(msg);
+        setPhase(room.sceneBackgroundUrl ? "preview" : "idle");
+      }
+      toast.error(`Render failed for ${room.name}. Try again from that room.`);
     }
   }
 

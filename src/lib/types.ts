@@ -297,6 +297,7 @@ export interface Room {
   sceneItems?: SceneItem[];     // Spoak-style visual scene composition
   compositeBackdrop?: CompositeBackdrop;
   pendingSourceCount?: number;
+  pendingRenderStartedAt?: string;
   /** Install-guide per-room tips (shown on room's install guide page) */
   installTips?: string;
   /** Snapshot of the rendered scene as base64 image, for use in install guide
