@@ -353,7 +353,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
             lengthFt: room.lengthFt,
           },
           referenceImageDataUrl: referenceImage ?? undefined,
-          mode: renderMode === "realistic" ? "full-scene" : "install-guide-bg",
+          mode: "full-scene",
           extraNotes: notes?.trim() || undefined,
         }),
       });

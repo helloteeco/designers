@@ -240,11 +240,17 @@ export async function POST(request: Request) {
         const cand = imageParts[i];
         const candData = cand.inlineData?.data;
         if (!candData) continue;
-        if (inputHash) {
+        if (inputHash && referenceBase64ForEchoCheck) {
           const { createHash } = await import("crypto");
           const candHash = createHash("sha256").update(candData).digest("hex");
           if (candHash === inputHash) {
-            // Skip — this is the model echoing our reference image
+            continue;
+          }
+          // Near-echo: if the output is within 5% of the input size and
+          // the first 200 chars of base64 match, it's likely a re-encoded
+          // version of the same image with minor compression artifacts.
+          const sizeDiff = Math.abs(candData.length - referenceBase64ForEchoCheck.length) / referenceBase64ForEchoCheck.length;
+          if (sizeDiff < 0.05 && candData.slice(0, 200) === referenceBase64ForEchoCheck.slice(0, 200)) {
             continue;
           }
         }
