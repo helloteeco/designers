@@ -2516,15 +2516,127 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           {/* Wall / wallpaper treatment — AI edits backdrop only, cutouts stay put */}
           <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-              🧱 Walls & wallpaper
+              🧱 Walls, trim & wallpaper
             </div>
-            <div className="flex gap-2 flex-wrap mb-1.5">
+
+            {/* Wall zone selector */}
+            <div className="flex gap-1 mb-2">
+              {[
+                { label: "All walls", zone: "" },
+                { label: "Accent wall", zone: "on the main/back accent wall only, keep other walls as-is" },
+                { label: "Side walls", zone: "on the side walls only, keep the accent/back wall as-is" },
+                { label: "Above chair rail", zone: "above the chair rail / wainscoting line only" },
+                { label: "Below chair rail", zone: "below the chair rail / wainscoting line only" },
+              ].map(z => (
+                <button
+                  key={z.label}
+                  onClick={() => setWallPrompt(p => {
+                    const base = p.replace(/ on the (?:main|back|side|accent).*$/i, "").replace(/ (?:above|below) the chair rail.*$/i, "").trim();
+                    return z.zone ? `${base} ${z.zone}` : base;
+                  })}
+                  disabled={wallBusy}
+                  className="text-[9px] rounded border border-brand-900/15 px-1.5 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                >
+                  {z.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Paint color swatches */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Paint colors</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { color: "#2d3a2e", name: "Forest green", prompt: "rich dark forest green matte paint" },
+                  { color: "#1a2744", name: "Navy blue", prompt: "deep navy blue matte paint" },
+                  { color: "#f5f0e8", name: "Warm white", prompt: "warm white with a hint of cream paint" },
+                  { color: "#e8dcc8", name: "Linen", prompt: "soft linen beige paint" },
+                  { color: "#d4c4a8", name: "Sand", prompt: "sandy warm neutral paint" },
+                  { color: "#c17f59", name: "Terracotta", prompt: "soft terracotta matte paint" },
+                  { color: "#8b7355", name: "Mushroom", prompt: "warm mushroom brown paint" },
+                  { color: "#2c2c2c", name: "Charcoal", prompt: "deep charcoal dark gray paint" },
+                  { color: "#b8c5b2", name: "Sage", prompt: "muted sage green paint" },
+                  { color: "#c5b9a8", name: "Greige", prompt: "warm greige (gray-beige) paint" },
+                  { color: "#d4bfb0", name: "Blush", prompt: "soft blush pink paint" },
+                  { color: "#8ea4bf", name: "Dusty blue", prompt: "dusty blue paint with a chalky matte finish" },
+                ].map(s => (
+                  <button
+                    key={s.name}
+                    onClick={() => setWallPrompt(s.prompt)}
+                    disabled={wallBusy}
+                    className="group flex flex-col items-center gap-0.5"
+                    title={s.name}
+                  >
+                    <div
+                      className="h-6 w-6 rounded border border-brand-900/20 shadow-sm group-hover:ring-2 group-hover:ring-amber/50 transition"
+                      style={{ backgroundColor: s.color }}
+                    />
+                    <span className="text-[7px] text-brand-500 leading-tight">{s.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Wallpaper & pattern presets */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Wallpaper & patterns</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: "🌿 Botanical", prompt: "large-scale botanical floral wallpaper with green leaves and soft florals" },
+                  { label: "🪶 Grasscloth", prompt: "natural grasscloth textured wallpaper in warm beige" },
+                  { label: "◆ Geometric", prompt: "modern geometric patterned wallpaper in muted tones" },
+                  { label: "🍃 Tropical", prompt: "tropical palm leaf wallpaper in deep green" },
+                  { label: "〰️ Stripe", prompt: "classic vertical striped wallpaper in subtle cream and white" },
+                  { label: "🌸 Chinoiserie", prompt: "chinoiserie scenic wallpaper with birds and branches" },
+                  { label: "🧱 Limewash", prompt: "limewashed plaster finish with subtle texture variation" },
+                  { label: "🎨 Color block", prompt: "two-tone color block — darker shade on bottom third, lighter shade on top two-thirds" },
+                ].map(w => (
+                  <button
+                    key={w.label}
+                    onClick={() => setWallPrompt(w.prompt)}
+                    disabled={wallBusy}
+                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Trim & architectural detail presets */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Trim & architectural details</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: "Wainscoting", prompt: "add classic white wainscoting / raised panel wainscot on the lower third of the walls" },
+                  { label: "Beadboard", prompt: "add white vertical beadboard paneling on the lower half of the walls" },
+                  { label: "Board & batten", prompt: "add board and batten vertical trim on the walls, painted same color as walls" },
+                  { label: "Chair rail", prompt: "add a chair rail molding at 32 inches from the floor, painted white" },
+                  { label: "Picture rail", prompt: "add a picture rail molding near the top of the walls" },
+                  { label: "Shiplap", prompt: "add horizontal shiplap wood planks on the accent wall, painted white" },
+                  { label: "Accent molding", prompt: "add rectangular accent molding / picture frame molding panels on the walls" },
+                  { label: "Coffered ceiling", prompt: "add a coffered ceiling grid with recessed panels" },
+                ].map(t => (
+                  <button
+                    key={t.label}
+                    onClick={() => setWallPrompt(t.prompt)}
+                    disabled={wallBusy}
+                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom prompt + apply */}
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="text"
                 value={wallPrompt}
                 onChange={e => setWallPrompt(e.target.value)}
-                placeholder='e.g. "moody green paint", "botanical wallpaper accent wall"'
-                className="input flex-1 text-xs min-w-[240px]"
+                placeholder="Click a swatch/preset above, or type your own..."
+                className="input flex-1 text-xs min-w-[200px]"
                 disabled={wallBusy}
                 onKeyDown={e => {
                   if (e.key === "Enter" && wallPrompt.trim()) {
@@ -2536,47 +2648,101 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               <button
                 onClick={() => void applyWallTreatment()}
                 disabled={!wallPrompt.trim() || wallBusy}
-                className="rounded-lg border border-brand-900 px-3 py-2 text-xs font-medium text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-900/5"
+                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
               >
-                {wallBusy ? "Applying..." : "Apply to walls"}
+                {wallBusy ? "Applying..." : "Apply to backdrop"}
               </button>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {[
-                { label: "Dark moody green", value: "rich dark forest green paint on all walls" },
-                { label: "Warm plaster", value: "warm limewashed plaster walls in creamy beige" },
-                { label: "Botanical wallpaper", value: "botanical floral wallpaper accent on the longest wall, keep other walls white" },
-                { label: "Wood paneling", value: "vertical warm oak wood paneling on the back wall" },
-                { label: "Terracotta", value: "soft terracotta paint with a matte finish" },
-              ].map(c => (
-                <button
-                  key={c.label}
-                  onClick={() => setWallPrompt(c.value)}
-                  disabled={wallBusy}
-                  className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
             <div className="mt-1 text-[10px] text-brand-600/70">
-              Windows, doors, floor stay. Placed items stay. Rebuild the composite after to refresh the deliverable.
+              Pick a color/wallpaper/trim above or type a custom instruction. Windows, doors, floor stay. Placed items stay.
             </div>
           </div>
 
-          {/* Fixtures / floors / hardware — same pattern as walls but the
-              prompt targets architectural finishes rather than walls. */}
+          {/* Fixtures / floors / lighting — targets architectural finishes */}
           <div className="rounded-lg bg-white border border-brand-900/10 p-2.5 mb-2">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 mb-1.5">
-              🛠️ Floors, fixtures & hardware
+              💡 Lighting, floors & fixtures
             </div>
-            <div className="flex gap-2 flex-wrap mb-1.5">
+
+            {/* Lighting category */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Lighting</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: "Chandelier → modern pendant", value: "replace the chandelier/ceiling light with a modern minimalist pendant" },
+                  { label: "Chandelier → rattan", value: "replace the chandelier/ceiling light with a woven rattan pendant" },
+                  { label: "Chandelier → drum shade", value: "replace the chandelier/ceiling light with a clean linen drum shade pendant" },
+                  { label: "Chandelier → sputnik", value: "replace the chandelier/ceiling light with a mid-century sputnik chandelier in brass" },
+                  { label: "Add wall sconces", value: "add matching wall sconces flanking the main wall / either side of the bed or sofa" },
+                  { label: "Recessed lighting", value: "add clean recessed can lights in the ceiling" },
+                  { label: "Remove ceiling fan", value: "remove the ceiling fan entirely — leave a clean flush-mount light" },
+                ].map(l => (
+                  <button
+                    key={l.label}
+                    onClick={() => setFixturesPrompt(l.value)}
+                    disabled={fixturesBusy}
+                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Flooring category */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Flooring</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: "White oak", value: "replace the flooring with wide-plank white oak hardwood" },
+                  { label: "Herringbone", value: "replace the flooring with white oak herringbone pattern" },
+                  { label: "Dark walnut", value: "replace the flooring with dark walnut hardwood planks" },
+                  { label: "Concrete", value: "replace the flooring with polished concrete" },
+                  { label: "Terracotta tile", value: "replace the flooring with terracotta floor tiles" },
+                  { label: "Carpet", value: "replace the flooring with plush wall-to-wall neutral carpet" },
+                ].map(f => (
+                  <button
+                    key={f.label}
+                    onClick={() => setFixturesPrompt(f.value)}
+                    disabled={fixturesBusy}
+                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Hardware & details */}
+            <div className="mb-2">
+              <div className="text-[9px] text-brand-500 uppercase tracking-wider mb-1">Hardware & details</div>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: "Brass hardware", value: "upgrade all visible cabinet and door hardware to warm brushed brass" },
+                  { label: "Matte black pulls", value: "upgrade all cabinet pulls and door handles to matte black" },
+                  { label: "Remove popcorn ceiling", value: "remove any popcorn or textured ceiling — smooth flat ceiling" },
+                  { label: "Panel doors", value: "upgrade doors to 5-panel shaker-style doors painted crisp white" },
+                ].map(h => (
+                  <button
+                    key={h.label}
+                    onClick={() => setFixturesPrompt(h.value)}
+                    disabled={fixturesBusy}
+                    className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
+                  >
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom + apply */}
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="text"
                 value={fixturesPrompt}
                 onChange={e => setFixturesPrompt(e.target.value)}
-                placeholder='e.g. "replace ceiling fan with brass pendant", "matte black cabinet pulls"'
-                className="input flex-1 text-xs min-w-[240px]"
+                placeholder="Click a preset above, or type your own..."
+                className="input flex-1 text-xs min-w-[200px]"
                 disabled={fixturesBusy}
                 onKeyDown={e => {
                   if (e.key === "Enter" && fixturesPrompt.trim()) {
@@ -2588,34 +2754,13 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               <button
                 onClick={applyFixturesEdit}
                 disabled={!fixturesPrompt.trim() || fixturesBusy}
-                className="rounded-lg border border-brand-900 px-3 py-2 text-xs font-medium text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-900/5"
+                className="rounded-lg bg-brand-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700"
               >
-                {fixturesBusy ? "Applying..." : "Apply"}
+                {fixturesBusy ? "Applying..." : "Apply to backdrop"}
               </button>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {[
-                { label: "Ceiling fan → pendant", value: "replace the ceiling fan with a style-appropriate modern pendant light" },
-                { label: "Brass hardware", value: "upgrade all visible cabinet and door hardware to warm brushed brass" },
-                { label: "Matte black pulls", value: "upgrade all cabinet pulls and door handles to matte black" },
-                { label: "White oak floors", value: "replace the flooring with wide-plank white oak hardwood" },
-                { label: "Herringbone floor", value: "replace the flooring with white oak herringbone pattern" },
-                { label: "Remove popcorn ceiling", value: "remove any popcorn or textured ceiling — smooth flat ceiling in the wall color" },
-                { label: "Crown molding", value: "add simple modern crown molding where the walls meet the ceiling" },
-                { label: "Panel doors", value: "upgrade doors to 5-panel shaker-style doors painted crisp white" },
-              ].map(c => (
-                <button
-                  key={c.label}
-                  onClick={() => setFixturesPrompt(c.value)}
-                  disabled={fixturesBusy}
-                  className="text-[10px] rounded-full border border-brand-900/15 px-2 py-0.5 hover:border-amber/40 hover:bg-amber/5"
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
             <div className="mt-1 text-[10px] text-brand-600/70">
-              Targets lighting, hardware, flooring, trim — not walls, not your placed items.
+              Changes lighting, flooring, hardware on the backdrop. Walls and placed items stay.
             </div>
           </div>
 
