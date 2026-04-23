@@ -1,20 +1,29 @@
 import { NextResponse } from "next/server";
+import { titleMatchesDescription } from "@/lib/product-title-match";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
 
 /**
- * Extract the og:image (Open Graph image) from any product page URL.
- * Every major vendor (Wayfair, Overstock, Target, IKEA, Amazon, etc.)
- * sets og:image in their HTML <head> because social media platforms
- * use it for link previews. It's always a direct, hotlinkable image URL.
+ * Extract the og:image from a product page URL AND validate it's actually the
+ * product the caller is looking for.
  *
- * GET /api/og-image?url=https%3A%2F%2Fwww.overstock.com%2F...
- *   → { imageUrl: "https://ak1.ostkcdn.com/images/..." }
+ * Why validation: Gemini's grounded search sometimes hallucinates URLs. Without
+ * a title check, we happily pull the og:image off a romance novel's Amazon page
+ * and paste it onto a dining-chair line item on the composite board. The title
+ * match is cheap and catches the common "completely unrelated page" case.
+ *
+ * GET /api/og-image?url=<page>&description=<what-we-wanted>
+ *   → { imageUrl, title, matched: true }           — good match
+ *   → { error: "title-mismatch", title, imageUrl } — looks like the wrong page
+ *
+ * The description param is optional. When omitted we skip validation (kept for
+ * backward compat; new callers should always pass it).
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const target = searchParams.get("url");
+  const description = searchParams.get("description") ?? "";
   if (!target) {
     return NextResponse.json({ error: "url query param required" }, { status: 400 });
   }
@@ -35,13 +44,14 @@ export async function GET(request: Request) {
 
     const html = await res.text();
 
-    // Try og:image first (most reliable)
-    let imageUrl = extractMeta(html, "og:image");
+    // Grab title signals — og:title is usually cleaner than <title>, but both
+    // count for the keyword match so we max our chances of a legit match.
+    const ogTitle = extractMeta(html, "og:title");
+    const pageTitle = extractPageTitle(html);
+    const titleForMatch = [ogTitle, pageTitle].filter(Boolean).join(" | ");
 
-    // Fallback: twitter:image
-    if (!imageUrl) imageUrl = extractMeta(html, "twitter:image");
-
-    // Fallback: first large image in JSON-LD product schema
+    // Try og:image first, then twitter:image, then JSON-LD product schema
+    let imageUrl = extractMeta(html, "og:image") ?? extractMeta(html, "twitter:image");
     if (!imageUrl) {
       const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
       if (ldMatch) {
@@ -65,7 +75,27 @@ export async function GET(request: Request) {
       imageUrl = base.origin + imageUrl;
     }
 
-    return NextResponse.json({ imageUrl });
+    // Title validation — if a description was supplied and the page's title
+    // doesn't look like the same kind of product, reject. Better to return a
+    // placeholder the designer can swap than a wildly wrong image.
+    if (description && titleForMatch) {
+      const match = titleMatchesDescription(titleForMatch, description);
+      if (!match.isMatch) {
+        return NextResponse.json(
+          {
+            error: "title-mismatch",
+            title: titleForMatch,
+            description,
+            imageUrl,
+            keywordOverlap: match.keywordOverlap,
+            categoryMatch: match.categoryMatch,
+          },
+          { status: 422 }
+        );
+      }
+    }
+
+    return NextResponse.json({ imageUrl, title: titleForMatch });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch page" },
@@ -75,7 +105,6 @@ export async function GET(request: Request) {
 }
 
 function extractMeta(html: string, property: string): string | null {
-  // Match both property="og:image" and name="og:image" patterns
   const patterns = [
     new RegExp(`<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["']`, "i"),
     new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${property}["']`, "i"),
@@ -85,4 +114,15 @@ function extractMeta(html: string, property: string): string | null {
     if (m?.[1]) return m[1];
   }
   return null;
+}
+
+function extractPageTitle(html: string): string | null {
+  const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (!m?.[1]) return null;
+  // Strip HTML entities + common vendor suffix noise ("| Wayfair", "- Amazon.com")
+  return m[1]
+    .replace(/&amp;/g, "&")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

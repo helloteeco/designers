@@ -145,13 +145,18 @@ async function looksLikePlaceholder(dataUrl: string): Promise<boolean> {
 }
 
 /**
- * Extract og:image from a product page URL via the /api/og-image endpoint.
- * Returns the image URL if found, null otherwise.
+ * Extract og:image from a product page URL via the /api/og-image endpoint,
+ * validating that the page's title actually matches the product description.
+ * Returns the image URL only when the server confirms a match; if the page
+ * looks like a different product entirely (Gemini URL hallucination), returns
+ * null so the caller moves on to the next fallback or placeholder.
  */
-async function extractOgImage(pageUrl: string): Promise<string | null> {
+async function extractOgImage(pageUrl: string, description: string): Promise<string | null> {
   if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
   try {
-    const res = await fetch(`/api/og-image?url=${encodeURIComponent(pageUrl)}`);
+    const qs = new URLSearchParams({ url: pageUrl });
+    if (description) qs.set("description", description);
+    const res = await fetch(`/api/og-image?${qs.toString()}`);
     if (!res.ok) return null;
     const json = (await res.json()) as { imageUrl?: string };
     return json.imageUrl ?? null;
@@ -251,7 +256,7 @@ export async function resolveProductImage(
     if (alternatives[i].url) pageUrls.push({ url: alternatives[i].url!, altIdx: i });
   }
   for (const { url: pageUrl, altIdx } of pageUrls) {
-    const ogImg = await extractOgImage(pageUrl);
+    const ogImg = await extractOgImage(pageUrl, description);
     if (ogImg) {
       const hosted = await tryHostVendorImage(ogImg);
       if (hosted) return { url: hosted, usedAlternativeIndex: altIdx, isPlaceholder: false };
