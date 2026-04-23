@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { titleMatchesDescription } from "@/lib/product-title-match";
+import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -60,12 +61,18 @@ export async function POST(request: Request) {
     budget,
     estimatedSize,
     roomType,
+    referenceImageDataUrl,
   } = (body ?? {}) as {
     description?: string;
     styleHint?: string;
     budget?: number;
     estimatedSize?: string;
     roomType?: string;
+    /** Optional crop from the AI-generated scene showing this specific item.
+     *  When supplied, sourcing becomes reverse-image-search style — Gemini
+     *  prioritizes products that VISUALLY match this image (style, material,
+     *  color, silhouette) over products that merely match the text. */
+    referenceImageDataUrl?: string;
   };
 
   if (!description || description.trim().length < 3) {
@@ -73,6 +80,17 @@ export async function POST(request: Request) {
       { error: "description is required (min 3 chars)" },
       { status: 400 }
     );
+  }
+
+  // If a reference image was sent, prep it for Gemini vision input
+  let referenceImage: { mimeType: string; data: string } | null = null;
+  if (referenceImageDataUrl) {
+    try {
+      const normalized = await imageToInlineBase64(referenceImageDataUrl);
+      referenceImage = { mimeType: normalized.mimeType, data: normalized.data };
+    } catch {
+      referenceImage = null; // non-fatal — fall back to text-only sourcing
+    }
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -87,8 +105,29 @@ export async function POST(request: Request) {
   const roomLine = roomType ? ` Intended for a ${roomType.replace(/-/g, " ")}.` : "";
   const sizeLine = estimatedSize ? ` Approximate size: ${estimatedSize}.` : "";
 
+  const visualLead = referenceImage
+    ? [
+        `REVERSE-IMAGE-SEARCH MODE — the attached image is a crop from an AI-generated room design`,
+        `showing the EXACT piece we need to source. Your job is to find real products that visually`,
+        `match this image as closely as possible. Treat the image as the primary reference and the`,
+        `text description as a secondary hint.`,
+        ``,
+        `Match priorities IN ORDER:`,
+        `  1. SILHOUETTE & FORM — overall shape, proportions, stance (arm style, back height, leg style, base type)`,
+        `  2. MATERIAL — wood tone / upholstery fabric / metal finish visible in the image`,
+        `  3. COLOR — dominant color family of the piece (not just similar, actually matching)`,
+        `  4. STYLE PERIOD — mid-century, modern farmhouse, traditional, contemporary, etc.`,
+        ``,
+        `If you can't find a VERY close visual match, return the closest real product you can find —`,
+        `designer will audit and swap. A visually-close real product is always better than a perfect`,
+        `text-match with the wrong look.`,
+        ``,
+      ].join("\n")
+    : "";
+
   const prompt = [
-    `Find 4 real, currently-available products a designer could buy RIGHT NOW matching this description:`,
+    visualLead,
+    `Find 4 real, currently-available products a designer could buy RIGHT NOW matching this ${referenceImage ? "image and " : ""}description:`,
     `"${description.trim()}".${styleLine}${roomLine}${sizeLine}${budgetHint}`,
     ``,
     `PRICING GUIDANCE — a typical mid-market ${anchor.label} retails for $${anchor.min}–$${anchor.max}.`,
@@ -132,9 +171,16 @@ export async function POST(request: Request) {
   ].join("\n");
 
   try {
+    const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [
+      { text: prompt },
+    ];
+    if (referenceImage) {
+      parts.push({ inlineData: referenceImage });
+    }
+
     const res = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts }],
       config: {
         tools: [{ googleSearch: {} }],
       },

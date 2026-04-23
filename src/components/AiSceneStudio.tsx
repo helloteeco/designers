@@ -5,7 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
-import { ensureHostedUrl, compactProjectImages, finalizeCutout, resolveProductImage } from "@/lib/scene-storage";
+import { ensureHostedUrl, compactProjectImages, finalizeCutout, finalizeCutoutGuaranteed, resolveProductImage } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
 import RoomTopDown from "./RoomTopDown";
 import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
@@ -728,6 +728,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               styleHint: preset.id,
               budget: remainingBudget || undefined,
               roomType: room.type,
+              // Reverse-image-search: send the crop of this item from the AI
+              // scene so Gemini matches by visual appearance, not just text.
+              referenceImageDataUrl: item.thumbnailDataUrl,
             }),
           });
           const result = res.ok ? (await res.json()) as { options?: SourcedOption[] } : null;
@@ -745,9 +748,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           // but we can extract og:image from the product page
           const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
           const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
-          // Remove white background so product floats cleanly on the composite
+          // Guaranteed transparent-bg cutout — falls back to Gemini cutout
+          // generation if the fast white-bg removal didn't actually strip the
+          // background (lifestyle photos, colored backdrops, CORS issues).
           if (!imgResult.isPlaceholder) {
-            const cleaned = await finalizeCutout(imgResult.url);
+            const cleaned = await finalizeCutoutGuaranteed(imgResult.url, item.description, opt.vendor);
             if (cleaned) imgResult.url = cleaned;
           }
 
