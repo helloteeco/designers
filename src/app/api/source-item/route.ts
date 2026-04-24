@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { titleMatchesDescription } from "@/lib/product-title-match";
+import { imageToInlineBase64 } from "@/lib/image-url-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -59,12 +61,18 @@ export async function POST(request: Request) {
     budget,
     estimatedSize,
     roomType,
+    referenceImageDataUrl,
   } = (body ?? {}) as {
     description?: string;
     styleHint?: string;
     budget?: number;
     estimatedSize?: string;
     roomType?: string;
+    /** Optional crop from the AI-generated scene showing this specific item.
+     *  When supplied, sourcing becomes reverse-image-search style — Gemini
+     *  prioritizes products that VISUALLY match this image (style, material,
+     *  color, silhouette) over products that merely match the text. */
+    referenceImageDataUrl?: string;
   };
 
   if (!description || description.trim().length < 3) {
@@ -72,6 +80,17 @@ export async function POST(request: Request) {
       { error: "description is required (min 3 chars)" },
       { status: 400 }
     );
+  }
+
+  // If a reference image was sent, prep it for Gemini vision input
+  let referenceImage: { mimeType: string; data: string } | null = null;
+  if (referenceImageDataUrl) {
+    try {
+      const normalized = await imageToInlineBase64(referenceImageDataUrl);
+      referenceImage = { mimeType: normalized.mimeType, data: normalized.data };
+    } catch {
+      referenceImage = null; // non-fatal — fall back to text-only sourcing
+    }
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -86,8 +105,29 @@ export async function POST(request: Request) {
   const roomLine = roomType ? ` Intended for a ${roomType.replace(/-/g, " ")}.` : "";
   const sizeLine = estimatedSize ? ` Approximate size: ${estimatedSize}.` : "";
 
+  const visualLead = referenceImage
+    ? [
+        `REVERSE-IMAGE-SEARCH MODE — the attached image is a crop from an AI-generated room design`,
+        `showing the EXACT piece we need to source. Your job is to find real products that visually`,
+        `match this image as closely as possible. Treat the image as the primary reference and the`,
+        `text description as a secondary hint.`,
+        ``,
+        `Match priorities IN ORDER:`,
+        `  1. SILHOUETTE & FORM — overall shape, proportions, stance (arm style, back height, leg style, base type)`,
+        `  2. MATERIAL — wood tone / upholstery fabric / metal finish visible in the image`,
+        `  3. COLOR — dominant color family of the piece (not just similar, actually matching)`,
+        `  4. STYLE PERIOD — mid-century, modern farmhouse, traditional, contemporary, etc.`,
+        ``,
+        `If you can't find a VERY close visual match, return the closest real product you can find —`,
+        `designer will audit and swap. A visually-close real product is always better than a perfect`,
+        `text-match with the wrong look.`,
+        ``,
+      ].join("\n")
+    : "";
+
   const prompt = [
-    `Find 4 real, currently-available products a designer could buy RIGHT NOW matching this description:`,
+    visualLead,
+    `Find 4 real, currently-available products a designer could buy RIGHT NOW matching this ${referenceImage ? "image and " : ""}description:`,
     `"${description.trim()}".${styleLine}${roomLine}${sizeLine}${budgetHint}`,
     ``,
     `PRICING GUIDANCE — a typical mid-market ${anchor.label} retails for $${anchor.min}–$${anchor.max}.`,
@@ -131,9 +171,16 @@ export async function POST(request: Request) {
   ].join("\n");
 
   try {
+    const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [
+      { text: prompt },
+    ];
+    if (referenceImage) {
+      parts.push({ inlineData: referenceImage });
+    }
+
     const res = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts }],
       config: {
         tools: [{ googleSearch: {} }],
       },
@@ -195,9 +242,10 @@ export async function POST(request: Request) {
     });
 
     // Server-side image verification: for each option, validate the image
-    // URL actually works. If it doesn't, extract og:image from the product
-    // page. This runs on the server (no CORS) so we get reliable results
-    // BEFORE sending to the client.
+    // URL actually works. If it doesn't, try the product page's og:image —
+    // but ONLY accept it when the page's title plausibly describes the same
+    // product (catches Gemini URL hallucinations where the "product page" is
+    // actually a romance novel or makeup listing).
     await Promise.all(options.map(async (opt) => {
       // Step 1: verify the Gemini-provided imageUrl actually loads
       if (opt.imageUrl) {
@@ -205,16 +253,19 @@ export async function POST(request: Request) {
         if (ok) return; // image works, done
       }
 
-      // Step 2: extract og:image from the product page URL
+      // Step 2: extract og:image from the product page URL, validated against
+      // the description so wrong-page hallucinations fail out here.
       if (opt.url) {
-        const ogImg = await extractOgImageServer(opt.url);
+        const ogImg = await extractValidatedOgImage(opt.url, description.trim());
         if (ogImg) {
           opt.imageUrl = ogImg;
           return;
         }
       }
 
-      // Step 3: no working image found — clear it so client knows
+      // Step 3: no working, title-matching image found — clear it so the
+      // client's resolveProductImage moves on (and eventually shows a
+      // placeholder the designer can swap).
       opt.imageUrl = undefined;
     }));
 
@@ -282,7 +333,13 @@ async function verifyImageUrl(url: string): Promise<boolean> {
   }
 }
 
-async function extractOgImageServer(pageUrl: string): Promise<string | null> {
+/**
+ * Fetch a product page, extract its og:image, AND cross-check that the page's
+ * title (og:title + <title>) actually matches the product description the
+ * caller asked for. Returns the image URL only on a match. Catches the
+ * "Gemini handed us an Amazon page for a completely different product" case.
+ */
+async function extractValidatedOgImage(pageUrl: string, description: string): Promise<string | null> {
   if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
   try {
     const res = await fetch(pageUrl, {
@@ -295,6 +352,18 @@ async function extractOgImageServer(pageUrl: string): Promise<string | null> {
     });
     if (!res.ok) return null;
     const html = await res.text();
+
+    // Pull title signals BEFORE bothering to resolve the image — if the page
+    // is the wrong kind of product we don't need the image.
+    if (description) {
+      const ogTitle = extractMeta(html, "og:title");
+      const pageTitle = extractPageTitle(html);
+      const titleForMatch = [ogTitle, pageTitle].filter(Boolean).join(" | ");
+      if (titleForMatch) {
+        const match = titleMatchesDescription(titleForMatch, description);
+        if (!match.isMatch) return null;
+      }
+    }
 
     let imageUrl = extractMeta(html, "og:image")
       ?? extractMeta(html, "twitter:image");
@@ -336,4 +405,14 @@ function extractMeta(html: string, property: string): string | null {
     if (m?.[1]) return m[1];
   }
   return null;
+}
+
+function extractPageTitle(html: string): string | null {
+  const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (!m?.[1]) return null;
+  return m[1]
+    .replace(/&amp;/g, "&")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

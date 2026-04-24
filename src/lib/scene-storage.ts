@@ -145,13 +145,18 @@ async function looksLikePlaceholder(dataUrl: string): Promise<boolean> {
 }
 
 /**
- * Extract og:image from a product page URL via the /api/og-image endpoint.
- * Returns the image URL if found, null otherwise.
+ * Extract og:image from a product page URL via the /api/og-image endpoint,
+ * validating that the page's title actually matches the product description.
+ * Returns the image URL only when the server confirms a match; if the page
+ * looks like a different product entirely (Gemini URL hallucination), returns
+ * null so the caller moves on to the next fallback or placeholder.
  */
-async function extractOgImage(pageUrl: string): Promise<string | null> {
+async function extractOgImage(pageUrl: string, description: string): Promise<string | null> {
   if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
   try {
-    const res = await fetch(`/api/og-image?url=${encodeURIComponent(pageUrl)}`);
+    const qs = new URLSearchParams({ url: pageUrl });
+    if (description) qs.set("description", description);
+    const res = await fetch(`/api/og-image?${qs.toString()}`);
     if (!res.ok) return null;
     const json = (await res.json()) as { imageUrl?: string };
     return json.imageUrl ?? null;
@@ -251,7 +256,7 @@ export async function resolveProductImage(
     if (alternatives[i].url) pageUrls.push({ url: alternatives[i].url!, altIdx: i });
   }
   for (const { url: pageUrl, altIdx } of pageUrls) {
-    const ogImg = await extractOgImage(pageUrl);
+    const ogImg = await extractOgImage(pageUrl, description);
     if (ogImg) {
       const hosted = await tryHostVendorImage(ogImg);
       if (hosted) return { url: hosted, usedAlternativeIndex: altIdx, isPlaceholder: false };
@@ -355,6 +360,131 @@ export async function finalizeCutout(url: string | undefined): Promise<string | 
     const hosted = await ensureHostedUrl(url, "cutouts");
     return hosted ?? url;
   }
+}
+
+/**
+ * GUARANTEED cutout: like `finalizeCutout`, but if the fast white-bg removal
+ * didn't actually produce transparent edges (e.g. lifestyle photo, colored
+ * studio backdrop, CORS-tainted canvas), we fall back to Gemini's cutout
+ * generator for a clean transparent result.
+ *
+ * Use this anywhere a product is going to be placed on the composite board —
+ * no more white rectangles slipping through. Caller pays ~$0.01 on cache-miss
+ * cutouts; cache hits are free.
+ */
+export async function finalizeCutoutGuaranteed(
+  url: string | undefined,
+  description: string,
+  vendor?: string,
+): Promise<string | null> {
+  if (!url) return null;
+
+  // Fast path — try white-bg removal first
+  const fast = await finalizeCutout(url);
+  if (fast && !(await hasOpaqueEdges(fast))) return fast;
+
+  // Fast path didn't work — generate a proper cutout via Gemini
+  try {
+    const res = await fetch("/api/generate-cutout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, imageUrl: url, vendor }),
+    });
+    if (res.ok) {
+      const json = (await res.json()) as { imageUrl?: string; imageDataUrl?: string };
+      const cutout = json.imageUrl ?? json.imageDataUrl;
+      if (cutout) {
+        const hosted = await ensureHostedUrl(cutout, "cutouts");
+        return hosted ?? cutout;
+      }
+    }
+  } catch {
+    // fall through to best-effort
+  }
+
+  return fast ?? url;
+}
+
+/**
+ * Sample the edges of an image — corners + mid-edges — to detect whether it
+ * still has an opaque rectangular background. Returns true if 6+ of 8 edge
+ * samples are opaque (meaning white-bg removal didn't do its job and we
+ * should regenerate the cutout).
+ */
+async function hasOpaqueEdges(src: string): Promise<boolean> {
+  try {
+    const img = await loadCorsImage(src);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return true;
+    ctx.drawImage(img, 0, 0);
+
+    let data: ImageData;
+    try {
+      data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } catch {
+      return true; // tainted canvas — can't confirm it's transparent
+    }
+
+    const pixels = data.data;
+    const w = canvas.width;
+    const h = canvas.height;
+    const samples: [number, number][] = [
+      [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
+      [Math.floor(w / 2), 0], [Math.floor(w / 2), h - 1],
+      [0, Math.floor(h / 2)], [w - 1, Math.floor(h / 2)],
+    ];
+    let opaqueCount = 0;
+    for (const [x, y] of samples) {
+      const i = (y * w + x) * 4;
+      if (pixels[i + 3] > 128) opaqueCount++;
+    }
+    return opaqueCount >= 6;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Turn a scene-crop thumbnail (the AI-generated crop of one item from the
+ * room render) into a clean transparent cutout via Gemini. This is the
+ * fallback path when real vendor images can't be fetched or cleaned — the
+ * composite board always has SOMETHING on it, so sourcing failures never
+ * leave the designer with a wall of "No Image Available" boxes.
+ *
+ * Always hits /api/generate-cutout because scene crops have full room
+ * context behind the item (walls, other furniture) that white-bg removal
+ * can't handle.
+ */
+export async function sceneCropToCutout(
+  thumbnailDataUrl: string,
+  description: string,
+  vendor?: string,
+): Promise<string | null> {
+  if (!thumbnailDataUrl) return null;
+  try {
+    const res = await fetch("/api/generate-cutout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, imageUrl: thumbnailDataUrl, vendor }),
+    });
+    if (res.ok) {
+      const json = (await res.json()) as { imageUrl?: string; imageDataUrl?: string };
+      const cutout = json.imageUrl ?? json.imageDataUrl;
+      if (cutout) {
+        const hosted = await ensureHostedUrl(cutout, "cutouts");
+        return hosted ?? cutout;
+      }
+    }
+  } catch {
+    // Fall through
+  }
+  // Last resort: return the raw scene crop. Still a real image from the AI
+  // render — ugly-looking rectangle at worst, never "No Image Available".
+  const hosted = await ensureHostedUrl(thumbnailDataUrl, "cutouts");
+  return hosted ?? thumbnailDataUrl;
 }
 
 /**

@@ -5,6 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { detectRoomsFromSvg, detectRoomsFromSvgDetailed, readSvgText, isSvgSource, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
 import AutoDetectRooms from "./AutoDetectRooms";
+import FloorPlanBuilder from "./FloorPlanBuilder";
 import type { Project, FloorPlan, Room } from "@/lib/types";
 
 interface Props {
@@ -39,6 +40,8 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
   const [autoDetectPlan, setAutoDetectPlan] = useState<FloorPlan | null>(null);
   const [showAllPlans, setShowAllPlans] = useState(false);
+  /** null = closed; "new" = creating; plan id = editing that plan */
+  const [builderOpen, setBuilderOpen] = useState<null | "new" | string>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleDragEnter(e: React.DragEvent) {
@@ -374,22 +377,37 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
         <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
           Floor Plans ({floorPlans.length})
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="text-xs text-amber-dark hover:underline font-medium"
-        >
-          + Add Plan
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setBuilderOpen("new")}
+            className="text-xs text-amber-dark hover:underline font-medium"
+            title="Draw a to-scale floor plan from dimensions"
+          >
+            📐 Build Plan
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="text-xs text-amber-dark hover:underline font-medium"
+          >
+            + Upload
+          </button>
+        </div>
       </div>
 
       {floorPlans.length === 0 && !showForm && (
         <div className="rounded-lg border-2 border-dashed border-brand-900/10 px-4 py-6 text-center">
           <div className="text-2xl mb-1">📐</div>
           <p className="text-xs text-brand-600 mb-1">
-            Drag &amp; drop floor plan files here
+            Drag &amp; drop floor plan files — or
           </p>
-          <p className="text-[10px] text-brand-600/60">
-            PDF or image — multiple at once OK
+          <button
+            onClick={() => setBuilderOpen("new")}
+            className="mt-1 text-xs text-amber-dark hover:underline font-medium"
+          >
+            build one from dimensions →
+          </button>
+          <p className="text-[10px] text-brand-600/60 mt-2">
+            PDF or image upload · or type room sizes for a pixel-perfect plan
           </p>
         </div>
       )}
@@ -428,6 +446,7 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
               onAutoDetect={primaryPlan.type === "image"
                 ? () => isSvgSource(primaryPlan.url) ? autoApplySvg(primaryPlan) : setAutoDetectPlan(primaryPlan)
                 : undefined}
+              onEditBuilder={primaryPlan.builderData ? () => setBuilderOpen(primaryPlan.id) : undefined}
             />
           )}
 
@@ -456,6 +475,7 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
                       onAutoDetect={plan.type === "image"
                         ? () => isSvgSource(plan.url) ? autoApplySvg(plan) : setAutoDetectPlan(plan)
                         : undefined}
+                      onEditBuilder={plan.builderData ? () => setBuilderOpen(plan.id) : undefined}
                     />
                   ))}
                 </div>
@@ -472,6 +492,16 @@ export default function FloorPlansPanel({ project, onUpdate, compact }: Props) {
           plan={autoDetectPlan}
           onUpdate={onUpdate}
           onClose={() => setAutoDetectPlan(null)}
+        />
+      )}
+
+      {/* Floor Plan Builder — vector-first drawing for accurate plans */}
+      {builderOpen && (
+        <FloorPlanBuilder
+          project={project}
+          existingPlanId={builderOpen === "new" ? undefined : builderOpen}
+          onUpdate={onUpdate}
+          onClose={() => setBuilderOpen(null)}
         />
       )}
 
@@ -682,6 +712,7 @@ function PlanCard({
   onRemove,
   onSetPrimary,
   onAutoDetect,
+  onEditBuilder,
 }: {
   plan: FloorPlan;
   isPrimary: boolean;
@@ -692,6 +723,7 @@ function PlanCard({
   onRemove: () => void;
   onSetPrimary: () => void;
   onAutoDetect?: () => void;
+  onEditBuilder?: () => void;
 }) {
   return (
     <div
@@ -751,6 +783,15 @@ function PlanCard({
             {` · ${new Date(plan.uploadedAt).toLocaleDateString()}`}
           </div>
           <div className="flex gap-2">
+            {onEditBuilder && (
+              <button
+                onClick={onEditBuilder}
+                className="text-[10px] text-amber-dark hover:underline font-medium"
+                title="Edit this plan in the builder"
+              >
+                📐 Edit Builder
+              </button>
+            )}
             {onAutoDetect && (
               <button
                 onClick={onAutoDetect}

@@ -5,7 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
-import { ensureHostedUrl, compactProjectImages, finalizeCutout, resolveProductImage } from "@/lib/scene-storage";
+import { ensureHostedUrl, compactProjectImages, finalizeCutout, finalizeCutoutGuaranteed, resolveProductImage, sceneCropToCutout } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
 import RoomTopDown from "./RoomTopDown";
 import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
@@ -713,51 +713,22 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       }
       logActivity(project.id, "composite_from_render", `Stripped backdrop ready — sourcing ${kept.length} products for ${room.name}`);
 
-      // Run sourcing with limited concurrency (3 at a time) to avoid
-      // overwhelming the browser's connection pool and Vercel's function
-      // concurrency limits. Each task fully processes one item end-to-end:
-      // source → resolve image → save to localStorage → increment progress.
+      // Two-step split: composite generation ONLY produces scene-crop cutouts
+      // — it never calls source-item. Designers source real products per item
+      // on demand via the "Source Real Product" button on each masterlist
+      // row. Decoupling these two concerns means sourcing failures can never
+      // break the composite image, and designers see and pick real products
+      // one at a time instead of reviewing 9 broken guesses all at once.
       const CONCURRENCY = 3;
       const processItem = async (item: typeof kept[number], idx: number): Promise<void> => {
         try {
-          const res = await fetch("/api/source-item", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              description: item.description,
-              styleHint: preset.id,
-              budget: remainingBudget || undefined,
-              roomType: room.type,
-            }),
-          });
-          const result = res.ok ? (await res.json()) as { options?: SourcedOption[] } : null;
-          const opt = result?.options?.[0] ?? null;
-          if (!opt || !opt.imageUrl) {
-            logActivity(project.id, "source_skipped", `Couldn't source real product for "${item.description}"`);
+          // Scene-crop cutout only — always works because we control the
+          // source image (the AI rendered it) and only need Gemini to remove
+          // the room context behind it.
+          const cutoutUrl = await sceneCropToCutout(item.thumbnailDataUrl, item.description);
+          if (!cutoutUrl) {
+            logActivity(project.id, "item_skip_no_image", `Couldn't cut out "${item.description}" from scene`);
             return;
-          }
-
-          // Resolve image: try primary vendor URL, fall back through alternatives
-          // (real products only — never AI-generated). If all fail, returns a
-          // labeled placeholder and isPlaceholder=true.
-          const altOptions = (result?.options ?? []).slice(1);
-          // Include the primary product's page URL in case its imageUrl failed
-          // but we can extract og:image from the product page
-          const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
-          const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
-          // Remove white background so product floats cleanly on the composite
-          if (!imgResult.isPlaceholder) {
-            const cleaned = await finalizeCutout(imgResult.url);
-            if (cleaned) imgResult.url = cleaned;
-          }
-
-          // If we used an alternative, promote it to primary so the masterlist
-          // shows the actual product the designer can buy (matching the image)
-          let primary = opt;
-          let remainingAlts = altOptions;
-          if (imgResult.usedAlternativeIndex >= 0) {
-            primary = altOptions[imgResult.usedAlternativeIndex];
-            remainingAlts = [opt, ...altOptions.filter((_, i) => i !== imgResult.usedAlternativeIndex)];
           }
 
           const fresh2 = getProjectFromStore(project.id);
@@ -770,35 +741,25 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           const itemId = `ext-${generateId()}`;
           const customItem: FurnitureItem = {
             id: itemId,
-            name: primary.name || item.description,
+            name: item.description,
             category,
             subcategory: item.category,
-            widthIn: parseFirstDim(primary.dimensions) ?? 36,
-            depthIn: parseSecondDim(primary.dimensions) ?? 36,
-            heightIn: parseThirdDim(primary.dimensions) ?? 30,
-            price: primary.price ?? 0,
-            vendor: primary.vendor || "—",
-            vendorUrl: primary.url || "",
-            imageUrl: imgResult.url,
+            // Placeholder dimensions — designer fills these in when sourcing
+            // a real product, which brings real dimensions from the vendor.
+            widthIn: 36, depthIn: 36, heightIn: 30,
+            price: 0,
+            vendor: "",
+            vendorUrl: "",
+            imageUrl: cutoutUrl,
             color: "", material: "",
             style: preset.designStyle,
           };
           const tempRoom = { ...rr, furniture: [...rr.furniture] };
           const placed = placeFurniture(tempRoom, customItem);
-          // If placeholder, mark as needs-attention so it's flagged in the
-          // masterlist export — designer must swap before sending to client
-          placed.status = imgResult.isPlaceholder ? "alt-pending" : "approved";
-          const alts = remainingAlts.filter(
-            (a: SourcedOption) => a.imageUrl && a.name,
-          ) as SourcedAlternative[];
-          if (alts.length > 0) placed.alternatives = alts;
+          // alt-pending = composite image is ready, but a real product
+          // still needs to be sourced. Masterlist nags + CTA shows "Source".
+          placed.status = "alt-pending";
           rr.furniture.push(placed);
-
-          if (imgResult.isPlaceholder) {
-            logActivity(project.id, "image_placeholder", `No real image for "${item.description}" — needs designer swap`);
-          } else if (imgResult.usedAlternativeIndex >= 0) {
-            logActivity(project.id, "image_fallback_alt", `Used alternative #${imgResult.usedAlternativeIndex + 1} for "${item.description}" (primary image unavailable)`);
-          }
 
           const bb = item.boundingBoxPct;
           rr.sceneItems.push({
@@ -812,7 +773,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           saveProject(fresh2);
           onUpdate();
         } catch (err) {
-          logActivity(project.id, "source_error", `Error sourcing "${item.description}": ${err instanceof Error ? err.message : "unknown"}`);
+          logActivity(project.id, "source_error", `Error placing "${item.description}": ${err instanceof Error ? err.message : "unknown"}`);
         } finally {
           if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
         }
@@ -1316,20 +1277,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }
 
   function clearAndRestart() {
-    if (!confirm("Clear the scene background, items, and review list? The masterlist approvals stay.")) return;
+    if (!confirm(
+      "Clear everything for this room — scene background, items, and all products on the masterlist + budget?\n\n" +
+      "Your Matterport / reference image and room dimensions stay. This is a fresh start."
+    )) return;
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const target = fresh.rooms.find(r => r.id === room.id);
     if (!target) return;
+    // AI scene state
     target.sceneBackgroundUrl = undefined;
     target.sceneSnapshot = undefined;
+    target.originalRenderUrl = undefined;
     target.sceneItems = [];
+    target.compositeBackdrop = undefined;
+    // Masterlist / budget / Excel — this is the array those features read
+    target.furniture = [];
+    // Reset any stuck "in progress" flags from an interrupted session
+    target.pendingSourceCount = undefined;
+    target.pendingRenderStartedAt = undefined;
     saveProject(fresh);
     setSourcedItems(null);
     setPhase("idle");
     setLastError(null);
     onUpdate();
-    toast.info("Scene cleared. Design again when ready.");
+    logActivity(project.id, "room_reset", `Reset ${target.name}: cleared scene, items, and all sourced products`);
+    toast.info("Room reset. Everything cleared — start fresh when ready.");
   }
 
   // ── Pick-first workflow ─────────────────────────────────────────────
@@ -1339,7 +1312,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   // cutouts onto the empty-room backdrop. Image and masterlist ship
   // the same items by construction — no drift.
 
-  async function searchForItem() {
+  async function searchForItem(opts?: { referenceImageDataUrl?: string }) {
     const q = pickQuery.trim();
     if (!q || pickPhase !== "idle") return;
     setLastError(null);
@@ -1354,6 +1327,10 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           styleHint: preset.id,
           budget: remainingBudget || undefined,
           roomType: room.type,
+          // When sourcing an already-placed item, the scene-crop cutout is
+          // the most accurate visual reference — it's what the designer
+          // wants the real product to look like.
+          referenceImageDataUrl: opts?.referenceImageDataUrl,
         }),
       });
       const raw = await res.text();
@@ -1410,6 +1387,16 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         const si = target.sceneItems.find(s => s.id === swappingId);
         if (!si) throw new Error("Item to swap missing");
         const oldItemId = si.itemId;
+        const oldFurn = target.furniture.find(f => f.item.id === oldItemId);
+        // First-time sourcing an unsourced item (from "🔍 Source Real
+        // Product")? Preserve its composite image — the scene-crop cutout
+        // already looks right, and vendor cutouts often regress (white
+        // rectangles, wrong product). Designer can still quick-swap to an
+        // alt thumbnail later if they want the real vendor photo.
+        const isFirstTimeSource = !!oldFurn && (!oldFurn.item.vendor || !oldFurn.item.vendorUrl);
+        const composedImageUrl = isFirstTimeSource && oldFurn?.item.imageUrl
+          ? oldFurn.item.imageUrl
+          : (cutoutUrl || opt.imageUrl || "");
         const newItem: FurnitureItem = {
           id: `pick-${generateId()}`,
           name: opt.name,
@@ -1421,7 +1408,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           price: opt.price ?? 0,
           vendor: opt.vendor,
           vendorUrl: opt.url,
-          imageUrl: cutoutUrl || opt.imageUrl || "",
+          imageUrl: composedImageUrl,
           color: "",
           material: "",
           style: preset.designStyle,
@@ -1434,8 +1421,9 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
         target.furniture.push(placed);
         si.itemId = newItem.id;
         saveProject(fresh);
-        logActivity(project.id, "item_swapped", `Swapped to ${opt.name} in ${target.name}`);
-        toast.success(`Swapped to ${opt.name}`);
+        const verb = isFirstTimeSource ? "Sourced" : "Swapped to";
+        logActivity(project.id, "item_swapped", `${verb} ${opt.name} in ${target.name}`);
+        toast.success(`${verb} ${opt.name}`);
       } else {
         // ADD path: new item + new scene placement
         const customItem: FurnitureItem = {
@@ -1474,6 +1462,25 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     } finally {
       setPickPhase("idle");
     }
+  }
+
+  /**
+   * Kick off sourcing for an item that's already on the board but has no
+   * vendor yet (status "alt-pending"). Opens the existing pick modal, pre-
+   * fills the description, and uses the item's current composite image —
+   * which is the scene-crop cutout — as the reverse-image-search reference.
+   * When the designer picks an option, the existing swap path fires and
+   * just fills in vendor/price/url/alts.
+   */
+  function sourceUnsourcedItem(sceneItemId: string, description: string, referenceImageUrl: string) {
+    if (pickPhase !== "idle") return;
+    setSwappingId(sceneItemId);
+    setPickQuery(description);
+    setPickOptions(null);
+    setLastError(null);
+    // Kick off the search immediately — designer doesn't need to type
+    // anything, we already know the description from the scene extraction.
+    void searchForItem({ referenceImageDataUrl: referenceImageUrl });
   }
 
   function quickSwapToAlt(sceneItemId: string, oldItemId: string, alt: SourcedAlternative, remainingAlts: SourcedAlternative[]) {
@@ -2673,11 +2680,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-brand-900 truncate">{row.item.name}</div>
                       <div className="text-[10px] text-brand-600 truncate">
-                        {row.status === "alt-pending" && !row.item.vendor ? (
-                          <span className="text-amber-dark">🔎 sourcing product...</span>
+                        {!row.item.vendor || !row.item.vendorUrl ? (
+                          <span className="text-amber-dark font-medium">⚠️ needs real product</span>
                         ) : (
                           <>
-                            {row.item.vendor || "—"}
+                            {row.item.vendor}
                             {row.item.price ? ` · $${row.item.price.toLocaleString()}` : " · $0 (set price)"}
                           </>
                         )}
@@ -2699,26 +2706,52 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                         ⚠ Check size
                       </span>
                     )}
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (isSwapping) {
-                          setSwappingId(null);
-                        } else {
-                          setSwappingId(row.sceneItem.id);
-                          setPickQuery(row.item.subcategory || row.item.name);
-                          setPickOptions(null);
-                        }
-                      }}
-                      className={`text-[10px] px-2 py-1 rounded ${
-                        isSwapping
-                          ? "bg-amber text-white"
-                          : "text-brand-700 hover:bg-brand-900/5 border border-brand-900/15"
-                      }`}
-                      title="Find 3 alternative products to replace this item (keeps position)"
-                    >
-                      {isSwapping ? "Cancel swap" : "🔄 Swap"}
-                    </button>
+                    {(() => {
+                      const isUnsourced = !row.item.vendor || !row.item.vendorUrl;
+                      return (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (isSwapping) {
+                              setSwappingId(null);
+                              return;
+                            }
+                            if (isUnsourced) {
+                              // First-time sourcing: use the composite cutout
+                              // as the reverse-image-search reference so the
+                              // returned products visually match the scene.
+                              sourceUnsourcedItem(
+                                row.sceneItem.id,
+                                row.item.subcategory || row.item.name,
+                                row.item.imageUrl,
+                              );
+                            } else {
+                              // Already sourced — open the swap flow with a
+                              // blank query, designer retypes to find alts.
+                              setSwappingId(row.sceneItem.id);
+                              setPickQuery(row.item.subcategory || row.item.name);
+                              setPickOptions(null);
+                            }
+                          }}
+                          className={`text-[10px] px-2 py-1 rounded font-medium ${
+                            isSwapping
+                              ? "bg-amber text-white"
+                              : isUnsourced
+                                ? "bg-amber text-white hover:bg-amber-dark"
+                                : "text-brand-700 hover:bg-brand-900/5 border border-brand-900/15"
+                          }`}
+                          title={
+                            isSwapping
+                              ? "Cancel the current swap"
+                              : isUnsourced
+                                ? "Find real products matching this item (reverse image search)"
+                                : "Find 3 alternative products to replace this item (keeps position)"
+                          }
+                        >
+                          {isSwapping ? "Cancel" : isUnsourced ? "🔍 Source" : "🔄 Swap"}
+                        </button>
+                      );
+                    })()}
                     <button
                       onClick={e => {
                         e.stopPropagation();
