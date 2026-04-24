@@ -1321,20 +1321,32 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }
 
   function clearAndRestart() {
-    if (!confirm("Clear the scene background, items, and review list? The masterlist approvals stay.")) return;
+    if (!confirm(
+      "Clear everything for this room — scene background, items, and all products on the masterlist + budget?\n\n" +
+      "Your Matterport / reference image and room dimensions stay. This is a fresh start."
+    )) return;
     const fresh = getProjectFromStore(project.id);
     if (!fresh) return;
     const target = fresh.rooms.find(r => r.id === room.id);
     if (!target) return;
+    // AI scene state
     target.sceneBackgroundUrl = undefined;
     target.sceneSnapshot = undefined;
+    target.originalRenderUrl = undefined;
     target.sceneItems = [];
+    target.compositeBackdrop = undefined;
+    // Masterlist / budget / Excel — this is the array those features read
+    target.furniture = [];
+    // Reset any stuck "in progress" flags from an interrupted session
+    target.pendingSourceCount = undefined;
+    target.pendingRenderStartedAt = undefined;
     saveProject(fresh);
     setSourcedItems(null);
     setPhase("idle");
     setLastError(null);
     onUpdate();
-    toast.info("Scene cleared. Design again when ready.");
+    logActivity(project.id, "room_reset", `Reset ${target.name}: cleared scene, items, and all sourced products`);
+    toast.info("Room reset. Everything cleared — start fresh when ready.");
   }
 
   // ── Pick-first workflow ─────────────────────────────────────────────
