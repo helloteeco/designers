@@ -448,6 +448,46 @@ async function hasOpaqueEdges(src: string): Promise<boolean> {
 }
 
 /**
+ * Turn a scene-crop thumbnail (the AI-generated crop of one item from the
+ * room render) into a clean transparent cutout via Gemini. This is the
+ * fallback path when real vendor images can't be fetched or cleaned — the
+ * composite board always has SOMETHING on it, so sourcing failures never
+ * leave the designer with a wall of "No Image Available" boxes.
+ *
+ * Always hits /api/generate-cutout because scene crops have full room
+ * context behind the item (walls, other furniture) that white-bg removal
+ * can't handle.
+ */
+export async function sceneCropToCutout(
+  thumbnailDataUrl: string,
+  description: string,
+  vendor?: string,
+): Promise<string | null> {
+  if (!thumbnailDataUrl) return null;
+  try {
+    const res = await fetch("/api/generate-cutout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, imageUrl: thumbnailDataUrl, vendor }),
+    });
+    if (res.ok) {
+      const json = (await res.json()) as { imageUrl?: string; imageDataUrl?: string };
+      const cutout = json.imageUrl ?? json.imageDataUrl;
+      if (cutout) {
+        const hosted = await ensureHostedUrl(cutout, "cutouts");
+        return hosted ?? cutout;
+      }
+    }
+  } catch {
+    // Fall through
+  }
+  // Last resort: return the raw scene crop. Still a real image from the AI
+  // render — ugly-looking rectangle at worst, never "No Image Available".
+  const hosted = await ensureHostedUrl(thumbnailDataUrl, "cutouts");
+  return hosted ?? thumbnailDataUrl;
+}
+
+/**
  * Compact all room images in a project by re-uploading any remaining
  * data URLs to Supabase. Frees localStorage space.
  */

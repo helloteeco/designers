@@ -5,7 +5,7 @@ import { saveProject, getProject as getProjectFromStore, generateId, logActivity
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
-import { ensureHostedUrl, compactProjectImages, finalizeCutout, finalizeCutoutGuaranteed, resolveProductImage } from "@/lib/scene-storage";
+import { ensureHostedUrl, compactProjectImages, finalizeCutout, finalizeCutoutGuaranteed, resolveProductImage, sceneCropToCutout } from "@/lib/scene-storage";
 import { useToast } from "./Toast";
 import RoomTopDown from "./RoomTopDown";
 import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
@@ -735,34 +735,49 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           });
           const result = res.ok ? (await res.json()) as { options?: SourcedOption[] } : null;
           const opt = result?.options?.[0] ?? null;
-          if (!opt || !opt.imageUrl) {
-            logActivity(project.id, "source_skipped", `Couldn't source real product for "${item.description}"`);
+          const altOptions = (result?.options ?? []).slice(1);
+
+          // Resolve the cutout for the composite board. Two-tier fallback so
+          // the composite ALWAYS gets a real image — no more "No Image
+          // Available" boxes:
+          //   1. Real vendor image (if sourcing worked + bg cleans up)
+          //   2. Scene-crop cutout from the AI render (always works because
+          //      we painted it ourselves; Gemini cutout removes the room
+          //      context behind it)
+          // Sourcing failures only affect the masterlist name / price / URL.
+          let cutoutUrl: string | null = null;
+          let sourcedFromVendor = false;
+          let usedAlternativeIndex = -1;
+
+          if (opt) {
+            const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
+            const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
+            if (!imgResult.isPlaceholder) {
+              const cleaned = await finalizeCutoutGuaranteed(imgResult.url, item.description, opt.vendor);
+              if (cleaned) {
+                cutoutUrl = cleaned;
+                sourcedFromVendor = true;
+                usedAlternativeIndex = imgResult.usedAlternativeIndex;
+              }
+            }
+          }
+
+          if (!cutoutUrl) {
+            cutoutUrl = await sceneCropToCutout(item.thumbnailDataUrl, item.description, opt?.vendor);
+          }
+
+          if (!cutoutUrl) {
+            logActivity(project.id, "item_skip_no_image", `No cutout at all for "${item.description}"`);
             return;
           }
 
-          // Resolve image: try primary vendor URL, fall back through alternatives
-          // (real products only — never AI-generated). If all fail, returns a
-          // labeled placeholder and isPlaceholder=true.
-          const altOptions = (result?.options ?? []).slice(1);
-          // Include the primary product's page URL in case its imageUrl failed
-          // but we can extract og:image from the product page
-          const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
-          const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
-          // Guaranteed transparent-bg cutout — falls back to Gemini cutout
-          // generation if the fast white-bg removal didn't actually strip the
-          // background (lifestyle photos, colored backdrops, CORS issues).
-          if (!imgResult.isPlaceholder) {
-            const cleaned = await finalizeCutoutGuaranteed(imgResult.url, item.description, opt.vendor);
-            if (cleaned) imgResult.url = cleaned;
-          }
-
-          // If we used an alternative, promote it to primary so the masterlist
-          // shows the actual product the designer can buy (matching the image)
+          // Promote the alternative that worked (if any) to primary on the
+          // masterlist so the designer sees the product whose image we used.
           let primary = opt;
           let remainingAlts = altOptions;
-          if (imgResult.usedAlternativeIndex >= 0) {
-            primary = altOptions[imgResult.usedAlternativeIndex];
-            remainingAlts = [opt, ...altOptions.filter((_, i) => i !== imgResult.usedAlternativeIndex)];
+          if (usedAlternativeIndex >= 0 && opt) {
+            primary = altOptions[usedAlternativeIndex];
+            remainingAlts = [opt, ...altOptions.filter((_, i) => i !== usedAlternativeIndex)];
           }
 
           const fresh2 = getProjectFromStore(project.id);
@@ -775,34 +790,35 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           const itemId = `ext-${generateId()}`;
           const customItem: FurnitureItem = {
             id: itemId,
-            name: primary.name || item.description,
+            name: primary?.name || item.description,
             category,
             subcategory: item.category,
-            widthIn: parseFirstDim(primary.dimensions) ?? 36,
-            depthIn: parseSecondDim(primary.dimensions) ?? 36,
-            heightIn: parseThirdDim(primary.dimensions) ?? 30,
-            price: primary.price ?? 0,
-            vendor: primary.vendor || "—",
-            vendorUrl: primary.url || "",
-            imageUrl: imgResult.url,
+            widthIn: parseFirstDim(primary?.dimensions) ?? 36,
+            depthIn: parseSecondDim(primary?.dimensions) ?? 36,
+            heightIn: parseThirdDim(primary?.dimensions) ?? 30,
+            price: primary?.price ?? 0,
+            vendor: primary?.vendor || "—",
+            vendorUrl: primary?.url || "",
+            imageUrl: cutoutUrl,
             color: "", material: "",
             style: preset.designStyle,
           };
           const tempRoom = { ...rr, furniture: [...rr.furniture] };
           const placed = placeFurniture(tempRoom, customItem);
-          // If placeholder, mark as needs-attention so it's flagged in the
-          // masterlist export — designer must swap before sending to client
-          placed.status = imgResult.isPlaceholder ? "alt-pending" : "approved";
+          // Status: approved when we have a vetted vendor image; alt-pending
+          // when the composite is using the scene-crop cutout — designer
+          // should audit and pick a real product before delivery.
+          placed.status = sourcedFromVendor ? "approved" : "alt-pending";
           const alts = remainingAlts.filter(
             (a: SourcedOption) => a.imageUrl && a.name,
           ) as SourcedAlternative[];
           if (alts.length > 0) placed.alternatives = alts;
           rr.furniture.push(placed);
 
-          if (imgResult.isPlaceholder) {
-            logActivity(project.id, "image_placeholder", `No real image for "${item.description}" — needs designer swap`);
-          } else if (imgResult.usedAlternativeIndex >= 0) {
-            logActivity(project.id, "image_fallback_alt", `Used alternative #${imgResult.usedAlternativeIndex + 1} for "${item.description}" (primary image unavailable)`);
+          if (!sourcedFromVendor) {
+            logActivity(project.id, "image_scene_crop_fallback", `Scene-crop cutout for "${item.description}" — real product TBD`);
+          } else if (usedAlternativeIndex >= 0) {
+            logActivity(project.id, "image_fallback_alt", `Used alternative #${usedAlternativeIndex + 1} for "${item.description}" (primary image unavailable)`);
           }
 
           const bb = item.boundingBoxPct;
