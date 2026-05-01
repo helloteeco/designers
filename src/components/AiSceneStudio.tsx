@@ -6,6 +6,7 @@ import { STYLE_PRESETS } from "@/lib/style-presets";
 import { placeFurniture } from "@/lib/space-planning";
 import { compositeRoomScene } from "@/lib/composite-scene";
 import { ensureHostedUrl, compactProjectImages, finalizeCutout, resolveProductImage } from "@/lib/scene-storage";
+import { retryFetch } from "@/lib/api-retry";
 import { useToast } from "./Toast";
 import RoomTopDown from "./RoomTopDown";
 import type { Project, Room, FurnitureItem, SceneItem, SourcedAlternative } from "@/lib/types";
@@ -375,7 +376,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 110_000);
-      const res = await fetch("/api/generate-scene", {
+      const res = await retryFetch("/api/generate-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -391,7 +392,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           mode: "full-scene",
           extraNotes: notes?.trim() || undefined,
         }),
-      });
+      }, { maxRetries: 2, baseDelayMs: 3000, signal: controller.signal });
       clearTimeout(timeout);
       const raw = await res.text();
       let parsed: { imageDataUrl?: string; error?: string; errors?: Array<{ model: string; error: string }> } = {};
@@ -470,7 +471,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     setLastError(null);
     setPhase("sourcing");
     try {
-      const res = await fetch("/api/source-from-scene", {
+      const res = await retryFetch("/api/source-from-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -478,7 +479,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           budget: remainingBudget || undefined,
           styleHint: preset.id,
         }),
-      });
+      }, { maxRetries: 2, baseDelayMs: 3000 });
       const raw = await res.text();
       let parsed: { items?: SourcedItem[]; error?: string } = {};
       try { parsed = JSON.parse(raw); } catch { /* keep raw */ }
@@ -550,11 +551,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     setExtractingReview(true);
     try {
       // 1. Get bounding boxes from Gemini vision
-      const res = await fetch("/api/extract-items", {
+      const res = await retryFetch("/api/extract-items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageDataUrl: render }),
-      });
+      }, { maxRetries: 2, baseDelayMs: 3000 });
       const raw = await res.text();
       let payload: {
         items?: Array<{
@@ -647,11 +648,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       //    this over using the raw reference photo because the strip
       //    keeps any AI-applied style touches (lighting/mood) from the
       //    render while removing only the furniture.
-      const stripRes = await fetch("/api/strip-scene", {
+      const stripRes = await retryFetch("/api/strip-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageDataUrl: extractionReview.sourceRender }),
-      });
+      }, { maxRetries: 2, baseDelayMs: 3000 });
       const stripPayload = (await stripRes.json()) as { imageDataUrl?: string; error?: string };
       if (!stripRes.ok || !stripPayload.imageDataUrl) {
         throw new Error(stripPayload.error || `Strip failed: HTTP ${stripRes.status}`);
@@ -720,7 +721,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       const CONCURRENCY = 3;
       const processItem = async (item: typeof kept[number], idx: number): Promise<void> => {
         try {
-          const res = await fetch("/api/source-item", {
+          const res = await retryFetch("/api/source-item", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -729,7 +730,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
               budget: remainingBudget || undefined,
               roomType: room.type,
             }),
-          });
+          }, { maxRetries: 3, baseDelayMs: 2000 });
           const result = res.ok ? (await res.json()) as { options?: SourcedOption[] } : null;
           const opt = result?.options?.[0] ?? null;
           if (!opt || !opt.imageUrl) {
@@ -867,11 +868,11 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
     setPhase("generating");
     try {
       // 1. Strip the original render to an empty backdrop
-      const stripRes = await fetch("/api/strip-scene", {
+      const stripRes = await retryFetch("/api/strip-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageDataUrl: originalRender }),
-      });
+      }, { maxRetries: 2, baseDelayMs: 3000 });
       const stripRaw = await stripRes.text();
       let stripPayload: { imageDataUrl?: string; error?: string } = {};
       try { stripPayload = JSON.parse(stripRaw); } catch {}
@@ -882,7 +883,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
 
       // 2. Source products from the ORIGINAL render (the stripped one has nothing)
       setPhase("sourcing");
-      const sourceRes = await fetch("/api/source-from-scene", {
+      const sourceRes = await retryFetch("/api/source-from-scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -890,7 +891,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           budget: remainingBudget || undefined,
           styleHint: preset.id,
         }),
-      });
+      }, { maxRetries: 2, baseDelayMs: 3000 });
       const sourceRaw = await sourceRes.text();
       let sourcePayload: { items?: SourcedItem[]; error?: string } = {};
       try { sourcePayload = JSON.parse(sourceRaw); } catch {}
@@ -912,67 +913,94 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       target.sceneItems = [];
       saveProject(fresh);
       onUpdate();
-      toast.info(`Placing ${items.length} real products... (cutouts ~15s each, running in parallel)`);
+      toast.info(`Placing ${items.length} real products... (cutouts ~15s each, 3 at a time)`);
 
-      // 4. For each sourced item, generate a cutout + place on scene
-      //    Promise.all keeps the wall-clock time reasonable; each save
-      //    re-reads the latest project state so parallel saves don't clobber.
-      await Promise.all(items.map(async item => {
+      // 4. For each sourced item, generate a cutout + place on scene.
+      //    Uses a concurrency pool (3 workers) instead of unbounded Promise.all
+      //    to avoid overwhelming Gemini rate limits. Each item is isolated —
+      //    one failure doesn't kill the whole batch.
+      let placedCount = 0;
+      let failedCount = 0;
+      const CONCURRENCY = 3;
+      const processLegacyItem = async (item: typeof items[number]): Promise<void> => {
         const opt = item.options?.[0];
         if (!opt) return;
-        let cutoutUrl = opt.imageUrl || "";
         try {
-          const cutRes = await fetch("/api/generate-cutout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              description: `${opt.name} (${item.category})`,
-              imageUrl: opt.imageUrl || undefined,
-              vendor: opt.vendor || undefined,
-            }),
-          });
-          if (cutRes.ok) {
-            const j = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
-            cutoutUrl = j.imageUrl ?? j.imageDataUrl ?? cutoutUrl;
+          let cutoutUrl = opt.imageUrl || "";
+          try {
+            const cutRes = await retryFetch("/api/generate-cutout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                description: `${opt.name} (${item.category})`,
+                imageUrl: opt.imageUrl || undefined,
+                vendor: opt.vendor || undefined,
+              }),
+            }, { maxRetries: 2, baseDelayMs: 2000 });
+            if (cutRes.ok) {
+              const j = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+              cutoutUrl = j.imageUrl ?? j.imageDataUrl ?? cutoutUrl;
+            }
+          } catch {
+            // If cutout fails, fall back to the raw product image URL (proxy will still serve it)
           }
-        } catch {
-          // If cutout fails, fall back to the raw product image URL (proxy will still serve it)
+          cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
+          const next = getProjectFromStore(project.id);
+          if (!next) return;
+          const tt = next.rooms.find(r => r.id === room.id);
+          if (!tt) return;
+          if (!tt.sceneItems) tt.sceneItems = [];
+          const category = mapCategory(item.category);
+          const customItem: FurnitureItem = {
+            id: `auto-${generateId()}`,
+            name: opt.name,
+            category,
+            subcategory: item.category,
+            widthIn: parseFirstDim(opt.dimensions) ?? 36,
+            depthIn: parseSecondDim(opt.dimensions) ?? 36,
+            heightIn: parseThirdDim(opt.dimensions) ?? 30,
+            price: opt.price ?? 0,
+            vendor: opt.vendor,
+            vendorUrl: opt.url,
+            imageUrl: cutoutUrl,
+            color: "",
+            material: "",
+            style: preset.designStyle,
+          };
+          const placed = placeFurniture(tt, customItem);
+          placed.status = "approved";
+          tt.furniture.push(placed);
+          tt.sceneItems.push(defaultSceneItemFor(customItem, tt.sceneItems.length, category));
+          saveProject(next);
+          onUpdate();
+          placedCount++;
+        } catch (err) {
+          failedCount++;
+          logActivity(project.id, "cutout_error", `Error placing "${opt.name}": ${err instanceof Error ? err.message : "unknown"}`);
         }
-        cutoutUrl = (await finalizeCutout(cutoutUrl)) ?? cutoutUrl;
-        const next = getProjectFromStore(project.id);
-        if (!next) return;
-        const tt = next.rooms.find(r => r.id === room.id);
-        if (!tt) return;
-        if (!tt.sceneItems) tt.sceneItems = [];
-        const category = mapCategory(item.category);
-        const customItem: FurnitureItem = {
-          id: `auto-${generateId()}`,
-          name: opt.name,
-          category,
-          subcategory: item.category,
-          widthIn: parseFirstDim(opt.dimensions) ?? 36,
-          depthIn: parseSecondDim(opt.dimensions) ?? 36,
-          heightIn: parseThirdDim(opt.dimensions) ?? 30,
-          price: opt.price ?? 0,
-          vendor: opt.vendor,
-          vendorUrl: opt.url,
-          imageUrl: cutoutUrl,
-          color: "",
-          material: "",
-          style: preset.designStyle,
-        };
-        const placed = placeFurniture(tt, customItem);
-        placed.status = "approved";
-        tt.furniture.push(placed);
-        tt.sceneItems.push(defaultSceneItemFor(customItem, tt.sceneItems.length, category));
-        saveProject(next);
-        onUpdate();
-      }));
+      };
+
+      // Concurrency pool: 3 workers pull items from the queue
+      const itemQueue = [...items];
+      const workers: Promise<void>[] = [];
+      for (let w = 0; w < Math.min(CONCURRENCY, itemQueue.length); w++) {
+        workers.push((async () => {
+          while (itemQueue.length > 0) {
+            const next = itemQueue.shift();
+            if (!next) break;
+            await processLegacyItem(next);
+          }
+        })());
+      }
+      await Promise.all(workers);
 
       setSourcedItems(null);
       setPhase("ready");
-      logActivity(project.id, "composite_converted", `Converted render to composite: ${items.length} items placed in ${room.name}`);
-      toast.success(`Composite board ready — ${items.length} items placed. Drag, swap, or remove anything.`);
+      const summary = failedCount > 0
+        ? `Composite board ready — ${placedCount} items placed, ${failedCount} failed (check activity log). Drag, swap, or remove anything.`
+        : `Composite board ready — ${placedCount} items placed. Drag, swap, or remove anything.`;
+      logActivity(project.id, "composite_converted", `Converted render to composite: ${placedCount} placed, ${failedCount} failed in ${room.name}`);
+      toast.success(summary);
     } catch (err) {
       setLastError(err instanceof Error ? err.message : "Conversion failed");
       setPhase("preview");
@@ -1791,7 +1819,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       try {
         const furn = room.furniture.find(f => f.item.id === p.item.id);
         const alts = (furn?.alternatives ?? []).map(a => ({ imageUrl: a.imageUrl, url: a.url }));
-        alts.unshift({ imageUrl: undefined, url: furn?.item.vendorUrl });
+        alts.unshift({ imageUrl: undefined as string | undefined, url: furn?.item.vendorUrl ?? "" });
         const result = await resolveProductImage(p.item.imageUrl, p.item.name, alts);
         if (!result.isPlaceholder && result.url !== p.item.imageUrl) {
           const fresh = getProjectFromStore(project.id);

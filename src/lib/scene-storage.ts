@@ -361,21 +361,27 @@ export async function finalizeCutout(url: string | undefined): Promise<string | 
  * Compact all room images in a project by re-uploading any remaining
  * data URLs to Supabase. Frees localStorage space.
  */
-export async function compactProjectImages(project: { id: string; rooms: Array<{ sceneBackgroundUrl?: string; sceneSnapshot?: string; originalRenderUrl?: string; referenceImageUrl?: string }> }): Promise<void> {
+export async function compactProjectImages(project: { id: string; rooms: Array<{ sceneBackgroundUrl?: string; sceneSnapshot?: string; originalRenderUrl?: string; referenceImageUrl?: string }> }): Promise<{ uploaded: number }> {
+  let uploaded = 0;
   for (const room of project.rooms) {
     if (room.sceneBackgroundUrl?.startsWith("data:")) {
-      room.sceneBackgroundUrl = await ensureHostedUrl(room.sceneBackgroundUrl, "scenes") ?? room.sceneBackgroundUrl;
+      const hosted = await ensureHostedUrl(room.sceneBackgroundUrl, "scenes");
+      if (hosted) { room.sceneBackgroundUrl = hosted; uploaded++; }
     }
     if (room.sceneSnapshot?.startsWith("data:")) {
-      room.sceneSnapshot = await ensureHostedUrl(room.sceneSnapshot, "snapshots") ?? room.sceneSnapshot;
+      const hosted = await ensureHostedUrl(room.sceneSnapshot, "snapshots");
+      if (hosted) { room.sceneSnapshot = hosted; uploaded++; }
     }
     if (room.originalRenderUrl?.startsWith("data:")) {
-      room.originalRenderUrl = await ensureHostedUrl(room.originalRenderUrl, "scenes") ?? room.originalRenderUrl;
+      const hosted = await ensureHostedUrl(room.originalRenderUrl, "scenes");
+      if (hosted) { room.originalRenderUrl = hosted; uploaded++; }
     }
     if (room.referenceImageUrl?.startsWith("data:")) {
-      room.referenceImageUrl = await ensureHostedUrl(room.referenceImageUrl, "scenes") ?? room.referenceImageUrl;
+      const hosted = await ensureHostedUrl(room.referenceImageUrl, "scenes");
+      if (hosted) { room.referenceImageUrl = hosted; uploaded++; }
     }
   }
+  return { uploaded };
 }
 
 // ── Internal helpers ──────────────────────────────────────────────
