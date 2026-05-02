@@ -171,27 +171,33 @@ export default function NewProjectPage() {
       }
 
       if (rooms.length === 0 && file.type.startsWith("image/") && !isSvg) {
-        // OCR path — approximate
+        // GPT Vision path — reliable extraction from PNG/JPG floor plans
         try {
-          const detected: DetectedRoom[] = await detectRoomsFromImage(dataUrl, () => {});
-          for (const r of detected) {
-            rooms.push({
-              id: generateId(),
-              name: r.label,
-              type: r.guessedType,
-              widthFt: r.widthFt,
-              lengthFt: r.lengthFt,
-              ceilingHeightFt: 9,
-              floor: 1,
-              features: [],
-              selectedBedConfig: null,
-              furniture: [],
-              accentWall: null,
-              notes: "",
-            });
-          }
-          if (detected.length > 0) {
-            note = `Extracted ${detected.length} rooms via OCR — please verify dimensions.`;
+          const res = await fetch("/api/extract-floorplan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageDataUrl: dataUrl }),
+          });
+          const result = await res.json();
+          if (result.ok && result.rooms?.length > 0) {
+            const M_TO_FT_CONV = 3.28084;
+            for (const r of result.rooms as { name: string; type: string; widthM: number; lengthM: number; floor: number }[]) {
+              rooms.push({
+                id: generateId(),
+                name: r.name,
+                type: (r.type || "bedroom") as Room["type"],
+                widthFt: Math.round(r.widthM * M_TO_FT_CONV * 10) / 10,
+                lengthFt: Math.round(r.lengthM * M_TO_FT_CONV * 10) / 10,
+                ceilingHeightFt: 9,
+                floor: r.floor || 1,
+                features: [],
+                selectedBedConfig: null,
+                furniture: [],
+                accentWall: null,
+                notes: "",
+              });
+            }
+            note = `Extracted ${result.rooms.length} rooms via AI vision (${result.unit || "m"}) — please verify dimensions.`;
           }
         } catch {
           // Extraction failed, will fall back to heuristic
@@ -1025,68 +1031,105 @@ export default function NewProjectPage() {
                   <p>No rooms generated yet.</p>
                   <p className="text-xs mt-1">Add bedrooms/bathrooms above, or click &ldquo;+ Add Room&rdquo; to build manually.</p>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {generatedRooms.map((room) => (
-                    <div
-                      key={room.id}
-                      className="flex items-center gap-3 rounded-lg border border-brand-900/10 px-4 py-2.5 group"
-                    >
-                      <span className="text-[9px] text-brand-600/60 uppercase tracking-wider w-20 shrink-0">
-                        {room.type.replace(/-/g, " ")}
-                      </span>
-                      <input
-                        className="flex-1 text-sm text-brand-900 bg-transparent border-none outline-none focus:ring-0 p-0"
-                        value={room.name}
-                        onChange={(e) => updateRoomName(room.id, e.target.value)}
-                      />
-                      {/* Editable dimensions */}
-                      <div className="flex items-center gap-1 text-[11px] text-brand-600">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          className="w-14 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40 [appearance:textfield]"
-                          defaultValue={ftToDisplay(room.widthFt)}
-                          key={`w-${room.id}-${dimUnit}`}
-                          onBlur={(e) => {
-                            const v = parseFloat(e.target.value);
-                            if (!isNaN(v) && v >= 0) updateRoomDimension(room.id, "widthFt", v);
-                            else e.target.value = String(ftToDisplay(room.widthFt));
-                          }}
-                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                        />
-                        <span>&times;</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          className="w-14 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40 [appearance:textfield]"
-                          defaultValue={ftToDisplay(room.lengthFt)}
-                          key={`l-${room.id}-${dimUnit}`}
-                          onBlur={(e) => {
-                            const v = parseFloat(e.target.value);
-                            if (!isNaN(v) && v >= 0) updateRoomDimension(room.id, "lengthFt", v);
-                            else e.target.value = String(ftToDisplay(room.lengthFt));
-                          }}
-                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                        />
-                        <span className="text-[9px] text-brand-600/50">{unitLabel()}</span>
+              ) : (() => {
+                // Group rooms by floor
+                const maxFloor = Math.max(...generatedRooms.map(r => r.floor), 1);
+                const floorGroups = Array.from({ length: maxFloor }, (_, i) => i + 1).map(f => ({
+                  floor: f,
+                  rooms: generatedRooms.filter(r => r.floor === f),
+                })).filter(g => g.rooms.length > 0);
+
+                const floorLabel = (f: number) => {
+                  if (f === 0) return "Basement";
+                  if (f === 1 && maxFloor === 1) return "";
+                  return `Floor ${f}`;
+                };
+
+                return (
+                  <div className="space-y-4">
+                    {floorGroups.map(({ floor, rooms: floorRooms }) => (
+                      <div key={floor}>
+                        {maxFloor > 1 && (
+                          <div className="text-[10px] font-semibold text-brand-600/70 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <span className="bg-brand-900/5 rounded px-2 py-0.5">{floorLabel(floor)}</span>
+                            <span className="text-brand-600/40">{floorRooms.length} room{floorRooms.length !== 1 ? "s" : ""}</span>
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          {floorRooms.map((room) => (
+                            <div
+                              key={room.id}
+                              className="flex items-center gap-3 rounded-lg border border-brand-900/10 px-4 py-2.5 group"
+                            >
+                              <span className="text-[9px] text-brand-600/60 uppercase tracking-wider w-20 shrink-0">
+                                {room.type.replace(/-/g, " ")}
+                              </span>
+                              <input
+                                className="flex-1 text-sm text-brand-900 bg-transparent border-none outline-none focus:ring-0 p-0"
+                                value={room.name}
+                                onChange={(e) => updateRoomName(room.id, e.target.value)}
+                              />
+                              {/* Editable dimensions */}
+                              <div className="flex items-center gap-1 text-[11px] text-brand-600">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  className="w-14 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40 [appearance:textfield]"
+                                  defaultValue={ftToDisplay(room.widthFt)}
+                                  key={`w-${room.id}-${dimUnit}`}
+                                  onBlur={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    if (!isNaN(v) && v >= 0) updateRoomDimension(room.id, "widthFt", v);
+                                    else e.target.value = String(ftToDisplay(room.widthFt));
+                                  }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                                <span>&times;</span>
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  className="w-14 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40 [appearance:textfield]"
+                                  defaultValue={ftToDisplay(room.lengthFt)}
+                                  key={`l-${room.id}-${dimUnit}`}
+                                  onBlur={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    if (!isNaN(v) && v >= 0) updateRoomDimension(room.id, "lengthFt", v);
+                                    else e.target.value = String(ftToDisplay(room.lengthFt));
+                                  }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                                <span className="text-[9px] text-brand-600/50">{unitLabel()}</span>
+                              </div>
+                              {/* Floor selector for multi-floor properties */}
+                              {maxFloor > 1 && (
+                                <select
+                                  className="text-[9px] text-brand-600/70 bg-brand-900/5 rounded px-1.5 py-0.5 border-none outline-none cursor-pointer"
+                                  value={room.floor}
+                                  onChange={(e) => {
+                                    const newFloor = parseInt(e.target.value);
+                                    setGeneratedRooms(prev => prev.map(r => r.id === room.id ? { ...r, floor: newFloor } : r));
+                                  }}
+                                >
+                                  {Array.from({ length: maxFloor }, (_, i) => i + 1).map(f => (
+                                    <option key={f} value={f}>F{f}</option>
+                                  ))}
+                                </select>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeRoom(room.id)}
+                                className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition text-sm"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      {room.floor > 1 && (
-                        <span className="text-[9px] text-brand-600/50 bg-brand-900/5 rounded px-1.5 py-0.5">
-                          F{room.floor}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeRoom(room.id)}
-                        className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition text-sm"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
             </section>
 
             {/* Actions */}
