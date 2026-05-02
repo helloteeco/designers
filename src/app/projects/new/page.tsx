@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { createEmptyProject, saveProject, logActivity, generateId } from "@/lib/store";
 import { TEMPLATES } from "@/lib/project-templates";
 import { detectRoomsFromImage, type DetectedRoom } from "@/lib/floor-plan-ocr";
+import { sharpenImage } from "@/lib/sharpen-image";
 import { detectRoomsFromSvg, detectRoomsFromSvgDetailed, isSvgSource, readSvgText } from "@/lib/floor-plan-svg";
 import type { DesignStyle, Room, ProjectType, FloorPlan } from "@/lib/types";
 
@@ -112,10 +113,19 @@ export default function NewProjectPage() {
       (f) => (f.type.startsWith("image/") || f.type === "application/pdf") && f.size <= MAX_UPLOAD_BYTES
     );
     const withPreviews = await Promise.all(
-      arr.map(async (file) => ({
-        file,
-        preview: file.type.startsWith("image/") ? await fileToDataUrl(file) : "",
-      }))
+      arr.map(async (file) => {
+        if (!file.type.startsWith("image/")) {
+          return { file, preview: "" };
+        }
+        // Sharpen image for better readability of dimension text
+        try {
+          const sharpened = await sharpenImage(file, 0.8);
+          return { file, preview: sharpened };
+        } catch {
+          // Fallback to raw preview if sharpening fails
+          return { file, preview: await fileToDataUrl(file) };
+        }
+      })
     );
     setFloorPlanFiles((prev) => [...prev, ...withPreviews]);
   }
