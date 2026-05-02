@@ -375,6 +375,27 @@ export default function ExportPanel({ project }: Props) {
         </p>
       </div>
 
+      {/* Unlocked items warning */}
+      {(() => {
+        const allFurniture = project.rooms.flatMap(r => r.furniture ?? []);
+        const unlockedCount = allFurniture.filter(f => f.lockedIn === false).length;
+        if (unlockedCount === 0) return null;
+        return (
+          <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
+            <span className="text-amber-500 text-lg leading-none">⚠</span>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                {unlockedCount} item{unlockedCount !== 1 ? "s" : ""} not locked in yet
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                These items still show AI-generated images and have no real vendor/price.
+                Go to Design → Item Selection to lock in real products before exporting.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Export Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <div className="card text-center border-amber/40 bg-amber/5">

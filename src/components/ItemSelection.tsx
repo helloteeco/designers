@@ -162,6 +162,22 @@ export default function ItemSelection({ project, room, onUpdate }: Props) {
     }
   }
 
+  // Auto-lock: for each unlocked item that already has alternatives,
+  // automatically lock in the first (best-confidence) match. Designer can
+  // still swap later — this just removes the manual step for the common case.
+  async function autoLockBestMatches() {
+    const unlocked = furniture
+      .map((f, idx) => ({ f, idx }))
+      .filter(({ f }) => !f.lockedIn && (f.alternatives?.length ?? 0) > 0);
+    if (unlocked.length === 0) return;
+    toast.info(`Auto-locking ${unlocked.length} items with best matches...`);
+    for (const { f, idx } of unlocked) {
+      const bestAlt = f.alternatives![0];
+      await lockInProduct(idx, bestAlt);
+    }
+    toast.success(`Done! ${unlocked.length} items locked in. Review and swap any that don't look right.`);
+  }
+
   if (totalCount === 0) {
     return (
       <div className="card text-center py-12">
@@ -201,6 +217,16 @@ export default function ItemSelection({ project, room, onUpdate }: Props) {
           <p className="text-xs text-brand-600 mt-2">
             Lock in all items before exporting the Excel sheet. Unlocked items will show AI-generated images only.
           </p>
+        )}
+        {/* Auto-lock best match: pre-selects the first alternative for each unlocked item */}
+        {lockedCount < totalCount && furniture.some(f => !f.lockedIn && (f.alternatives?.length ?? 0) > 0) && (
+          <button
+            onClick={autoLockBestMatches}
+            disabled={lockingIdx !== null}
+            className="mt-3 w-full py-2 px-3 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+          >
+            ⚡ Auto-lock best matches (you can swap later)
+          </button>
         )}
       </div>
 

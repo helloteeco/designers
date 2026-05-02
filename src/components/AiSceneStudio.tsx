@@ -1951,13 +1951,15 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
   }
 
   // Items currently placed on the scene, paired with their FurnitureItem
-  interface PlacedRow { sceneItem: SceneItem; item: FurnitureItem; status: FurnitureItem["name"] extends never ? never : string | undefined }
+  interface PlacedRow { sceneItem: SceneItem; item: FurnitureItem; status: string | undefined; lockedIn?: boolean }
   const placedItems: PlacedRow[] = (room.sceneItems ?? [])
     .map(si => {
       const f = room.furniture.find(ff => ff.item.id === si.itemId);
-      return f ? { sceneItem: si, item: f.item, status: f.status as string | undefined } : null;
+      if (!f) return null;
+      const row: PlacedRow = { sceneItem: si, item: f.item, status: f.status as string | undefined, lockedIn: f.lockedIn };
+      return row;
     })
-    .filter((x): x is PlacedRow => !!x);
+    .filter((x): x is PlacedRow => x !== null);
 
   const placedTotalCost = placedItems.reduce((s, p) => s + (p.item.price ?? 0), 0);
 
@@ -2395,6 +2397,7 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
                 sceneItem={row.sceneItem}
                 imageUrl={row.item.imageUrl}
                 selected={selectedPlacedId === row.sceneItem.id}
+                isLocked={row.lockedIn}
                 onSelect={() => setSelectedPlacedId(row.sceneItem.id)}
                 onMove={(x, y) => updateScenePos(row.sceneItem.id, { x, y })}
                 onScale={s => updateScenePos(row.sceneItem.id, { scale: s })}
@@ -3530,7 +3533,7 @@ function ItemReviewRow({
 // invisible when none of the fields are present (e.g. vendor didn't expose
 // review data), so there's no "fake data" appearance.
 interface MoodBoardViewProps {
-  placedItems: { sceneItem: SceneItem; item: FurnitureItem; status?: string }[];
+  placedItems: { sceneItem: SceneItem; item: FurnitureItem; status?: string; lockedIn?: boolean }[];
   room: Room;
   project: Project;
   selectedPlacedId: string | null;
@@ -3803,6 +3806,7 @@ function MoodBoardView({
             sceneItem={row.sceneItem}
             imageUrl={row.item.imageUrl}
             selected={selectedPlacedId === row.sceneItem.id}
+            isLocked={row.lockedIn}
             onSelect={() => onSelectItem(row.sceneItem.id)}
             onMove={(x, y) => onMove(row.sceneItem.id, x, y)}
             onScale={s => onScale(row.sceneItem.id, s)}
@@ -4141,6 +4145,8 @@ interface DraggableCutoutProps {
   sceneItem: SceneItem;
   imageUrl: string;
   selected: boolean;
+  /** Whether this item has been locked in via Item Selection */
+  isLocked?: boolean;
   onSelect: () => void;
   onMove: (xPct: number, yPct: number) => void;
   onScale: (scale: number) => void;
@@ -4157,6 +4163,7 @@ function DraggableCutout({
   sceneItem,
   imageUrl,
   selected,
+  isLocked,
   onSelect,
   onMove,
   onScale,
@@ -4298,6 +4305,15 @@ function DraggableCutout({
           transform: `scale(${sx}, ${sy})`,
         }}
       />
+      {/* Yellow badge for unlocked items — tells designer this needs a real product */}
+      {isLocked === false && (
+        <div
+          className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-400 text-[8px] font-bold text-amber-900 shadow-sm pointer-events-none z-10"
+          title="Not locked in yet — pick a real product in Item Selection"
+        >
+          ○
+        </div>
+      )}
       {selected && (
         <>
           {/* Scale handle — bottom-right corner (uniform) */}
