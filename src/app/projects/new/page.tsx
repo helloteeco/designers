@@ -51,6 +51,7 @@ export default function NewProjectPage() {
 
   // Generation state
   const [generating, setGenerating] = useState(false);
+  const [genStatus, setGenStatus] = useState("");
   const [generatedRooms, setGeneratedRooms] = useState<Room[]>([]);
   const [extractionNote, setExtractionNote] = useState("");
 
@@ -261,6 +262,7 @@ export default function NewProjectPage() {
     }
 
     setGenerating(true);
+    setGenStatus("");
 
     try {
       let finalRooms: Room[] = [];
@@ -268,6 +270,7 @@ export default function NewProjectPage() {
       // Try to scrape listing if URL provided
       const urlToScrape = listingUrl.trim() || matterportUrl.trim();
       if (urlToScrape) {
+        setGenStatus("Scraping listing details...");
         const res = await fetch("/api/scrape-listing", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -317,6 +320,7 @@ export default function NewProjectPage() {
 
       // Try floor plan extraction — overrides heuristic rooms if successful
       if (floorPlanFiles.length > 0) {
+        setGenStatus("Analyzing floor plan with AI...");
         console.log("[FloorPlan] Starting extraction for", floorPlanFiles.length, "files");
         const extractedRooms = await extractRoomsFromFloorPlans();
         console.log("[FloorPlan] Extracted rooms:", extractedRooms.length);
@@ -346,6 +350,7 @@ export default function NewProjectPage() {
       }
 
       setGeneratedRooms(finalRooms);
+      setGenStatus("");
 
       // Store matterport link
       if (matterportUrl.trim()) {
@@ -361,6 +366,7 @@ export default function NewProjectPage() {
       setStep("confirm");
     } finally {
       setGenerating(false);
+      setGenStatus("");
     }
   }
 
@@ -744,7 +750,7 @@ export default function NewProjectPage() {
                 {generating ? (
                   <span className="flex items-center gap-2">
                     <span className="inline-block h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    Generating...
+                    {genStatus || "Generating..."}
                   </span>
                 ) : (
                   "Generate Project Draft"
