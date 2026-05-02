@@ -1043,21 +1043,31 @@ export default function NewProjectPage() {
                       {/* Editable dimensions */}
                       <div className="flex items-center gap-1 text-[11px] text-brand-600">
                         <input
-                          type="number"
-                          className="w-12 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40"
-                          value={ftToDisplay(room.widthFt)}
-                          onChange={(e) => updateRoomDimension(room.id, "widthFt", parseFloat(e.target.value) || 0)}
-                          step={dimUnit === "m" ? 0.1 : 1}
-                          min={0}
+                          type="text"
+                          inputMode="decimal"
+                          className="w-14 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40 [appearance:textfield]"
+                          defaultValue={ftToDisplay(room.widthFt)}
+                          key={`w-${room.id}-${dimUnit}`}
+                          onBlur={(e) => {
+                            const v = parseFloat(e.target.value);
+                            if (!isNaN(v) && v >= 0) updateRoomDimension(room.id, "widthFt", v);
+                            else e.target.value = String(ftToDisplay(room.widthFt));
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                         />
                         <span>&times;</span>
                         <input
-                          type="number"
-                          className="w-12 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40"
-                          value={ftToDisplay(room.lengthFt)}
-                          onChange={(e) => updateRoomDimension(room.id, "lengthFt", parseFloat(e.target.value) || 0)}
-                          step={dimUnit === "m" ? 0.1 : 1}
-                          min={0}
+                          type="text"
+                          inputMode="decimal"
+                          className="w-14 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40 [appearance:textfield]"
+                          defaultValue={ftToDisplay(room.lengthFt)}
+                          key={`l-${room.id}-${dimUnit}`}
+                          onBlur={(e) => {
+                            const v = parseFloat(e.target.value);
+                            if (!isNaN(v) && v >= 0) updateRoomDimension(room.id, "lengthFt", v);
+                            else e.target.value = String(ftToDisplay(room.lengthFt));
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                         />
                         <span className="text-[9px] text-brand-600/50">{unitLabel()}</span>
                       </div>
