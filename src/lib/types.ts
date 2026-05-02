@@ -223,6 +223,14 @@ export interface SelectedFurniture {
   status?: FurnitureStatus;
   altItem?: AltItem;
   alternatives?: SourcedAlternative[];
+  /** AI-generated cutout URL (always available — generated from description).
+   *  This is the IMMEDIATE visual on the composite board. Real vendor images
+   *  are resolved later via the Item Selection tab. */
+  aiCutoutUrl?: string;
+  /** True once the designer has explicitly locked in a real product via the
+   *  Item Selection tab. Until locked, the composite shows the AI cutout and
+   *  the Excel export warns about unlocked items. */
+  lockedIn?: boolean;
 }
 
 export interface SourcedAlternative {

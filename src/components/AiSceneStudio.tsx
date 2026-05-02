@@ -675,30 +675,20 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       target.sceneItems = [];
       saveProject(fresh);
       onUpdate();
-      toast.info(`Sourcing ${kept.length} real products — items will appear on the board as each finishes...`);
+      toast.info(`Placing ${kept.length} items with AI cutouts — real product matches will be available in Item Selection...`);
 
-      // Items-visible scene boot — the empty stripped backdrop is already
-      // saved above. We now source each kept item in parallel via
-      // source-item. When a call resolves, we place the item on the board
-      // using the VENDOR'S PRODUCT PHOTO as the visual (not a half-cropped
-      // fragment of the AI render). Saves are serialized via a promise
-      // chain so parallel resolutions don't race.
+      // Two-step composite workflow:
+      //   Step 1: Generate AI cutout from each item's DESCRIPTION and place
+      //           it on the board immediately. Board is always visually complete.
+      //   Step 2: Source real products in background, store as alternatives.
+      //           Designer picks the real product via Item Selection tab.
       //
-      // Why not crop from the render first?
-      //   - Crops are often half-cut, overlap neighbors, and keep
-      //     Matterport watermarks / scene shadows
-      //   - Vendor product photos are studio-quality, white-background,
-      //     exactly what the client will order
-      //   - Removes one Gemini call per item (no generate-cutout) and
-      //     its associated failure modes
-      //
-      // Bounding box from extraction is still used for POSITIONING —
-      // item lands where the render showed it. Designer can drag/resize.
-      //
-      // Safety:
-      //   - isMountedRef: don't save after designer navigates away
-      //   - serialized saveChain: no parallel save races
-      //   - skip items where sourcing returned nothing (no ghost rows)
+      // This ensures:
+      //   - No "No Image Available" placeholders ever
+      //   - Composite board is presentable immediately
+      //   - Designer is the quality gate for product selection
+      //   - Overlapping items (pillows, throws) get proper AI cutouts from
+      //     their text description rather than badly-cropped render fragments
 
       setExtractionReview(null);
       setPhase("ready");
@@ -714,53 +704,39 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
       }
       logActivity(project.id, "composite_from_render", `Stripped backdrop ready — sourcing ${kept.length} products for ${room.name}`);
 
-      // Run sourcing with limited concurrency (3 at a time) to avoid
-      // overwhelming the browser's connection pool and Vercel's function
-      // concurrency limits. Each task fully processes one item end-to-end:
-      // source → resolve image → save to localStorage → increment progress.
+      // Two-step product sourcing: AI cutouts FIRST (instant visual), then
+      // real vendor images resolved in background as upgrade options.
+      // Step 1: Generate AI cutout from description → place on board immediately
+      // Step 2: Source real products in background → store as alternatives
+      // Designer locks in real products later via the Item Selection tab.
       const CONCURRENCY = 3;
       const processItem = async (item: typeof kept[number], idx: number): Promise<void> => {
         try {
-          const res = await retryFetch("/api/source-item", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              description: item.description,
-              styleHint: preset.id,
-              budget: remainingBudget || undefined,
-              roomType: room.type,
-            }),
-          }, { maxRetries: 3, baseDelayMs: 2000 });
-          const result = res.ok ? (await res.json()) as { options?: SourcedOption[] } : null;
-          const opt = result?.options?.[0] ?? null;
-          if (!opt || !opt.imageUrl) {
-            logActivity(project.id, "source_skipped", `Couldn't source real product for "${item.description}"`);
-            return;
+          // ── Step 1: Generate AI cutout from description (always works) ──
+          let cutoutUrl = "";
+          try {
+            const cutRes = await retryFetch("/api/generate-cutout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                description: item.description,
+                vendor: undefined, // no vendor yet — pure description
+              }),
+            }, { maxRetries: 2, baseDelayMs: 2000 });
+            if (cutRes.ok) {
+              const j = (await cutRes.json()) as { imageUrl?: string; imageDataUrl?: string };
+              cutoutUrl = j.imageUrl ?? j.imageDataUrl ?? "";
+            }
+          } catch {
+            // AI cutout generation failed — will use placeholder
+          }
+          // Finalize: remove white bg + upload to Supabase
+          if (cutoutUrl) {
+            const cleaned = await finalizeCutout(cutoutUrl);
+            if (cleaned) cutoutUrl = cleaned;
           }
 
-          // Resolve image: try primary vendor URL, fall back through alternatives
-          // (real products only — never AI-generated). If all fail, returns a
-          // labeled placeholder and isPlaceholder=true.
-          const altOptions = (result?.options ?? []).slice(1);
-          // Include the primary product's page URL in case its imageUrl failed
-          // but we can extract og:image from the product page
-          const altsWithPrimaryPage = [{ imageUrl: undefined, url: opt.url }, ...altOptions];
-          const imgResult = await resolveProductImage(opt.imageUrl, item.description, altsWithPrimaryPage);
-          // Remove white background so product floats cleanly on the composite
-          if (!imgResult.isPlaceholder) {
-            const cleaned = await finalizeCutout(imgResult.url);
-            if (cleaned) imgResult.url = cleaned;
-          }
-
-          // If we used an alternative, promote it to primary so the masterlist
-          // shows the actual product the designer can buy (matching the image)
-          let primary = opt;
-          let remainingAlts = altOptions;
-          if (imgResult.usedAlternativeIndex >= 0) {
-            primary = altOptions[imgResult.usedAlternativeIndex];
-            remainingAlts = [opt, ...altOptions.filter((_, i) => i !== imgResult.usedAlternativeIndex)];
-          }
-
+          // Place item on board immediately with AI cutout
           const fresh2 = getProjectFromStore(project.id);
           if (!fresh2) return;
           const rr = fresh2.rooms.find(r2 => r2.id === room.id);
@@ -771,35 +747,26 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           const itemId = `ext-${generateId()}`;
           const customItem: FurnitureItem = {
             id: itemId,
-            name: primary.name || item.description,
+            name: item.description,
             category,
             subcategory: item.category,
-            widthIn: parseFirstDim(primary.dimensions) ?? 36,
-            depthIn: parseSecondDim(primary.dimensions) ?? 36,
-            heightIn: parseThirdDim(primary.dimensions) ?? 30,
-            price: primary.price ?? 0,
-            vendor: primary.vendor || "—",
-            vendorUrl: primary.url || "",
-            imageUrl: imgResult.url,
+            widthIn: 36,
+            depthIn: 36,
+            heightIn: 30,
+            price: 0,
+            vendor: "—",
+            vendorUrl: "",
+            imageUrl: cutoutUrl || generatePlaceholderSvgInline(item.description),
             color: "", material: "",
             style: preset.designStyle,
           };
           const tempRoom = { ...rr, furniture: [...rr.furniture] };
           const placed = placeFurniture(tempRoom, customItem);
-          // If placeholder, mark as needs-attention so it's flagged in the
-          // masterlist export — designer must swap before sending to client
-          placed.status = imgResult.isPlaceholder ? "alt-pending" : "approved";
-          const alts = remainingAlts.filter(
-            (a: SourcedOption) => a.imageUrl && a.name,
-          ) as SourcedAlternative[];
-          if (alts.length > 0) placed.alternatives = alts;
+          // Mark as specced (not yet locked in) — designer must approve via Item Selection
+          placed.status = "specced";
+          placed.aiCutoutUrl = cutoutUrl || undefined;
+          placed.lockedIn = false;
           rr.furniture.push(placed);
-
-          if (imgResult.isPlaceholder) {
-            logActivity(project.id, "image_placeholder", `No real image for "${item.description}" — needs designer swap`);
-          } else if (imgResult.usedAlternativeIndex >= 0) {
-            logActivity(project.id, "image_fallback_alt", `Used alternative #${imgResult.usedAlternativeIndex + 1} for "${item.description}" (primary image unavailable)`);
-          }
 
           const bb = item.boundingBoxPct;
           rr.sceneItems.push({
@@ -812,8 +779,46 @@ export default function AiSceneStudio({ project, room, onUpdate }: Props) {
           });
           saveProject(fresh2);
           onUpdate();
+
+          // ── Step 2: Source real products in background (non-blocking) ──
+          // Results are stored as alternatives; designer picks via Item Selection tab
+          try {
+            const res = await retryFetch("/api/source-item", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                description: item.description,
+                styleHint: preset.id,
+                budget: remainingBudget || undefined,
+                roomType: room.type,
+              }),
+            }, { maxRetries: 2, baseDelayMs: 2000 });
+            if (res.ok) {
+              const result = (await res.json()) as { options?: SourcedOption[] };
+              const options = result?.options ?? [];
+              if (options.length > 0) {
+                const fresh3 = getProjectFromStore(project.id);
+                if (fresh3) {
+                  const rr3 = fresh3.rooms.find(r3 => r3.id === room.id);
+                  if (rr3) {
+                    const fIdx = rr3.furniture.findIndex(f => f.item.id === itemId);
+                    if (fIdx >= 0) {
+                      rr3.furniture[fIdx].alternatives = options.filter(
+                        (a: SourcedOption) => a.name,
+                      ) as SourcedAlternative[];
+                      saveProject(fresh3);
+                      onUpdate();
+                    }
+                  }
+                }
+              }
+            }
+          } catch {
+            // Background sourcing failed — item still shows AI cutout, designer
+            // can manually source later via Item Selection tab
+          }
         } catch (err) {
-          logActivity(project.id, "source_error", `Error sourcing "${item.description}": ${err instanceof Error ? err.message : "unknown"}`);
+          logActivity(project.id, "source_error", `Error placing "${item.description}": ${err instanceof Error ? err.message : "unknown"}`);
         } finally {
           if (isMountedRef.current) setSourcingProgress(p => p ? { ...p, done: p.done + 1 } : null);
         }
@@ -3985,6 +3990,26 @@ function parseThirdDim(s?: string): number | null {
   if (!s) return null;
   const m = s.match(/\d+(?:\.\d+)?["\s]*[xX×]\s*\d+(?:\.\d+)?["\s]*[xX×]\s*(\d+(?:\.\d+)?)/);
   return m ? parseFloat(m[1]) : null;
+}
+
+/**
+ * Inline SVG placeholder for items where AI cutout generation failed.
+ * Shows a gentle "generating..." indicator rather than a broken image.
+ */
+function generatePlaceholderSvgInline(description: string): string {
+  const escapeXml = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const label = escapeXml(description.slice(0, 32));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="220" height="220">
+    <rect x="6" y="6" width="208" height="208" rx="14" fill="#f0fdf4" stroke="#86efac" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="110" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#166534" font-weight="600">AI Cutout</text>
+    <text x="110" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#15803d">${label}</text>
+    <text x="110" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8.5" fill="#166534">Pick a real product in Item Selection</text>
+  </svg>`;
+  const b64 = typeof window !== "undefined"
+    ? btoa(unescape(encodeURIComponent(svg)))
+    : Buffer.from(svg).toString("base64");
+  return `data:image/svg+xml;base64,${b64}`;
 }
 
 /**

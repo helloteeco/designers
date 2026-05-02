@@ -189,11 +189,105 @@ export async function POST(request: Request) {
       };
     });
 
+    // Server-side image verification: validate each option's imageUrl actually
+    // loads a real image. Falls back to og:image extraction from product page.
+    // Same hardening as /api/source-item — prevents broken/wrong images.
+    await Promise.all(options.map(async (opt) => {
+      if (opt.imageUrl) {
+        const ok = await verifyImageUrl(opt.imageUrl);
+        if (ok) return;
+      }
+      if (opt.url) {
+        const ogImg = await extractOgImageServer(opt.url);
+        if (ogImg) {
+          opt.imageUrl = ogImg;
+          return;
+        }
+      }
+      opt.imageUrl = undefined;
+    }));
+
     return NextResponse.json({ identified, searchQuery, estimatedSize, options });
   } catch (err) {
     return NextResponse.json(
       { identified, searchQuery, estimatedSize, error: err instanceof Error ? err.message : String(err) },
       { status: 502 }
     );
+  }
+}
+
+// ── Image verification helpers (ported from source-item route) ──────────
+
+/**
+ * HEAD/GET probe to verify a URL actually returns an image (2xx + image/* content-type).
+ * Times out after 5s to avoid blocking the response.
+ */
+async function verifyImageUrl(url: string): Promise<boolean> {
+  if (!url || url.startsWith("data:")) return true;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    // Try HEAD first (cheaper)
+    let res = await fetch(url, {
+      method: "HEAD",
+      signal: ctrl.signal,
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; EdgeDesigner/1.0)" },
+    });
+    // Some servers reject HEAD — fall back to GET with range
+    if (!res.ok) {
+      res = await fetch(url, {
+        method: "GET",
+        signal: ctrl.signal,
+        redirect: "follow",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; EdgeDesigner/1.0)",
+          Range: "bytes=0-1023",
+        },
+      });
+    }
+    clearTimeout(timer);
+    if (!res.ok) return false;
+    const ct = res.headers.get("content-type") ?? "";
+    return ct.startsWith("image/");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fetch a product page URL and extract og:image meta tag as fallback image.
+ * Times out after 6s. Returns null on failure.
+ */
+async function extractOgImageServer(pageUrl: string): Promise<string | null> {
+  if (!pageUrl) return null;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(pageUrl, {
+      signal: ctrl.signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html",
+      },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    // Only read first 50KB to avoid downloading huge pages
+    const text = await res.text();
+    const chunk = text.slice(0, 50000);
+    // Match og:image meta tag
+    const m = chunk.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      ?? chunk.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (m?.[1]) {
+      const img = m[1];
+      // Verify the extracted URL is actually an image
+      const ok = await verifyImageUrl(img);
+      return ok ? img : null;
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

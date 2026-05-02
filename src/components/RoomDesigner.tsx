@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import AiSceneStudio from "./AiSceneStudio";
+import ItemSelection from "./ItemSelection";
+import TabHelp from "./TabHelp";
 import type { Project, Room } from "@/lib/types";
 
 interface Props {
@@ -14,7 +16,8 @@ interface Props {
  *
  * Layout (top-to-bottom):
  *   1. Horizontal room picker — click chip → switch rooms
- *   2. AI Scene Studio for the active room (drop photo → style → ⚡ → approve inline)
+ *   2. Sub-view toggle: "Design Board" | "Item Selection"
+ *   3. AI Scene Studio OR Item Selection for the active room
  *
  * No catalog sidebar, no manual drag canvas. Items land in the masterlist
  * via the AI flow's Approve button — the scene is a by-product. If a designer
@@ -24,6 +27,7 @@ export default function RoomDesigner({ project, onUpdate }: Props) {
   const [selectedRoomId, setSelectedRoomId] = useState<string>(
     () => project.rooms[0]?.id ?? ""
   );
+  const [subView, setSubView] = useState<"design" | "items">("design");
 
   // If current room is deleted elsewhere, fall back to first room
   useEffect(() => {
@@ -47,6 +51,11 @@ export default function RoomDesigner({ project, onUpdate }: Props) {
   const floors = Array.from(new Set(project.rooms.map((r) => r.floor))).sort(
     (a, b) => a - b
   );
+
+  // Compute lock-in stats for the active room
+  const roomFurniture = room.furniture ?? [];
+  const lockedCount = roomFurniture.filter(f => f.lockedIn).length;
+  const totalItems = roomFurniture.length;
 
   return (
     <div>
@@ -76,8 +85,54 @@ export default function RoomDesigner({ project, onUpdate }: Props) {
         })}
       </div>
 
-      {/* The one and only working surface per room */}
-      <AiSceneStudio key={room.id} project={project} room={room} onUpdate={onUpdate} />
+      {/* Sub-view toggle: Design Board | Item Selection */}
+      {totalItems > 0 && (
+        <div className="flex items-center gap-1 mb-4 p-1 bg-brand-900/[0.03] rounded-lg w-fit">
+          <button
+            onClick={() => setSubView("design")}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+              subView === "design"
+                ? "bg-white text-brand-900 shadow-sm"
+                : "text-brand-600 hover:text-brand-900"
+            }`}
+          >
+            Design Board
+          </button>
+          <button
+            onClick={() => setSubView("items")}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+              subView === "items"
+                ? "bg-white text-brand-900 shadow-sm"
+                : "text-brand-600 hover:text-brand-900"
+            }`}
+          >
+            Item Selection
+            {totalItems > 0 && (
+              <span className={`text-[10px] rounded-full px-1.5 py-0.5 ${
+                lockedCount === totalItems
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}>
+                {lockedCount}/{totalItems}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Active surface */}
+      {subView === "design" ? (
+        <>
+          <TabHelp tabId="design-board" title="How the Design Board works">
+            Drop a photo of your room. Pick a style. Click the magic button.
+            The AI makes a picture of your room with furniture. Then click
+            "Extract Items" to put each piece on the board. You can move them around.
+          </TabHelp>
+          <AiSceneStudio key={room.id} project={project} room={room} onUpdate={onUpdate} />
+        </>
+      ) : (
+        <ItemSelection key={`items-${room.id}`} project={project} room={room} onUpdate={onUpdate} />
+      )}
     </div>
   );
 }
