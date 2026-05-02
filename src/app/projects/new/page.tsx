@@ -56,6 +56,11 @@ export default function NewProjectPage() {
   // Unit toggle for room dimensions display/input
   const [dimUnit, setDimUnit] = useState<DimUnit>("ft");
 
+  // Floor plan preview state
+  const [previewPlan, setPreviewPlan] = useState<string | null>(null);
+  const [planZoom, setPlanZoom] = useState(1);
+  const [activePlanIdx, setActivePlanIdx] = useState(0);
+
   const MAX_UPLOAD_MB = 3;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
@@ -848,6 +853,120 @@ export default function NewProjectPage() {
                 </div>
               </details>
             </section>
+
+            {/* Floor Plan Reference (zoomable) */}
+            {floorPlanFiles.length > 0 && (
+              <section className="card">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider">
+                    Floor Plan Reference
+                  </h2>
+                  <p className="text-[10px] text-brand-600/60">Click to zoom in and verify dimensions</p>
+                </div>
+
+                {/* Thumbnails */}
+                <div className="flex gap-3 mb-3">
+                  {floorPlanFiles.map((f, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => { setActivePlanIdx(i); setPreviewPlan(f.preview); setPlanZoom(1); }}
+                      className={`relative rounded-lg border-2 overflow-hidden transition ${
+                        activePlanIdx === i ? "border-amber" : "border-brand-900/10 hover:border-amber/40"
+                      }`}
+                    >
+                      {f.preview ? (
+                        <img src={f.preview} alt="" className="w-20 h-14 object-cover" />
+                      ) : (
+                        <div className="w-20 h-14 flex items-center justify-center bg-brand-900/5 text-[10px] text-brand-600">PDF</div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Inline preview */}
+                {floorPlanFiles[activePlanIdx]?.preview && (
+                  <div className="relative rounded-xl border border-brand-900/10 overflow-hidden bg-white">
+                    {/* Zoom controls */}
+                    <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/90 backdrop-blur rounded-lg border border-brand-900/10 px-2 py-1">
+                      <button
+                        type="button"
+                        onClick={() => setPlanZoom(z => Math.max(0.5, z - 0.25))}
+                        className="w-6 h-6 flex items-center justify-center text-brand-900 hover:bg-brand-900/5 rounded text-sm font-bold"
+                      >
+                        &minus;
+                      </button>
+                      <span className="text-[10px] text-brand-600 w-10 text-center">{(planZoom * 100).toFixed(0)}%</span>
+                      <button
+                        type="button"
+                        onClick={() => setPlanZoom(z => Math.min(3, z + 0.25))}
+                        className="w-6 h-6 flex items-center justify-center text-brand-900 hover:bg-brand-900/5 rounded text-sm font-bold"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewPlan(floorPlanFiles[activePlanIdx].preview)}
+                        className="ml-1 w-6 h-6 flex items-center justify-center text-brand-900 hover:bg-brand-900/5 rounded text-xs"
+                        title="Full screen"
+                      >
+                        &#x26F6;
+                      </button>
+                    </div>
+                    {/* Scrollable image container */}
+                    <div className="overflow-auto max-h-[400px] cursor-grab active:cursor-grabbing">
+                      <img
+                        src={floorPlanFiles[activePlanIdx].preview}
+                        alt="Floor plan"
+                        className="block mx-auto transition-transform"
+                        style={{ transform: `scale(${planZoom})`, transformOrigin: "top left", maxWidth: "none", width: planZoom <= 1 ? "100%" : undefined }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Full-screen floor plan overlay */}
+            {previewPlan && (
+              <div className="fixed inset-0 z-50 bg-black/80 flex flex-col" onClick={() => setPreviewPlan(null)}>
+                <div className="flex items-center justify-between px-4 py-3 bg-black/60" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-sm text-white/80">Floor Plan — pinch or scroll to zoom</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPlanZoom(z => Math.max(0.5, z - 0.25))}
+                      className="w-7 h-7 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 rounded text-sm font-bold"
+                    >
+                      &minus;
+                    </button>
+                    <span className="text-xs text-white/70 w-10 text-center">{(planZoom * 100).toFixed(0)}%</span>
+                    <button
+                      type="button"
+                      onClick={() => setPlanZoom(z => Math.min(4, z + 0.25))}
+                      className="w-7 h-7 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 rounded text-sm font-bold"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPlan(null)}
+                      className="ml-3 w-7 h-7 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 rounded text-lg"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto flex items-start justify-center p-4" onClick={(e) => e.stopPropagation()}>
+                  <img
+                    src={previewPlan}
+                    alt="Floor plan full view"
+                    className="transition-transform"
+                    style={{ transform: `scale(${planZoom})`, transformOrigin: "top center", maxWidth: "none" }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Room List */}
             <section className="card">
