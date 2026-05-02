@@ -132,6 +132,34 @@ export default function NewProjectPage() {
 
   // ── Floor Plan Extraction ──────────────────────────────────────────────
 
+  /** Resize an image data URL to max 1500px on longest side for API calls */
+  function resizeForVision(dataUrl: string, maxPx = 1500): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        // If already small enough, return as-is
+        if (width <= maxPx && height <= maxPx) {
+          resolve(dataUrl);
+          return;
+        }
+        const scale = maxPx / Math.max(width, height);
+        const w = Math.round(width * scale);
+        const h = Math.round(height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        // Use JPEG for smaller payload (floor plans are mostly black/white)
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
   async function extractRoomsFromFloorPlans(): Promise<Room[]> {
     if (floorPlanFiles.length === 0) return [];
 
@@ -173,33 +201,44 @@ export default function NewProjectPage() {
       if (rooms.length === 0 && file.type.startsWith("image/") && !isSvg) {
         // GPT Vision path — reliable extraction from PNG/JPG floor plans
         try {
+          // Resize to reduce payload size (GPT vision doesn't need full res)
+          const resizedDataUrl = await resizeForVision(dataUrl, 1500);
+          console.log("[FloorPlan] Sending to /api/extract-floorplan, payload size:", Math.round(resizedDataUrl.length / 1024), "KB");
           const res = await fetch("/api/extract-floorplan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageDataUrl: dataUrl }),
+            body: JSON.stringify({ imageDataUrl: resizedDataUrl }),
           });
-          const result = await res.json();
-          if (result.ok && result.rooms?.length > 0) {
-            const M_TO_FT_CONV = 3.28084;
-            for (const r of result.rooms as { name: string; type: string; widthM: number; lengthM: number; floor: number }[]) {
-              rooms.push({
-                id: generateId(),
-                name: r.name,
-                type: (r.type || "bedroom") as Room["type"],
-                widthFt: Math.round(r.widthM * M_TO_FT_CONV * 10) / 10,
-                lengthFt: Math.round(r.lengthM * M_TO_FT_CONV * 10) / 10,
-                ceilingHeightFt: 9,
-                floor: r.floor || 1,
-                features: [],
-                selectedBedConfig: null,
-                furniture: [],
-                accentWall: null,
-                notes: "",
-              });
+          if (!res.ok) {
+            console.error("[FloorPlan] API returned status:", res.status, await res.text());
+          } else {
+            const result = await res.json();
+            console.log("[FloorPlan] API response:", result);
+            if (result.ok && result.rooms?.length > 0) {
+              const M_TO_FT_CONV = 3.28084;
+              for (const r of result.rooms as { name: string; type: string; widthM: number; lengthM: number; floor: number }[]) {
+                rooms.push({
+                  id: generateId(),
+                  name: r.name,
+                  type: (r.type || "bedroom") as Room["type"],
+                  widthFt: Math.round(r.widthM * M_TO_FT_CONV * 10) / 10,
+                  lengthFt: Math.round(r.lengthM * M_TO_FT_CONV * 10) / 10,
+                  ceilingHeightFt: 9,
+                  floor: r.floor || 1,
+                  features: [],
+                  selectedBedConfig: null,
+                  furniture: [],
+                  accentWall: null,
+                  notes: "",
+                });
+              }
+              note = `Extracted ${result.rooms.length} rooms via AI vision (${result.unit || "m"}) — please verify dimensions.`;
+            } else {
+              console.warn("[FloorPlan] API returned ok but no rooms:", result);
             }
-            note = `Extracted ${result.rooms.length} rooms via AI vision (${result.unit || "m"}) — please verify dimensions.`;
           }
-        } catch {
+        } catch (err) {
+          console.error("[FloorPlan] Extraction error:", err);
           // Extraction failed, will fall back to heuristic
         }
       }
@@ -224,6 +263,8 @@ export default function NewProjectPage() {
     setGenerating(true);
 
     try {
+      let finalRooms: Room[] = [];
+
       // Try to scrape listing if URL provided
       const urlToScrape = listingUrl.trim() || matterportUrl.trim();
       if (urlToScrape) {
@@ -269,17 +310,18 @@ export default function NewProjectPage() {
             }));
           }
 
-          // Generate room list from scraped data (fallback if floor plan extraction doesn't work)
-          const heuristicRooms = generateRoomList(data.bedrooms || project.property.bedrooms, data.bathrooms || project.property.bathrooms);
-          setGeneratedRooms(heuristicRooms);
+          // Generate heuristic rooms as fallback
+          finalRooms = generateRoomList(data.bedrooms || project.property.bedrooms, data.bathrooms || project.property.bathrooms);
         }
       }
 
       // Try floor plan extraction — overrides heuristic rooms if successful
       if (floorPlanFiles.length > 0) {
+        console.log("[FloorPlan] Starting extraction for", floorPlanFiles.length, "files");
         const extractedRooms = await extractRoomsFromFloorPlans();
+        console.log("[FloorPlan] Extracted rooms:", extractedRooms.length);
         if (extractedRooms.length > 0) {
-          setGeneratedRooms(extractedRooms);
+          finalRooms = extractedRooms;
           // Update bed/bath/floor counts from extracted rooms
           const bedCount = extractedRooms.filter(r =>
             ["primary-bedroom", "bedroom", "loft", "bonus-room"].includes(r.type)
@@ -299,10 +341,11 @@ export default function NewProjectPage() {
       }
 
       // If nothing produced rooms, generate from form values
-      if (generatedRooms.length === 0) {
-        const rooms = generateRoomList(project.property.bedrooms, project.property.bathrooms);
-        setGeneratedRooms(rooms);
+      if (finalRooms.length === 0) {
+        finalRooms = generateRoomList(project.property.bedrooms, project.property.bathrooms);
       }
+
+      setGeneratedRooms(finalRooms);
 
       // Store matterport link
       if (matterportUrl.trim()) {

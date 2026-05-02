@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Allow longer execution for vision API calls
+export const maxDuration = 30;
+
 /**
  * POST /api/extract-floorplan
  *
