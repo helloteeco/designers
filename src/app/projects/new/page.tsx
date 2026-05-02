@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createEmptyProject, saveProject, logActivity, generateId } from "@/lib/store";
 import { TEMPLATES } from "@/lib/project-templates";
+import { detectRoomsFromImage, type DetectedRoom } from "@/lib/floor-plan-ocr";
+import { detectRoomsFromSvg, detectRoomsFromSvgDetailed, isSvgSource, readSvgText } from "@/lib/floor-plan-svg";
 import type { DesignStyle, Room, ProjectType, FloorPlan } from "@/lib/types";
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -28,7 +30,11 @@ const V1_PROJECT_TYPES: { value: ProjectType; label: string; desc: string }[] = 
   { value: "full-redesign", label: "Airbnb-Ready Refresh", desc: "Light updates + full furnishing." },
 ];
 
+const M_TO_FT = 3.28084;
+const FT_TO_M = 1 / M_TO_FT;
+
 type FlowStep = "import" | "confirm";
+type DimUnit = "ft" | "m";
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -45,6 +51,10 @@ export default function NewProjectPage() {
   // Generation state
   const [generating, setGenerating] = useState(false);
   const [generatedRooms, setGeneratedRooms] = useState<Room[]>([]);
+  const [extractionNote, setExtractionNote] = useState("");
+
+  // Unit toggle for room dimensions display/input
+  const [dimUnit, setDimUnit] = useState<DimUnit>("ft");
 
   const MAX_UPLOAD_MB = 3;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
@@ -75,6 +85,23 @@ export default function NewProjectPage() {
     });
   }
 
+  /** Convert feet to display unit */
+  function ftToDisplay(ft: number): number {
+    if (dimUnit === "m") return Math.round(ft * FT_TO_M * 100) / 100;
+    return ft;
+  }
+
+  /** Convert display unit input back to feet for storage */
+  function displayToFt(val: number): number {
+    if (dimUnit === "m") return Math.round(val * M_TO_FT * 10) / 10;
+    return val;
+  }
+
+  /** Unit label */
+  function unitLabel(): string {
+    return dimUnit === "m" ? "m" : "ft";
+  }
+
   async function handleFloorPlanFiles(files: FileList | File[]) {
     const arr = Array.from(files).filter(
       (f) => (f.type.startsWith("image/") || f.type === "application/pdf") && f.size <= MAX_UPLOAD_BYTES
@@ -88,16 +115,87 @@ export default function NewProjectPage() {
     setFloorPlanFiles((prev) => [...prev, ...withPreviews]);
   }
 
+  // ── Floor Plan Extraction ──────────────────────────────────────────────
+
+  async function extractRoomsFromFloorPlans(): Promise<Room[]> {
+    if (floorPlanFiles.length === 0) return [];
+
+    const rooms: Room[] = [];
+    let note = "";
+
+    for (const { file, preview } of floorPlanFiles) {
+      const dataUrl = preview || await fileToDataUrl(file);
+      const isSvg = file.type === "image/svg+xml" || isSvgSource(dataUrl);
+
+      if (isSvg) {
+        // SVG path — exact, no OCR needed
+        try {
+          const result = await detectRoomsFromSvgDetailed(dataUrl);
+          for (const r of result.rooms) {
+            rooms.push({
+              id: generateId(),
+              name: r.label,
+              type: r.guessedType,
+              widthFt: r.widthFt,
+              lengthFt: r.lengthFt,
+              ceilingHeightFt: 9,
+              floor: r.floor ?? 1,
+              features: [],
+              selectedBedConfig: null,
+              furniture: [],
+              accentWall: null,
+              notes: "",
+            });
+          }
+          if (result.rooms.length > 0) {
+            note = `Extracted ${result.rooms.length} rooms from SVG floor plan (exact).`;
+          }
+        } catch {
+          // Fall through to OCR
+        }
+      }
+
+      if (rooms.length === 0 && file.type.startsWith("image/") && !isSvg) {
+        // OCR path — approximate
+        try {
+          const detected: DetectedRoom[] = await detectRoomsFromImage(dataUrl, () => {});
+          for (const r of detected) {
+            rooms.push({
+              id: generateId(),
+              name: r.label,
+              type: r.guessedType,
+              widthFt: r.widthFt,
+              lengthFt: r.lengthFt,
+              ceilingHeightFt: 9,
+              floor: 1,
+              features: [],
+              selectedBedConfig: null,
+              furniture: [],
+              accentWall: null,
+              notes: "",
+            });
+          }
+          if (detected.length > 0) {
+            note = `Extracted ${detected.length} rooms via OCR — please verify dimensions.`;
+          }
+        } catch {
+          // Extraction failed, will fall back to heuristic
+        }
+      }
+    }
+
+    setExtractionNote(note);
+    return rooms;
+  }
+
   // ── Generate Project Draft ──────────────────────────────────────────────
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    // Validate minimum input
+    // Allow manual creation even without any import asset
     if (!listingUrl.trim() && !matterportUrl.trim() && floorPlanFiles.length === 0) {
-      // Allow manual creation even without any import asset
-      // Just go to confirm step with empty rooms
       setStep("confirm");
       return;
     }
@@ -116,7 +214,6 @@ export default function NewProjectPage() {
         const data = await res.json();
 
         if (data.ok) {
-          // Auto-fill property details from scrape
           if (data.title && !project.name) {
             setProject(prev => ({ ...prev, name: data.title }));
           }
@@ -151,13 +248,36 @@ export default function NewProjectPage() {
             }));
           }
 
-          // Generate room list from scraped data
-          const rooms = generateRoomList(data.bedrooms || project.property.bedrooms, data.bathrooms || project.property.bathrooms);
-          setGeneratedRooms(rooms);
+          // Generate room list from scraped data (fallback if floor plan extraction doesn't work)
+          const heuristicRooms = generateRoomList(data.bedrooms || project.property.bedrooms, data.bathrooms || project.property.bathrooms);
+          setGeneratedRooms(heuristicRooms);
         }
       }
 
-      // If no scrape or scrape didn't return bed/bath, generate from form values
+      // Try floor plan extraction — overrides heuristic rooms if successful
+      if (floorPlanFiles.length > 0) {
+        const extractedRooms = await extractRoomsFromFloorPlans();
+        if (extractedRooms.length > 0) {
+          setGeneratedRooms(extractedRooms);
+          // Update bed/bath/floor counts from extracted rooms
+          const bedCount = extractedRooms.filter(r =>
+            ["primary-bedroom", "bedroom", "loft", "bonus-room"].includes(r.type)
+          ).length;
+          const bathCount = extractedRooms.filter(r => r.type === "bathroom").length;
+          const floorCount = Math.max(...extractedRooms.map(r => r.floor), 1);
+          setProject(prev => ({
+            ...prev,
+            property: {
+              ...prev.property,
+              bedrooms: bedCount || prev.property.bedrooms,
+              bathrooms: bathCount || prev.property.bathrooms,
+              floors: floorCount,
+            },
+          }));
+        }
+      }
+
+      // If nothing produced rooms, generate from form values
       if (generatedRooms.length === 0) {
         const rooms = generateRoomList(project.property.bedrooms, project.property.bathrooms);
         setGeneratedRooms(rooms);
@@ -184,7 +304,6 @@ export default function NewProjectPage() {
   function generateRoomList(bedrooms: number, bathrooms: number): Room[] {
     const rooms: Room[] = [];
 
-    // Always add living room + kitchen + dining
     rooms.push({
       id: generateId(),
       name: "Living Room",
@@ -228,7 +347,6 @@ export default function NewProjectPage() {
       notes: "",
     });
 
-    // Add bedrooms
     const bedroomCount = Math.max(bedrooms || 2, 1);
     for (let i = 0; i < bedroomCount; i++) {
       const isPrimary = i === 0;
@@ -248,7 +366,6 @@ export default function NewProjectPage() {
       });
     }
 
-    // Add bathrooms
     const bathroomCount = Math.max(bathrooms || 1, 1);
     for (let i = 0; i < bathroomCount; i++) {
       rooms.push({
@@ -267,7 +384,6 @@ export default function NewProjectPage() {
       });
     }
 
-    // Add outdoor space if 3+ bedrooms (likely a vacation property)
     if (bedroomCount >= 3) {
       rooms.push({
         id: generateId(),
@@ -313,6 +429,11 @@ export default function NewProjectPage() {
 
   function updateRoomName(id: string, name: string) {
     setGeneratedRooms(prev => prev.map(r => r.id === id ? { ...r, name } : r));
+  }
+
+  function updateRoomDimension(id: string, field: "widthFt" | "lengthFt", displayValue: number) {
+    const ftValue = displayToFt(displayValue);
+    setGeneratedRooms(prev => prev.map(r => r.id === id ? { ...r, [field]: ftValue } : r));
   }
 
   // ── Template shortcut ───────────────────────────────────────────────────
@@ -589,6 +710,12 @@ export default function NewProjectPage() {
               </div>
             )}
 
+            {extractionNote && (
+              <div className="rounded-lg bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-700">
+                {extractionNote}
+              </div>
+            )}
+
             {/* Property Basics */}
             <section className="card">
               <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider mb-4">
@@ -728,13 +855,40 @@ export default function NewProjectPage() {
                 <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider">
                   Rooms ({generatedRooms.length})
                 </h2>
-                <button
-                  type="button"
-                  onClick={addRoom}
-                  className="text-xs text-amber-dark hover:text-brand-900 font-medium transition"
-                >
-                  + Add Room
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* ft / m toggle */}
+                  <div className="flex items-center rounded-lg border border-brand-900/10 overflow-hidden text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setDimUnit("ft")}
+                      className={`px-2.5 py-1 transition font-medium ${
+                        dimUnit === "ft"
+                          ? "bg-brand-900 text-white"
+                          : "text-brand-600 hover:bg-brand-900/5"
+                      }`}
+                    >
+                      ft
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDimUnit("m")}
+                      className={`px-2.5 py-1 transition font-medium ${
+                        dimUnit === "m"
+                          ? "bg-brand-900 text-white"
+                          : "text-brand-600 hover:bg-brand-900/5"
+                      }`}
+                    >
+                      m
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addRoom}
+                    className="text-xs text-amber-dark hover:text-brand-900 font-medium transition"
+                  >
+                    + Add Room
+                  </button>
+                </div>
               </div>
 
               {generatedRooms.length === 0 ? (
@@ -749,7 +903,7 @@ export default function NewProjectPage() {
                       key={room.id}
                       className="flex items-center gap-3 rounded-lg border border-brand-900/10 px-4 py-2.5 group"
                     >
-                      <span className="text-xs text-brand-600/60 uppercase tracking-wider w-24 shrink-0">
+                      <span className="text-[9px] text-brand-600/60 uppercase tracking-wider w-20 shrink-0">
                         {room.type.replace(/-/g, " ")}
                       </span>
                       <input
@@ -757,9 +911,32 @@ export default function NewProjectPage() {
                         value={room.name}
                         onChange={(e) => updateRoomName(room.id, e.target.value)}
                       />
-                      <span className="text-[10px] text-brand-600/60">
-                        {room.widthFt}&times;{room.lengthFt} ft
-                      </span>
+                      {/* Editable dimensions */}
+                      <div className="flex items-center gap-1 text-[11px] text-brand-600">
+                        <input
+                          type="number"
+                          className="w-12 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40"
+                          value={ftToDisplay(room.widthFt)}
+                          onChange={(e) => updateRoomDimension(room.id, "widthFt", parseFloat(e.target.value) || 0)}
+                          step={dimUnit === "m" ? 0.1 : 1}
+                          min={0}
+                        />
+                        <span>&times;</span>
+                        <input
+                          type="number"
+                          className="w-12 text-center bg-brand-900/5 rounded px-1 py-0.5 border-none outline-none focus:ring-1 focus:ring-amber/40"
+                          value={ftToDisplay(room.lengthFt)}
+                          onChange={(e) => updateRoomDimension(room.id, "lengthFt", parseFloat(e.target.value) || 0)}
+                          step={dimUnit === "m" ? 0.1 : 1}
+                          min={0}
+                        />
+                        <span className="text-[9px] text-brand-600/50">{unitLabel()}</span>
+                      </div>
+                      {room.floor > 1 && (
+                        <span className="text-[9px] text-brand-600/50 bg-brand-900/5 rounded px-1.5 py-0.5">
+                          F{room.floor}
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeRoom(room.id)}

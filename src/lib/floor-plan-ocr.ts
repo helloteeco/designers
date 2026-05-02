@@ -37,6 +37,11 @@ const DIMENSION_RE = new RegExp(
   "g"
 );
 
+// Metric: 2.63 m x 5.92 m  |  2.63m × 5.92m  |  2.63 m X 5.92 m
+const METRIC_DIMENSION_RE = /(\d+(?:\.\d+)?)\s*m\s*[x×X]\s*(\d+(?:\.\d+)?)\s*m/g;
+
+const M_TO_FT = 3.28084;
+
 // ── Room-type vocabulary ──
 // Order matters — more specific keywords come first so "primary bathroom"
 // matches before generic "bathroom", and "walk-in closet / w.i.c" matches
@@ -255,7 +260,24 @@ function parseRoomLine(text: string): { label: string; widthFt: number; lengthFt
   return { label: pretty, widthFt: dim.widthFt, lengthFt: dim.lengthFt };
 }
 
-export function parseDimensionOnly(text: string): { widthFt: number; lengthFt: number } | null {
+export function parseDimensionOnly(text: string): { widthFt: number; lengthFt: number; sourceUnit: "ft" | "m" } | null {
+  // Try metric first (more specific pattern — requires "m" suffix)
+  METRIC_DIMENSION_RE.lastIndex = 0;
+  const metricMatch = METRIC_DIMENSION_RE.exec(text);
+  if (metricMatch) {
+    const wM = parseFloat(metricMatch[1]);
+    const lM = parseFloat(metricMatch[2]);
+    // Sanity: residential rooms 1m–20m
+    if (wM >= 1 && wM <= 20 && lM >= 1 && lM <= 20) {
+      return {
+        widthFt: Math.round(wM * M_TO_FT * 10) / 10,
+        lengthFt: Math.round(lM * M_TO_FT * 10) / 10,
+        sourceUnit: "m",
+      };
+    }
+  }
+
+  // Fall back to imperial (feet + optional inches)
   DIMENSION_RE.lastIndex = 0;
   const match = DIMENSION_RE.exec(text);
   if (!match) return null;
@@ -274,6 +296,7 @@ export function parseDimensionOnly(text: string): { widthFt: number; lengthFt: n
   return {
     widthFt: Math.round(width * 10) / 10,
     lengthFt: Math.round(length * 10) / 10,
+    sourceUnit: "ft",
   };
 }
 
