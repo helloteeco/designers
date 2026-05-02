@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createEmptyProject, saveProject, logActivity, generateId } from "@/lib/store";
 import { TEMPLATES } from "@/lib/project-templates";
 import type { DesignStyle, Room, ProjectType, FloorPlan } from "@/lib/types";
 
-// ── Styles (kept for later in the flow) ─────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────
 const STYLES: { value: DesignStyle; label: string }[] = [
   { value: "modern", label: "Modern" },
   { value: "farmhouse", label: "Farmhouse" },
@@ -23,46 +23,28 @@ const STYLES: { value: DesignStyle; label: string }[] = [
   { value: "traditional", label: "Traditional" },
 ];
 
-// V1 project types — focused on furnishing only
 const V1_PROJECT_TYPES: { value: ProjectType; label: string; desc: string }[] = [
-  { value: "furnish-only", label: "Furnish Only", desc: "Property is move-in ready. Just need furniture and decor." },
-  { value: "full-redesign", label: "Airbnb-Ready Refresh", desc: "Light updates + full furnishing plan for STR launch." },
+  { value: "furnish-only", label: "Furnish Only", desc: "Move-in ready. Just furniture + decor." },
+  { value: "full-redesign", label: "Airbnb-Ready Refresh", desc: "Light updates + full furnishing." },
 ];
 
-type EntryMode = null | "link" | "upload" | "manual";
-type FlowStep = "choose" | "link-input" | "upload-input" | "details";
+type FlowStep = "import" | "confirm";
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [project, setProject] = useState(() => createEmptyProject());
   const [error, setError] = useState("");
-  const [entryMode, setEntryMode] = useState<EntryMode>(null);
-  const [step, setStep] = useState<FlowStep>("choose");
+  const [step, setStep] = useState<FlowStep>("import");
 
-  // Link-based flow
+  // Import fields
   const [listingUrl, setListingUrl] = useState("");
-  const [scraping, setScraping] = useState(false);
-  const [scrapeResult, setScrapeResult] = useState<{
-    ok: boolean;
-    reason?: string;
-    title?: string;
-    address?: string;
-    bedrooms?: number;
-    bathrooms?: number;
-    sqft?: number;
-    galleryImages?: string[];
-    floorPlanImages?: string[];
-    matterportModelId?: string;
-  } | null>(null);
-
-  // Upload-based flow
+  const [matterportUrl, setMatterportUrl] = useState("");
   const [floorPlanFiles, setFloorPlanFiles] = useState<{ file: File; preview: string }[]>([]);
-  const [roomPhotoFiles, setRoomPhotoFiles] = useState<{ file: File; preview: string }[]>([]);
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
-  const roomPhotoInputRef = useRef<HTMLInputElement>(null);
 
-  // Template recommendation (shown after project skeleton is built)
-  const [showTemplateRec, setShowTemplateRec] = useState(false);
+  // Generation state
+  const [generating, setGenerating] = useState(false);
+  const [generatedRooms, setGeneratedRooms] = useState<Room[]>([]);
 
   const MAX_UPLOAD_MB = 3;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
@@ -93,43 +75,6 @@ export default function NewProjectPage() {
     });
   }
 
-  // ── Option A: Paste Link ────────────────────────────────────────────────
-
-  async function handleScrapeListing() {
-    if (!listingUrl.trim()) return;
-    setScraping(true);
-    setScrapeResult(null);
-    try {
-      const res = await fetch("/api/scrape-listing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: listingUrl.trim() }),
-      });
-      const data = await res.json();
-      setScrapeResult(data);
-
-      // Auto-populate project from scraped data
-      if (data.title) update("name", data.title);
-      if (data.address) update("property.address", data.address);
-      if (data.matterportModelId) update("property.matterportModelId", data.matterportModelId);
-      if (data.bedrooms) update("property.bedrooms", data.bedrooms);
-      if (data.bathrooms) update("property.bathrooms", data.bathrooms);
-      if (data.sqft) update("property.squareFootage", data.sqft);
-
-      // If scrape succeeded, move to details step
-      if (data.ok) {
-        setStep("details");
-        setShowTemplateRec(true);
-      }
-    } catch {
-      setScrapeResult({ ok: false, reason: "Network error. Try uploading files directly." });
-    } finally {
-      setScraping(false);
-    }
-  }
-
-  // ── Option B: Upload ────────────────────────────────────────────────────
-
   async function handleFloorPlanFiles(files: FileList | File[]) {
     const arr = Array.from(files).filter(
       (f) => (f.type.startsWith("image/") || f.type === "application/pdf") && f.size <= MAX_UPLOAD_BYTES
@@ -143,25 +88,234 @@ export default function NewProjectPage() {
     setFloorPlanFiles((prev) => [...prev, ...withPreviews]);
   }
 
-  async function handleRoomPhotoFiles(files: FileList | File[]) {
-    const arr = Array.from(files).filter(
-      (f) => f.type.startsWith("image/") && f.size <= MAX_UPLOAD_BYTES
-    );
-    const withPreviews = await Promise.all(
-      arr.map(async (file) => ({
-        file,
-        preview: await fileToDataUrl(file),
-      }))
-    );
-    setRoomPhotoFiles((prev) => [...prev, ...withPreviews]);
+  // ── Generate Project Draft ──────────────────────────────────────────────
+
+  async function handleGenerate(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    // Validate minimum input
+    if (!listingUrl.trim() && !matterportUrl.trim() && floorPlanFiles.length === 0) {
+      // Allow manual creation even without any import asset
+      // Just go to confirm step with empty rooms
+      setStep("confirm");
+      return;
+    }
+
+    setGenerating(true);
+
+    try {
+      // Try to scrape listing if URL provided
+      const urlToScrape = listingUrl.trim() || matterportUrl.trim();
+      if (urlToScrape) {
+        const res = await fetch("/api/scrape-listing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: urlToScrape }),
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          // Auto-fill property details from scrape
+          if (data.title && !project.name) {
+            setProject(prev => ({ ...prev, name: data.title }));
+          }
+          if (data.address) {
+            setProject(prev => ({
+              ...prev,
+              property: { ...prev.property, address: data.address },
+            }));
+          }
+          if (data.bedrooms) {
+            setProject(prev => ({
+              ...prev,
+              property: { ...prev.property, bedrooms: data.bedrooms },
+            }));
+          }
+          if (data.bathrooms) {
+            setProject(prev => ({
+              ...prev,
+              property: { ...prev.property, bathrooms: data.bathrooms },
+            }));
+          }
+          if (data.sqft) {
+            setProject(prev => ({
+              ...prev,
+              property: { ...prev.property, squareFootage: data.sqft },
+            }));
+          }
+          if (data.matterportModelId) {
+            setProject(prev => ({
+              ...prev,
+              property: { ...prev.property, matterportModelId: data.matterportModelId },
+            }));
+          }
+
+          // Generate room list from scraped data
+          const rooms = generateRoomList(data.bedrooms || project.property.bedrooms, data.bathrooms || project.property.bathrooms);
+          setGeneratedRooms(rooms);
+        }
+      }
+
+      // If no scrape or scrape didn't return bed/bath, generate from form values
+      if (generatedRooms.length === 0) {
+        const rooms = generateRoomList(project.property.bedrooms, project.property.bathrooms);
+        setGeneratedRooms(rooms);
+      }
+
+      // Store matterport link
+      if (matterportUrl.trim()) {
+        setProject(prev => ({
+          ...prev,
+          property: { ...prev.property, matterportLink: matterportUrl.trim() },
+        }));
+      }
+
+      setStep("confirm");
+    } catch {
+      setError("Something went wrong extracting property data. You can still fill in details manually.");
+      setStep("confirm");
+    } finally {
+      setGenerating(false);
+    }
   }
 
-  function proceedFromUpload() {
-    setStep("details");
-    setShowTemplateRec(true);
+  /** Generate a reasonable room list from bed/bath counts */
+  function generateRoomList(bedrooms: number, bathrooms: number): Room[] {
+    const rooms: Room[] = [];
+
+    // Always add living room + kitchen + dining
+    rooms.push({
+      id: generateId(),
+      name: "Living Room",
+      type: "living-room",
+      widthFt: 18,
+      lengthFt: 16,
+      ceilingHeightFt: 9,
+      floor: 1,
+      features: ["Window"],
+      selectedBedConfig: null,
+      furniture: [],
+      accentWall: null,
+      notes: "",
+    });
+    rooms.push({
+      id: generateId(),
+      name: "Kitchen",
+      type: "kitchen",
+      widthFt: 14,
+      lengthFt: 12,
+      ceilingHeightFt: 9,
+      floor: 1,
+      features: [],
+      selectedBedConfig: null,
+      furniture: [],
+      accentWall: null,
+      notes: "",
+    });
+    rooms.push({
+      id: generateId(),
+      name: "Dining Area",
+      type: "dining-room",
+      widthFt: 12,
+      lengthFt: 10,
+      ceilingHeightFt: 9,
+      floor: 1,
+      features: [],
+      selectedBedConfig: null,
+      furniture: [],
+      accentWall: null,
+      notes: "",
+    });
+
+    // Add bedrooms
+    const bedroomCount = Math.max(bedrooms || 2, 1);
+    for (let i = 0; i < bedroomCount; i++) {
+      const isPrimary = i === 0;
+      rooms.push({
+        id: generateId(),
+        name: isPrimary ? "Primary Suite" : `Bedroom ${i + 1}`,
+        type: isPrimary ? "primary-bedroom" : "bedroom",
+        widthFt: isPrimary ? 14 : 12,
+        lengthFt: isPrimary ? 14 : 12,
+        ceilingHeightFt: 9,
+        floor: bedroomCount > 3 && i >= 2 ? 2 : 1,
+        features: isPrimary ? ["En-suite", "Closet", "Window"] : ["Closet", "Window"],
+        selectedBedConfig: null,
+        furniture: [],
+        accentWall: null,
+        notes: "",
+      });
+    }
+
+    // Add bathrooms
+    const bathroomCount = Math.max(bathrooms || 1, 1);
+    for (let i = 0; i < bathroomCount; i++) {
+      rooms.push({
+        id: generateId(),
+        name: i === 0 ? "Primary Bathroom" : `Bathroom ${i + 1}`,
+        type: "bathroom",
+        widthFt: i === 0 ? 10 : 8,
+        lengthFt: i === 0 ? 8 : 6,
+        ceilingHeightFt: 9,
+        floor: 1,
+        features: [],
+        selectedBedConfig: null,
+        furniture: [],
+        accentWall: null,
+        notes: "",
+      });
+    }
+
+    // Add outdoor space if 3+ bedrooms (likely a vacation property)
+    if (bedroomCount >= 3) {
+      rooms.push({
+        id: generateId(),
+        name: "Outdoor Deck",
+        type: "outdoor",
+        widthFt: 16,
+        lengthFt: 12,
+        ceilingHeightFt: 10,
+        floor: 1,
+        features: [],
+        selectedBedConfig: null,
+        furniture: [],
+        accentWall: null,
+        notes: "",
+      });
+    }
+
+    return rooms;
   }
 
-  // ── Template application ────────────────────────────────────────────────
+  // ── Room editing helpers ────────────────────────────────────────────────
+
+  function removeRoom(id: string) {
+    setGeneratedRooms(prev => prev.filter(r => r.id !== id));
+  }
+
+  function addRoom() {
+    setGeneratedRooms(prev => [...prev, {
+      id: generateId(),
+      name: "New Room",
+      type: "bedroom" as const,
+      widthFt: 12,
+      lengthFt: 12,
+      ceilingHeightFt: 9,
+      floor: 1,
+      features: [],
+      selectedBedConfig: null,
+      furniture: [],
+      accentWall: null,
+      notes: "",
+    }]);
+  }
+
+  function updateRoomName(id: string, name: string) {
+    setGeneratedRooms(prev => prev.map(r => r.id === id ? { ...r, name } : r));
+  }
+
+  // ── Template shortcut ───────────────────────────────────────────────────
 
   function applyTemplate(tpl: typeof TEMPLATES[0]) {
     const rooms: Room[] = tpl.rooms.map((r) => ({
@@ -172,13 +326,12 @@ export default function NewProjectPage() {
       accentWall: null,
       notes: "",
     }));
+    setGeneratedRooms(rooms);
     setProject((prev) => ({
       ...prev,
       name: prev.name || tpl.name,
-      projectType: "furnish-only",
       style: tpl.style,
       targetGuests: tpl.targetGuests,
-      rooms,
       property: {
         ...prev.property,
         bedrooms: tpl.rooms.filter((r) =>
@@ -188,20 +341,18 @@ export default function NewProjectPage() {
         floors: Math.max(...tpl.rooms.map((r) => r.floor), 1),
       },
     }));
-    setShowTemplateRec(false);
   }
 
-  // ── Create project ──────────────────────────────────────────────────────
+  // ── Final create ────────────────────────────────────────────────────────
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleCreate() {
     setError("");
     if (!project.name.trim()) {
       setError("Please enter a project name.");
       return;
     }
 
-    const finalProject = { ...project };
+    const finalProject = { ...project, rooms: generatedRooms };
     if (!finalProject.property.floorPlans) finalProject.property.floorPlans = [];
 
     // Attach floor plans
@@ -220,33 +371,10 @@ export default function NewProjectPage() {
       finalProject.property.floorPlans.push(plan);
     }
 
-    // Attach room photos
-    for (const { file } of roomPhotoFiles) {
-      const dataUrl = await fileToDataUrl(file);
-      const plan: FloorPlan = {
-        id: generateId(),
-        name: `Room Photo - ${file.name.replace(/\.[^.]+$/, "")}`,
-        url: dataUrl,
-        type: "image",
-        uploadedAt: new Date().toISOString(),
-        notes: "room-photo",
-        sizeBytes: file.size,
-      };
-      finalProject.property.floorPlans.push(plan);
-    }
-
-    // Store listing URL if provided
-    if (listingUrl.trim()) {
-      finalProject.property.matterportLink = finalProject.property.matterportLink || listingUrl.trim();
-    }
-
     saveProject(finalProject);
     logActivity(finalProject.id, "created", `Created project: ${finalProject.name}`);
     if (floorPlanFiles.length > 0) {
       logActivity(finalProject.id, "floor_plans_added", `Added ${floorPlanFiles.length} floor plan(s) at creation`);
-    }
-    if (roomPhotoFiles.length > 0) {
-      logActivity(finalProject.id, "room_photos_added", `Added ${roomPhotoFiles.length} room photo(s) at creation`);
     }
     router.push(`/projects/${finalProject.id}`);
   }
@@ -264,273 +392,17 @@ export default function NewProjectPage() {
           &larr; Back to Projects
         </button>
 
-        {/* ═══ STEP 1: Choose Entry Mode ═══ */}
-        {step === "choose" && (
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-brand-900 mb-2">
-              Start New Design Project
-            </h1>
-            <p className="text-sm text-brand-600 mb-8">
-              How would you like to get started?
-            </p>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              {/* Option A: Paste Link */}
-              <button
-                onClick={() => { setEntryMode("link"); setStep("link-input"); }}
-                className="card text-left p-6 hover:border-amber/60 hover:shadow-md transition group"
-              >
-                <div className="text-3xl mb-3">🔗</div>
-                <h3 className="font-semibold text-brand-900 group-hover:text-amber-dark mb-1">
-                  Paste Listing / Matterport Link
-                </h3>
-                <p className="text-xs text-brand-600">
-                  Best for speed. We&apos;ll auto-extract property info, photos, and room data.
-                </p>
-                <div className="mt-3 text-[10px] font-medium text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 inline-block">
-                  Recommended
-                </div>
-              </button>
-
-              {/* Option B: Upload */}
-              <button
-                onClick={() => { setEntryMode("upload"); setStep("upload-input"); }}
-                className="card text-left p-6 hover:border-amber/60 hover:shadow-md transition group"
-              >
-                <div className="text-3xl mb-3">📷</div>
-                <h3 className="font-semibold text-brand-900 group-hover:text-amber-dark mb-1">
-                  Upload Photos / Floor Plan
-                </h3>
-                <p className="text-xs text-brand-600">
-                  For projects without a listing. Upload what you have and we&apos;ll build from there.
-                </p>
-              </button>
-
-              {/* Option C: Manual */}
-              <button
-                onClick={() => { setEntryMode("manual"); setStep("details"); setShowTemplateRec(true); }}
-                className="card text-left p-6 hover:border-amber/60 hover:shadow-md transition group"
-              >
-                <div className="text-3xl mb-3">✏️</div>
-                <h3 className="font-semibold text-brand-900 group-hover:text-amber-dark mb-1">
-                  Start Manually
-                </h3>
-                <p className="text-xs text-brand-600">
-                  Fill in project details yourself. Good for custom or unusual properties.
-                </p>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ STEP 2A: Paste Link ═══ */}
-        {step === "link-input" && (
-          <div>
-            <h1 className="text-2xl font-bold text-brand-900 mb-2">
-              Paste Your Listing Link
-            </h1>
-            <p className="text-sm text-brand-600 mb-6">
-              Paste a real estate listing, Matterport, or property page URL. We&apos;ll extract everything we can.
-            </p>
-
-            <div className="card p-6">
-              <div className="flex gap-2">
-                <input
-                  className="input flex-1"
-                  placeholder="https://www.airbnb.com/rooms/... or Matterport link"
-                  value={listingUrl}
-                  onChange={(e) => setListingUrl(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScrapeListing(); } }}
-                />
-                <button
-                  onClick={handleScrapeListing}
-                  disabled={scraping || !listingUrl.trim()}
-                  className="btn-primary whitespace-nowrap"
-                >
-                  {scraping ? (
-                    <span className="flex items-center gap-2">
-                      <span className="inline-block h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      Extracting...
-                    </span>
-                  ) : "Extract"}
-                </button>
-              </div>
-
-              {scrapeResult && (
-                <div className={`mt-4 rounded-lg px-4 py-3 text-sm ${
-                  scrapeResult.ok
-                    ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
-                    : "bg-amber-50 border border-amber-200 text-amber-700"
-                }`}>
-                  {scrapeResult.ok ? (
-                    <div>
-                      <div className="font-semibold mb-1">Found property data:</div>
-                      <ul className="text-xs space-y-0.5">
-                        {scrapeResult.title && <li>Title: {scrapeResult.title}</li>}
-                        {scrapeResult.address && <li>Address: {scrapeResult.address}</li>}
-                        {(scrapeResult.galleryImages?.length ?? 0) > 0 && (
-                          <li>{scrapeResult.galleryImages!.length} photos extracted</li>
-                        )}
-                        {scrapeResult.matterportModelId && <li>Matterport scan detected</li>}
-                      </ul>
-                    </div>
-                  ) : (
-                    <div>
-                      {scrapeResult.reason || "Could not extract data from this URL."}
-                      <button
-                        onClick={() => { setStep("upload-input"); setEntryMode("upload"); }}
-                        className="block mt-2 text-xs underline hover:no-underline"
-                      >
-                        Try uploading photos instead
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!scrapeResult && (
-                <p className="text-xs text-brand-600/60 mt-3">
-                  Supports: Airbnb, VRBO, Zillow, Realtor, Matterport, Bluegrass, and most listing sites.
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4 flex justify-between">
-              <button onClick={() => setStep("choose")} className="btn-secondary text-sm">
-                &larr; Back
-              </button>
-              {scrapeResult?.ok && (
-                <button onClick={() => setStep("details")} className="btn-primary text-sm">
-                  Continue &rarr;
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ═══ STEP 2B: Upload Photos ═══ */}
-        {step === "upload-input" && (
-          <div>
-            <h1 className="text-2xl font-bold text-brand-900 mb-2">
-              Upload Your Property Files
-            </h1>
-            <p className="text-sm text-brand-600 mb-6">
-              Upload floor plans, room photos, or anything you have. These power the AI room detection and design generation.
-            </p>
-
-            <div className="space-y-6">
-              {/* Floor Plan Upload */}
-              <div className="card p-6">
-                <label className="label mb-3 text-sm font-semibold">Floor Plan</label>
-                <div
-                  onClick={() => floorPlanInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFloorPlanFiles(e.dataTransfer.files); }}
-                  className="border-2 border-dashed border-brand-900/20 rounded-xl p-6 text-center cursor-pointer hover:border-amber/40 transition"
-                >
-                  <div className="text-2xl mb-2">📐</div>
-                  <p className="text-sm text-brand-600">Drag &amp; drop floor plan here, or click to browse</p>
-                  <p className="text-xs text-brand-600/60 mt-1">SVG (best), PNG, JPG, or PDF — max {MAX_UPLOAD_MB}MB each</p>
-                  <input
-                    ref={floorPlanInputRef}
-                    type="file"
-                    accept="image/*,.pdf,.svg"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => { if (e.target.files) handleFloorPlanFiles(e.target.files); e.target.value = ""; }}
-                  />
-                </div>
-                {floorPlanFiles.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {floorPlanFiles.map((f, i) => (
-                      <div key={i} className="relative group">
-                        {f.preview ? (
-                          <img src={f.preview} alt={f.file.name} className="w-20 h-20 object-cover rounded-lg border border-brand-900/10" />
-                        ) : (
-                          <div className="w-20 h-20 rounded-lg border border-brand-900/10 flex items-center justify-center bg-brand-900/5 text-xs text-brand-600">PDF</div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setFloorPlanFiles((prev) => prev.filter((_, j) => j !== i))}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Room Photos Upload */}
-              <div className="card p-6">
-                <label className="label mb-3 text-sm font-semibold">Room Photos</label>
-                <div
-                  onClick={() => roomPhotoInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleRoomPhotoFiles(e.dataTransfer.files); }}
-                  className="border-2 border-dashed border-brand-900/20 rounded-xl p-6 text-center cursor-pointer hover:border-amber/40 transition"
-                >
-                  <div className="text-2xl mb-2">📷</div>
-                  <p className="text-sm text-brand-600">Drag &amp; drop room photos here, or click to browse</p>
-                  <p className="text-xs text-brand-600/60 mt-1">Photos from photographer, Matterport screenshots, etc.</p>
-                  <input
-                    ref={roomPhotoInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => { if (e.target.files) handleRoomPhotoFiles(e.target.files); e.target.value = ""; }}
-                  />
-                </div>
-                {roomPhotoFiles.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {roomPhotoFiles.map((f, i) => (
-                      <div key={i} className="relative group">
-                        <img src={f.preview} alt={f.file.name} className="w-20 h-20 object-cover rounded-lg border border-brand-900/10" />
-                        <button
-                          type="button"
-                          onClick={() => setRoomPhotoFiles((prev) => prev.filter((_, j) => j !== i))}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-between">
-              <button onClick={() => setStep("choose")} className="btn-secondary text-sm">
-                &larr; Back
-              </button>
-              <button
-                onClick={proceedFromUpload}
-                disabled={floorPlanFiles.length === 0 && roomPhotoFiles.length === 0}
-                className="btn-primary text-sm disabled:opacity-40"
-              >
-                Continue &rarr;
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ STEP 3: Project Details (all paths converge here) ═══ */}
-        {step === "details" && (
-          <form onSubmit={handleCreate} className="space-y-6">
+        {/* ═══════════════════════════════════════════════════════════════════
+            SCREEN 1: Import Property
+        ═══════════════════════════════════════════════════════════════════ */}
+        {step === "import" && (
+          <form onSubmit={handleGenerate} className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold text-brand-900 mb-1">
-                Project Details
+                New Design Project
               </h1>
               <p className="text-sm text-brand-600">
-                {entryMode === "link"
-                  ? "We pre-filled what we could. Review and adjust below."
-                  : entryMode === "upload"
-                    ? "Tell us about the property. The AI will use your uploads + these details."
-                    : "Fill in your project details below."}
+                Paste a listing or Matterport link and we&apos;ll auto-generate your project. Or fill in what you know.
               </p>
             </div>
 
@@ -540,54 +412,113 @@ export default function NewProjectPage() {
               </div>
             )}
 
-            {/* Template Recommendation */}
-            {showTemplateRec && (
-              <div className="card border-amber/30 bg-amber/5 p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-brand-900">Quick Start: Use a Template?</h3>
-                    <p className="text-xs text-brand-600 mt-0.5">
-                      Templates pre-fill rooms, dimensions, and guest capacity. You can always edit later.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowTemplateRec(false)}
-                    className="text-brand-600 hover:text-brand-900 text-sm"
-                  >
-                    &times;
-                  </button>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {TEMPLATES.filter(t =>
-                    !t.id.includes("remodel") && !t.id.includes("reno") && !t.id.includes("adu")
-                  ).slice(0, 6).map(tpl => (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      onClick={() => applyTemplate(tpl)}
-                      className="text-left rounded-lg border border-brand-900/10 p-3 hover:border-amber/40 hover:bg-amber/5 transition"
-                    >
-                      <div className="text-xs font-semibold text-brand-900">{tpl.name}</div>
-                      <div className="text-[10px] text-brand-600 mt-0.5">{tpl.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Project Info */}
+            {/* Import Section */}
             <section className="card">
-              <h2 className="text-lg font-semibold mb-4">Project Info</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="label">Project Name</label>
+              <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider mb-4">
+                Import Property
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Listing URL</label>
                   <input
                     className="input"
-                    placeholder='e.g., "Lakehouse Retreat Design"'
-                    value={project.name}
-                    onChange={(e) => update("name", e.target.value)}
-                    required
+                    placeholder="https://www.airbnb.com/rooms/... or any listing page"
+                    value={listingUrl}
+                    onChange={(e) => setListingUrl(e.target.value)}
+                  />
+                  <p className="text-[10px] text-brand-600/60 mt-1">Airbnb, VRBO, Zillow, Realtor, Bluegrass, etc.</p>
+                </div>
+                <div>
+                  <label className="label">Matterport / 3D Scan Link</label>
+                  <input
+                    className="input"
+                    placeholder="https://my.matterport.com/show/?m=..."
+                    value={matterportUrl}
+                    onChange={(e) => setMatterportUrl(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label">Floor Plan <span className="text-brand-600/60 font-normal">(optional)</span></label>
+                  <div
+                    onClick={() => floorPlanInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFloorPlanFiles(e.dataTransfer.files); }}
+                    className="border-2 border-dashed border-brand-900/15 rounded-xl p-4 text-center cursor-pointer hover:border-amber/40 transition"
+                  >
+                    {floorPlanFiles.length === 0 ? (
+                      <>
+                        <p className="text-sm text-brand-600">Drop floor plan here or click to upload</p>
+                        <p className="text-[10px] text-brand-600/60 mt-1">SVG, PNG, JPG, or PDF — max {MAX_UPLOAD_MB}MB</p>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center gap-3">
+                        {floorPlanFiles.map((f, i) => (
+                          <div key={i} className="relative group">
+                            {f.preview ? (
+                              <img src={f.preview} alt="" className="w-16 h-16 object-cover rounded-lg border border-brand-900/10" />
+                            ) : (
+                              <div className="w-16 h-16 rounded-lg border border-brand-900/10 flex items-center justify-center bg-brand-900/5 text-[10px] text-brand-600">PDF</div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setFloorPlanFiles(prev => prev.filter((_, j) => j !== i)); }}
+                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                        <span className="text-xs text-brand-600">+ Add more</span>
+                      </div>
+                    )}
+                    <input
+                      ref={floorPlanInputRef}
+                      type="file"
+                      accept="image/*,.pdf,.svg"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => { if (e.target.files) handleFloorPlanFiles(e.target.files); e.target.value = ""; }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Project Basics */}
+            <section className="card">
+              <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider mb-4">
+                Project Basics
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="label">Project Type</label>
+                  <div className="flex gap-3">
+                    {V1_PROJECT_TYPES.map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => update("projectType", t.value)}
+                        className={`flex-1 rounded-xl border-2 p-3 text-left transition ${
+                          project.projectType === t.value
+                            ? "border-amber bg-amber/5"
+                            : "border-brand-900/10 hover:border-amber/40"
+                        }`}
+                      >
+                        <div className="text-sm font-semibold text-brand-900">{t.label}</div>
+                        <div className="text-[10px] text-brand-600 mt-0.5">{t.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Target Guest Count</label>
+                  <input
+                    type="number"
+                    className="input"
+                    min={1}
+                    placeholder="12"
+                    value={project.targetGuests || ""}
+                    onChange={(e) => update("targetGuests", parseInt(e.target.value) || 0)}
                   />
                 </div>
                 <div>
@@ -605,78 +536,82 @@ export default function NewProjectPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="label">Target Guests</label>
-                  <input
-                    type="number"
-                    className="input"
-                    min={1}
-                    value={project.targetGuests || ""}
-                    onChange={(e) => update("targetGuests", parseInt(e.target.value) || 0)}
-                  />
-                </div>
-                <div>
-                  <label className="label">Furnishing Budget ($)</label>
+                  <label className="label">Furnishing Budget <span className="text-brand-600/60 font-normal">($, optional)</span></label>
                   <input
                     type="number"
                     className="input"
                     min={0}
-                    placeholder="Optional"
+                    placeholder="e.g. 25000"
                     value={project.budget || ""}
                     onChange={(e) => update("budget", parseInt(e.target.value) || 0)}
                   />
                 </div>
-                <div>
-                  <label className="label">Project Type</label>
-                  <div className="flex gap-2">
-                    {V1_PROJECT_TYPES.map((t) => (
-                      <button
-                        key={t.value}
-                        type="button"
-                        onClick={() => update("projectType", t.value)}
-                        className={`flex-1 rounded-lg border-2 p-3 text-left transition text-xs ${
-                          project.projectType === t.value
-                            ? "border-amber bg-amber/5"
-                            : "border-brand-900/10 hover:border-amber/40"
-                        }`}
-                      >
-                        <div className="font-semibold text-brand-900">{t.label}</div>
-                        <div className="text-[10px] text-brand-600 mt-0.5">{t.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </section>
 
-            {/* Property Details */}
+            {/* Generate Button */}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={generating}
+                className="btn-primary text-base px-8 py-3 disabled:opacity-60"
+              >
+                {generating ? (
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    Generating...
+                  </span>
+                ) : (
+                  "Generate Project Draft"
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            SCREEN 2: Confirm Property Basics + Rooms
+        ═══════════════════════════════════════════════════════════════════ */}
+        {step === "confirm" && (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-bold text-brand-900 mb-1">
+                Confirm Project Details
+              </h1>
+              <p className="text-sm text-brand-600">
+                We generated a project draft. Review, edit, and confirm below.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            {/* Property Basics */}
             <section className="card">
-              <h2 className="text-lg font-semibold mb-4">Property Details</h2>
+              <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider mb-4">
+                Property Basics
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="label">Project Name</label>
+                  <input
+                    className="input"
+                    placeholder='e.g., "Lakehouse Retreat Design"'
+                    value={project.name}
+                    onChange={(e) => update("name", e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="sm:col-span-2">
                   <label className="label">Address</label>
                   <input
                     className="input"
-                    placeholder="123 Mountain View Dr"
+                    placeholder="123 Mountain View Dr, Gatlinburg, TN"
                     value={project.property.address}
                     onChange={(e) => update("property.address", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="label">City</label>
-                  <input
-                    className="input"
-                    placeholder="Gatlinburg"
-                    value={project.property.city}
-                    onChange={(e) => update("property.city", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="label">State</label>
-                  <input
-                    className="input"
-                    placeholder="TN"
-                    value={project.property.state}
-                    onChange={(e) => update("property.state", e.target.value)}
                   />
                 </div>
                 <div>
@@ -685,6 +620,7 @@ export default function NewProjectPage() {
                     type="number"
                     className="input"
                     min={0}
+                    placeholder="2400"
                     value={project.property.squareFootage || ""}
                     onChange={(e) => update("property.squareFootage", parseInt(e.target.value) || 0)}
                   />
@@ -723,108 +659,138 @@ export default function NewProjectPage() {
               </div>
             </section>
 
-            {/* Client Info (collapsible — not required) */}
-            <details className="card group">
-              <summary className="cursor-pointer text-lg font-semibold flex items-center justify-between">
-                Client Information
-                <span className="text-xs font-normal text-brand-600 group-open:hidden">(optional — add later)</span>
-              </summary>
-              <div className="grid gap-4 sm:grid-cols-2 mt-4">
+            {/* Design Settings (carried from Screen 1, editable) */}
+            <section className="card">
+              <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider mb-4">
+                Design Settings
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label className="label">Client Name</label>
+                  <label className="label">Style</label>
+                  <select
+                    className="select"
+                    value={project.style}
+                    onChange={(e) => update("style", e.target.value)}
+                  >
+                    {STYLES.map((s) => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Target Guests</label>
                   <input
+                    type="number"
                     className="input"
-                    placeholder="John Doe"
-                    value={project.client.name}
-                    onChange={(e) => update("client.name", e.target.value)}
+                    min={1}
+                    value={project.targetGuests || ""}
+                    onChange={(e) => update("targetGuests", parseInt(e.target.value) || 0)}
                   />
                 </div>
                 <div>
-                  <label className="label">Email</label>
+                  <label className="label">Budget ($)</label>
                   <input
-                    type="email"
+                    type="number"
                     className="input"
-                    placeholder="john@example.com"
-                    value={project.client.email}
-                    onChange={(e) => update("client.email", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="label">Phone</label>
-                  <input
-                    className="input"
-                    placeholder="(555) 123-4567"
-                    value={project.client.phone}
-                    onChange={(e) => update("client.phone", e.target.value)}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="label">Preferences / Notes</label>
-                  <textarea
-                    className="input min-h-[80px] resize-y"
-                    placeholder="Style preferences, color likes/dislikes, special requests..."
-                    value={project.client.preferences}
-                    onChange={(e) => update("client.preferences", e.target.value)}
+                    min={0}
+                    value={project.budget || ""}
+                    onChange={(e) => update("budget", parseInt(e.target.value) || 0)}
                   />
                 </div>
               </div>
-            </details>
 
-            {/* 3D Scan Links (collapsible) */}
-            <details className="card group">
-              <summary className="cursor-pointer text-lg font-semibold flex items-center justify-between">
-                3D Scan Links
-                <span className="text-xs font-normal text-brand-600 group-open:hidden">(optional)</span>
-              </summary>
-              <div className="grid gap-4 mt-4">
-                <div>
-                  <label className="label">Matterport Link</label>
-                  <input
-                    className="input"
-                    placeholder="https://my.matterport.com/show/?m=..."
-                    value={project.property.matterportLink}
-                    onChange={(e) => update("property.matterportLink", e.target.value)}
-                  />
+              {/* Template shortcut */}
+              <details className="mt-4 group">
+                <summary className="cursor-pointer text-xs text-brand-600 hover:text-brand-900 transition">
+                  Or apply a template to pre-fill rooms...
+                </summary>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {TEMPLATES.filter(t =>
+                    !t.id.includes("remodel") && !t.id.includes("reno") && !t.id.includes("adu")
+                  ).slice(0, 6).map(tpl => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => applyTemplate(tpl)}
+                      className="text-left rounded-lg border border-brand-900/10 p-2.5 hover:border-amber/40 hover:bg-amber/5 transition"
+                    >
+                      <div className="text-xs font-semibold text-brand-900">{tpl.name}</div>
+                      <div className="text-[10px] text-brand-600 mt-0.5">{tpl.description}</div>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="label">Polycam Link</label>
-                  <input
-                    className="input"
-                    placeholder="https://poly.cam/capture/..."
-                    value={project.property.polycamLink}
-                    onChange={(e) => update("property.polycamLink", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="label">Spoak Link</label>
-                  <input
-                    className="input"
-                    placeholder="https://spoak.com/project/..."
-                    value={project.property.spoakLink}
-                    onChange={(e) => update("property.spoakLink", e.target.value)}
-                  />
-                </div>
+              </details>
+            </section>
+
+            {/* Room List */}
+            <section className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-brand-900 uppercase tracking-wider">
+                  Rooms ({generatedRooms.length})
+                </h2>
+                <button
+                  type="button"
+                  onClick={addRoom}
+                  className="text-xs text-amber-dark hover:text-brand-900 font-medium transition"
+                >
+                  + Add Room
+                </button>
               </div>
-            </details>
 
-            {/* Submit */}
+              {generatedRooms.length === 0 ? (
+                <div className="text-center py-6 text-sm text-brand-600">
+                  <p>No rooms generated yet.</p>
+                  <p className="text-xs mt-1">Add bedrooms/bathrooms above, or click &ldquo;+ Add Room&rdquo; to build manually.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {generatedRooms.map((room) => (
+                    <div
+                      key={room.id}
+                      className="flex items-center gap-3 rounded-lg border border-brand-900/10 px-4 py-2.5 group"
+                    >
+                      <span className="text-xs text-brand-600/60 uppercase tracking-wider w-24 shrink-0">
+                        {room.type.replace(/-/g, " ")}
+                      </span>
+                      <input
+                        className="flex-1 text-sm text-brand-900 bg-transparent border-none outline-none focus:ring-0 p-0"
+                        value={room.name}
+                        onChange={(e) => updateRoomName(room.id, e.target.value)}
+                      />
+                      <span className="text-[10px] text-brand-600/60">
+                        {room.widthFt}&times;{room.lengthFt} ft
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeRoom(room.id)}
+                        className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition text-sm"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Actions */}
             <div className="flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => {
-                  if (entryMode === "link") setStep("link-input");
-                  else if (entryMode === "upload") setStep("upload-input");
-                  else setStep("choose");
-                }}
+                onClick={() => setStep("import")}
                 className="btn-secondary"
               >
                 &larr; Back
               </button>
-              <button type="submit" className="btn-primary">
+              <button
+                type="button"
+                onClick={handleCreate}
+                className="btn-primary text-base px-8 py-3"
+              >
                 Create Project
               </button>
             </div>
-          </form>
+          </div>
         )}
       </main>
     </div>
