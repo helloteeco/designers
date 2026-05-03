@@ -431,6 +431,7 @@ export interface Project {
   tasks: TaskAssignment[];
   finishes: SelectedFinish[];
   scope: ScopeItem[];
+  layoutCanvases?: LayoutCanvas[];
   targetGuests: number;
   style: DesignStyle;
   budget: number;
@@ -439,6 +440,63 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   notes: string;
+}
+
+// ── Floor Plan Layout Canvas types ──
+
+export type LayoutShapeType =
+  | "bed"
+  | "sofa"
+  | "table"
+  | "rug"
+  | "chair"
+  | "storage"
+  | "fixture"
+  | "game"
+  | "outdoor"
+  | "custom";
+
+export interface LayoutShape {
+  id: string;
+  type: LayoutShapeType;
+  label: string;
+  widthIn: number;
+  depthIn: number;
+  x: number;
+  y: number;
+  rotation: number;
+  color: string;
+  roomLabel?: string;
+  linkedItemId?: string;
+}
+
+export interface LayoutCalibration {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  realLengthFt: number;
+  pixelsPerFoot: number;
+}
+
+export interface LayoutCanvas {
+  id: string;
+  name: string;
+  imageUrl: string;
+  imageWidth: number;
+  imageHeight: number;
+  calibration?: LayoutCalibration;
+  shapes: LayoutShape[];
+  labels: LayoutLabel[];
+}
+
+export interface LayoutLabel {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  color: string;
 }
 
 // ── Sleep optimizer types ──

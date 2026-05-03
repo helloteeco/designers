@@ -5,6 +5,7 @@ import { saveProject, getProject as getProjectFromStore, logActivity } from "@/l
 import { autoDesignRoom } from "@/lib/auto-design";
 import SpacePlanner from "./SpacePlanner";
 import RoomDesigner from "./RoomDesigner";
+import FloorPlanCanvas from "./FloorPlanCanvas";
 import { useToast } from "./Toast";
 import type { Project, Room } from "@/lib/types";
 
@@ -13,18 +14,20 @@ interface Props {
   onUpdate: () => void;
 }
 
-type View = "by-room" | "whole-plan";
+type View = "layout" | "by-room" | "whole-plan";
 
 /**
- * Design Workspace — per-room AI design is the default path.
+ * Design Workspace — three views:
  *
- * "By Room" = pick room → drop photo → pick style → ⚡ → approve items
- *             (AI Scene Studio does the work, designer reviews)
- * "Whole Plan" = top-down floor plan for spatial validation after approvals
+ * "Layout"     = Floor Plan Canvas — upload plan, set scale, place furniture shapes
+ *               (the FIRST step: spatial planning before room-by-room design)
+ * "By Room"    = pick room → drop photo → pick style → ⚡ → approve items
+ *               (AI Scene Studio does the work, designer reviews)
+ * "Whole Plan" = top-down SVG floor plan for spatial validation after approvals
  */
 export default function DesignWorkspace({ project, onUpdate }: Props) {
   const toast = useToast();
-  const [view, setView] = useState<View>("by-room");
+  const [view, setView] = useState<View>("layout");
 
   function autoDesignAllRooms() {
     const fresh = getProjectFromStore(project.id);
@@ -47,41 +50,39 @@ export default function DesignWorkspace({ project, onUpdate }: Props) {
     onUpdate();
   }
 
-  if (project.rooms.length === 0) {
-    return (
-      <div className="card text-center py-12">
-        <div className="text-4xl mb-3">📐</div>
-        <h3 className="font-semibold text-brand-900 mb-2">No rooms yet</h3>
-        <p className="text-sm text-brand-600 max-w-md mx-auto">
-          Drop a Matterport SVG on the <strong>Brief</strong> tab to auto-create rooms,
-          or add rooms manually from the <strong>Rooms</strong> tab.
-        </p>
-      </div>
-    );
-  }
+  const viewDescription = {
+    layout: "Upload floor plan → set scale → drag furniture shapes to plan your layout.",
+    "by-room": "Pick a room · drop a photo · pick a style · ⚡ Design · approve.",
+    "whole-plan": "Whole-house top-down: every room, every item, real positions.",
+  };
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-semibold">Design</h2>
-          <p className="text-sm text-brand-600">
-            {view === "by-room"
-              ? "Pick a room · drop a photo · pick a style · ⚡ Design · approve."
-              : "Whole-house top-down: every room, every item, real positions."}
-          </p>
+          <p className="text-sm text-brand-600">{viewDescription[view]}</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={autoDesignAllRooms}
-            className="rounded-lg border border-amber/40 px-3 py-1.5 text-xs font-medium text-amber-dark hover:bg-amber/10"
-            title="Fill every empty room with style-matched furniture in one click"
-          >
-            🪄 Auto-Design All Empty Rooms
-          </button>
+          {view === "by-room" && project.rooms.length > 0 && (
+            <button
+              onClick={autoDesignAllRooms}
+              className="rounded-lg border border-amber/40 px-3 py-1.5 text-xs font-medium text-amber-dark hover:bg-amber/10"
+              title="Fill every empty room with style-matched furniture in one click"
+            >
+              🪄 Auto-Design All Empty Rooms
+            </button>
+          )}
 
           <div className="flex gap-1 rounded-xl bg-white border border-brand-900/10 p-1">
+            <button
+              onClick={() => setView("layout")}
+              className={view === "layout" ? "tab-active" : "tab"}
+              title="Floor plan layout: set scale, place furniture shapes"
+            >
+              📐 Layout
+            </button>
             <button
               onClick={() => setView("by-room")}
               className={view === "by-room" ? "tab-active" : "tab"}
@@ -92,16 +93,30 @@ export default function DesignWorkspace({ project, onUpdate }: Props) {
             <button
               onClick={() => setView("whole-plan")}
               className={view === "whole-plan" ? "tab-active" : "tab"}
-              title="Whole-house floor plan with all furniture"
+              title="Whole-house floor plan with all furniture (SVG)"
             >
-              📐 Whole Plan
+              🏠 Whole Plan
             </button>
           </div>
         </div>
       </div>
 
       <div className="animate-in">
-        {view === "by-room" && <RoomDesigner project={project} onUpdate={onUpdate} />}
+        {view === "layout" && <FloorPlanCanvas project={project} onUpdate={onUpdate} />}
+        {view === "by-room" && (
+          project.rooms.length === 0 ? (
+            <div className="card text-center py-12">
+              <div className="text-4xl mb-3">🎨</div>
+              <h3 className="font-semibold text-brand-900 mb-2">No rooms yet</h3>
+              <p className="text-sm text-brand-600 max-w-md mx-auto">
+                Drop a Matterport SVG on the <strong>Brief</strong> tab to auto-create rooms,
+                or add rooms manually from the <strong>Rooms</strong> tab.
+              </p>
+            </div>
+          ) : (
+            <RoomDesigner project={project} onUpdate={onUpdate} />
+          )
+        )}
         {view === "whole-plan" && <SpacePlanner project={project} onUpdate={onUpdate} />}
       </div>
     </div>
