@@ -54,9 +54,45 @@ export default function ProjectOverview({ project, onUpdate }: Props) {
   }
 
   const hasFloorPlan = (project.property.floorPlans ?? []).length > 0;
+  const hasLayoutCanvas = (project.layoutCanvases ?? []).length > 0;
+  const hasRooms = project.rooms.length > 0;
+  const hasFurniture = project.rooms.some(r => r.furniture.length > 0);
+
+  // Determine the next recommended action for the designer
+  const nextStep = !hasFloorPlan
+    ? { icon: "📐", title: "Upload your floor plan", desc: "Drop your Matterport floor plan image below to get started.", action: null }
+    : !hasLayoutCanvas
+      ? { icon: "📏", title: "Set up your Layout Canvas", desc: "Your floor plan is ready. Go to Design → Layout to set scale and start placing furniture.", action: "design" as const }
+      : !hasFurniture
+        ? { icon: "🪑", title: "Place furniture on your layout", desc: "Scale is set. Drag furniture shapes onto your floor plan to plan the space.", action: "design" as const }
+        : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      {/* Guided next-step banner — shows the ONE thing to do next */}
+      {nextStep && (
+        <div className="lg:col-span-2 rounded-xl bg-gradient-to-r from-amber/20 to-amber/5 border border-amber/40 px-5 py-4">
+          <div className="flex items-center gap-4">
+            <div className="text-3xl">{nextStep.icon}</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-brand-900 text-sm">{nextStep.title}</h3>
+              <p className="text-xs text-brand-700 mt-0.5">{nextStep.desc}</p>
+            </div>
+            {nextStep.action && (
+              <button
+                onClick={() => {
+                  // Navigate to Design tab by dispatching a custom event the parent page listens to
+                  window.dispatchEvent(new CustomEvent("navigate-tab", { detail: nextStep.action }));
+                }}
+                className="shrink-0 rounded-lg bg-amber px-4 py-2 text-sm font-medium text-brand-900 hover:bg-amber-dark transition shadow-sm"
+              >
+                Go to Layout →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Checklist */}
       <div className="lg:col-span-2">
         <ProjectChecklist project={project} />

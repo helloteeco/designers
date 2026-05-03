@@ -81,6 +81,18 @@ export default function ProjectDetailPage() {
     setProject(getProject(projectId));
   }, [projectId]);
 
+  // Listen for tab-navigation events from child components (e.g., next-step banner)
+  useEffect(() => {
+    function handleNavigateTab(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail === "string") {
+        setTab(detail as Tab);
+      }
+    }
+    window.addEventListener("navigate-tab", handleNavigateTab);
+    return () => window.removeEventListener("navigate-tab", handleNavigateTab);
+  }, []);
+
   useEffect(() => {
     const user = getUser();
     if (!user) {

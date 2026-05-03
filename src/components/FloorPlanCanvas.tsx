@@ -54,6 +54,63 @@ export default function FloorPlanCanvas({ project, onUpdate }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
+  // ── Auto-populate from existing floor plans uploaded on Brief tab ──
+  useEffect(() => {
+    const existingFloorPlans = project.property?.floorPlans ?? [];
+    const existingCanvases = project.layoutCanvases ?? [];
+    // Only auto-populate if there are floor plans but no layout canvases yet
+    if (existingFloorPlans.length > 0 && existingCanvases.length === 0) {
+      const imageFloorPlans = existingFloorPlans.filter(fp => fp.type === "image" && fp.url);
+      if (imageFloorPlans.length === 0) return;
+      // Create a layout canvas for each image floor plan
+      const newCanvases: LayoutCanvas[] = [];
+      let loaded = 0;
+      imageFloorPlans.forEach((fp, idx) => {
+        const img = new Image();
+        img.onload = () => {
+          newCanvases[idx] = {
+            id: generateId(),
+            name: fp.name || `Floor ${idx + 1}`,
+            imageUrl: fp.url,
+            imageWidth: img.naturalWidth,
+            imageHeight: img.naturalHeight,
+            shapes: [],
+            labels: [],
+          };
+          loaded++;
+          if (loaded === imageFloorPlans.length) {
+            const fresh = getProjectFromStore(project.id);
+            if (!fresh) return;
+            // Double-check no canvases were created in the meantime
+            if ((fresh.layoutCanvases ?? []).length === 0) {
+              fresh.layoutCanvases = newCanvases.filter(Boolean);
+              saveProject(fresh);
+              onUpdate();
+            }
+          }
+        };
+        img.onerror = () => {
+          loaded++;
+          // Skip failed images
+          if (loaded === imageFloorPlans.length) {
+            const valid = newCanvases.filter(Boolean);
+            if (valid.length > 0) {
+              const fresh = getProjectFromStore(project.id);
+              if (!fresh) return;
+              if ((fresh.layoutCanvases ?? []).length === 0) {
+                fresh.layoutCanvases = valid;
+                saveProject(fresh);
+                onUpdate();
+              }
+            }
+          }
+        };
+        img.src = fp.url;
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Helpers ──
   const ppf = canvas?.calibration?.pixelsPerFoot ?? 0;
 
