@@ -4,6 +4,7 @@ import { useState } from "react";
 import ReviewHub from "./ReviewHub";
 import OrderHub from "./OrderHub";
 import InstallHub from "./InstallHub";
+import ExportPanel from "./ExportPanel";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
   onUpdate?: () => void;
 }
 
-type View = "review" | "order" | "install";
+type View = "review" | "order" | "install" | "export";
 
 /**
  * Deliver — combines what used to be the Review, Order, and Install tabs into
@@ -62,12 +63,20 @@ export default function DeliverWorkspace({ project, projectId, onUpdate }: Props
           >
             📖 Install Guide
           </button>
+          <button
+            onClick={() => setView("export")}
+            className={view === "export" ? "tab-active" : "tab"}
+            title="Scout Scope, CSV, PDF, and print exports"
+          >
+            📤 Export
+          </button>
         </div>
       </div>
 
       {view === "review" && <ReviewHub project={project} />}
       {view === "order" && <OrderHub project={project} onUpdate={onUpdate} />}
       {view === "install" && <InstallHub project={project} projectId={projectId} />}
+      {view === "export" && <ExportPanel project={project} />}
     </div>
   );
 }
