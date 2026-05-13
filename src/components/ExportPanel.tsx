@@ -6,6 +6,7 @@ import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import { logActivity } from "@/lib/store";
 import { getStudioSettings } from "@/lib/studio-settings";
 import { downloadMasterlistXlsx } from "@/lib/masterlist-export";
+import { buildScoutMarkdownScope } from "@/lib/design-readiness";
 import { useToast } from "@/components/Toast";
 
 interface Props {
@@ -252,6 +253,18 @@ export default function ExportPanel({ project }: Props) {
     logActivity(project.id, "exported", `Exported sleep plan CSV (${sleeping} guests)`);
   }
 
+  function downloadScoutMarkdownScope() {
+    const markdown = buildScoutMarkdownScope(project);
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slugify(project.name)}-scout-design-scope.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    logActivity(project.id, "exported", "Exported Scout design scope Markdown");
+  }
+
   function downloadFullBrief() {
     const lines: string[] = [];
 
@@ -397,7 +410,21 @@ export default function ExportPanel({ project }: Props) {
       })()}
 
       {/* Export Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
+        <div className="card text-center border-brand-900/20 bg-cream/70">
+          <div className="mb-3 text-3xl">🧭</div>
+          <h3 className="font-semibold text-brand-900">Scout Scope</h3>
+          <p className="text-xs text-brand-600 mt-1 mb-4">
+            Markdown export with intake, source evidence, room inventory, scale gate, blockers, and assumptions.
+          </p>
+          <button
+            onClick={downloadScoutMarkdownScope}
+            className="btn-primary btn-sm w-full"
+          >
+            Download .md
+          </button>
+        </div>
+
         <div className="card text-center border-amber/40 bg-amber/5">
           <div className="mb-3 text-3xl">⭐</div>
           <h3 className="font-semibold text-brand-900">Teeco Masterlist (Excel)</h3>
