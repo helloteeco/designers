@@ -10,6 +10,7 @@ import DesignWorkspace from "@/components/DesignWorkspace";
 import RenovationHub from "@/components/RenovationHub";
 import DeliverWorkspace from "@/components/DeliverWorkspace";
 import ShareLinkButton from "@/components/ShareLinkButton";
+import ScoutWorkflowGate from "@/components/ScoutWorkflowGate";
 import { SaveIndicator, useToast } from "@/components/Toast";
 import {
   getProject,
@@ -253,6 +254,8 @@ export default function ProjectDetailPage() {
             target="$10-20"
           />
         </div>
+
+        <ScoutWorkflowGate project={project} onNavigate={setTab} />
 
         {/* Phase-based tabs — matches Teeco 7-week process */}
         <div className="mb-6 md:hidden">
