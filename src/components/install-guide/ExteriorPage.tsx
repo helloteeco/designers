@@ -1,5 +1,5 @@
-import type { ExteriorDescriptor } from "./page-list";
-import { BoardPlaceholder, GuidePage, PageTitle } from "./chrome";
+import { isPhotoFallback, type ExteriorDescriptor } from "./page-list";
+import { BoardPlaceholder, FurnitureList, GuidePage, PageTitle } from "./chrome";
 
 /**
  * Exterior / outdoor-space board page — image only, no key legend and no
@@ -14,11 +14,14 @@ export default function ExteriorPage({
   pageNumber: number;
   pageCount: number;
 }) {
-  const { displayName, boardImageUrl } = descriptor;
+  const { room, displayName, boardImageUrl } = descriptor;
 
   return (
     <GuidePage pageNumber={pageNumber} pageCount={pageCount}>
-      <PageTitle overline="Design Board" title={displayName} />
+      <PageTitle
+        overline={isPhotoFallback(room, boardImageUrl) ? "Room Photo — Design Board to Follow" : "Design Board"}
+        title={displayName}
+      />
 
       <div className="relative mt-3 min-h-0 flex-1">
         {boardImageUrl ? (
@@ -31,6 +34,10 @@ export default function ExteriorPage({
         ) : (
           <BoardPlaceholder roomName={displayName} />
         )}
+      </div>
+
+      <div className="mt-3">
+        <FurnitureList room={room} />
       </div>
     </GuidePage>
   );

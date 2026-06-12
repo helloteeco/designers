@@ -268,3 +268,32 @@ export function TipsBlock({ heading = "Tips", lines }: { heading?: string; lines
     </div>
   );
 }
+
+// ── Compact furniture & decor list (board pages) ──
+
+/** Compact two-column item list so the page reads like a real install guide
+ *  even before a styled board composite exists. First board page only. */
+export function FurnitureList({ room }: { room: Room }) {
+  const items = room.furniture ?? [];
+  if (items.length === 0) return null;
+  const MAX = 12;
+  const shown = items.slice(0, MAX);
+  return (
+    <div className="max-w-[3.4in]">
+      <div className="text-[8px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#A8987F" }}>
+        Furniture &amp; Decor
+      </div>
+      <ul className="mt-1 columns-2 gap-4 text-[8px] leading-[1.5]" style={{ color: "#2B2B2B" }}>
+        {shown.map((f, i) => (
+          <li key={i} className="break-inside-avoid truncate">
+            &middot; {f.item.name}
+            {f.quantity > 1 ? ` ×${f.quantity}` : ""}
+          </li>
+        ))}
+        {items.length > MAX && (
+          <li className="break-inside-avoid opacity-60">…and {items.length - MAX} more (see Masterlist)</li>
+        )}
+      </ul>
+    </div>
+  );
+}
