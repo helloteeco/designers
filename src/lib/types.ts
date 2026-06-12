@@ -153,6 +153,10 @@ export interface Property {
    *  When set + MATTERPORT_TOKEN_ID+SECRET env vars present, the Design
    *  tab can auto-pull panoramas per room as AI reference photos. */
   matterportModelId?: string;
+  /** Typed install markers (Art / Mirror / TV / towel hardware) placed on the
+   *  primary floor plan. Rendered as colored dots on the Install Guide
+   *  floor-plan page and per-room key crops. */
+  planMarkers?: PlanMarker[];
 }
 
 export interface BedItem {
@@ -254,6 +258,37 @@ export interface RoomAnnotation {
   height: number;       // 0-100 (% of plan height)
 }
 
+/** Install-position marker types shown on the Install Guide floor plan.
+ *  Core key: art (cyan #29B6E8), mirror (yellow #F5C518), tv (red #E53935).
+ *  Bathroom pages add the towel variants to an expanded key. */
+export type PlanMarkerType =
+  | "art"
+  | "mirror"
+  | "tv"
+  | "towel-bar"
+  | "towel-hooks"
+  | "towel-ring";
+
+export const PLAN_MARKER_COLORS: Record<PlanMarkerType, string> = {
+  art: "#29B6E8",
+  mirror: "#F5C518",
+  tv: "#E53935",
+  "towel-bar": "#29B6E8",
+  "towel-hooks": "#8E24AA",
+  "towel-ring": "#43A047",
+};
+
+/** A typed install marker placed on the primary floor plan. Coordinates are
+ *  percentages of the plan image so they survive any display size. */
+export interface PlanMarker {
+  id: string;
+  type: PlanMarkerType;
+  x: number;            // 0-100 (% of plan width)
+  y: number;            // 0-100 (% of plan height)
+  roomId?: string;      // optional room association for per-room key crops
+  label?: string;
+}
+
 export interface CompositeBackdrop {
   accentWallColor?: string;
   sideWallColor?: string;
@@ -322,6 +357,13 @@ export interface Room {
    *  ruler tool) so we can source correctly-sized rattan blinds, roller
    *  shades, curtains, etc. Optional — rooms without this field work fine. */
   windows?: WindowSpec[];
+  /** Additional design-board images for multi-view rooms (e.g. Living Room
+   *  second angle, Kitchen wood/white cabinet variants). The primary board is
+   *  sceneSnapshot; each entry here gets its own Install Guide board page. */
+  extraBoardImageUrls?: string[];
+  /** Photorealistic renders for this room's "<ROOM> – AI RENDER" Install
+   *  Guide page (1-2 images). Falls back to originalRenderUrl when empty. */
+  aiRenderUrls?: string[];
 }
 
 /** A single window with measurements for blind/shade sourcing. */
