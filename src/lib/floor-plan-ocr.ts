@@ -476,8 +476,18 @@ export function guessRoomType(label: string): RoomType {
 
 export function prettifyLabel(raw: string, type: RoomType, override?: string): string {
   if (override) return override;
+  // Strip any dimension expression BEFORE punctuation cleanup — otherwise
+  // `LIVING ROOM 18'4" x 14'2"` survives as "Living Room 184 X 142" and that
+  // garbage flows into the Install Guide titles and Masterlist Area column.
+  const noDims = raw
+    // imperial: 18'4" x 14'2", 12' x 11', 8'0 X 6'0
+    .replace(/\d+\s*['′]\s*\d*\s*[""″]?\s*[x×X]\s*\d+\s*['′]?\s*\d*\s*[""″]?/g, " ")
+    // metric: 3.2m x 4.1m
+    .replace(/\d+(\.\d+)?\s*m\s*[x×X]\s*\d+(\.\d+)?\s*m/gi, " ")
+    // bare: 184 x 142, 12x11
+    .replace(/\b\d+(\.\d+)?\s*[x×X]\s*\d+(\.\d+)?\b/g, " ");
   // Title-case the raw label
-  const trimmed = raw
+  const trimmed = noDims
     .replace(/[^a-zA-Z0-9\s\-&/]/g, "")
     .replace(/\s+/g, " ")
     .trim();

@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import ScanViewer from "@/components/ScanViewer";
 import { getProject, saveProject, generateId, logActivity } from "@/lib/store";
-import { detectRoomsFromSvgDetailed, isSvgSource } from "@/lib/floor-plan-svg";
+import { detectRoomsFromSvgDetailed, isSvgSource, readSvgText, parseSvgViewBox, annotationFromSvgBBox } from "@/lib/floor-plan-svg";
+import { guessRoomType, prettifyLabel } from "@/lib/floor-plan-ocr";
 import { sharpenImage } from "@/lib/sharpen-image";
 import type { FloorPlan, Project, Room, RoomType } from "@/lib/types";
 import { StepHeading, StepFooter, StepNotice } from "./StepShell";
@@ -18,6 +19,18 @@ interface Props {
 const MAX_UPLOAD_MB = 3;
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 const M_TO_FT = 3.28084;
+
+/** Starter dimensions when rooms come from the Matterport tour's room list,
+ *  which carries labels but no measurements — the confirm step fixes sizes. */
+const DEFAULT_DIMS: Partial<Record<RoomType, { w: number; l: number }>> = {
+  "living-room": { w: 16, l: 14 },
+  "dining-room": { w: 12, l: 11 },
+  kitchen: { w: 12, l: 11 },
+  "primary-bedroom": { w: 14, l: 12 },
+  bedroom: { w: 12, l: 11 },
+  bathroom: { w: 8, l: 6 },
+  outdoor: { w: 20, l: 14 },
+};
 
 const VALID_ROOM_TYPES = new Set<string>([
   "primary-bedroom", "bedroom", "loft", "den", "living-room", "dining-room",
@@ -63,6 +76,13 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
   const [importing, setImporting] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [note, setNote] = useState<{ tone: "info" | "warn" | "error" | "success"; text: string } | null>(null);
+  /** Plans imported while the project ALREADY had rooms — kept around so the
+   *  designer can choose to re-read them and replace the room list, instead
+   *  of us silently leaving the old rooms in place. */
+  const [redetectOffer, setRedetectOffer] = useState<{ plan: FloorPlan; dataUrl: string; preview: string }[] | null>(null);
+  const [redetecting, setRedetecting] = useState(false);
+  /** Secondary, quieter notice line for Matterport tour pull results. */
+  const [mpInfo, setMpInfo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const existingPlans = project.property.floorPlans ?? [];
@@ -99,14 +119,16 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
     if (accepted.length > 0) setFiles(prev => [...prev, ...accepted]);
   }
 
-  /** Detect rooms from one plan. Returns [] when nothing could be read. */
+  /** Detect rooms from one plan. Returns no rooms when nothing could be
+   *  read. `method` records HOW the rooms were read — exact SVG geometry
+   *  ("svg") vs AI vision ("ai") — so notices can say so. */
   async function detectRooms(
     rawDataUrl: string,
     previewDataUrl: string,
     isPdf: boolean,
     planId: string,
     planIsImage: boolean
-  ): Promise<Room[]> {
+  ): Promise<{ rooms: Room[]; method: "svg" | "ai" }> {
     const rooms: Room[] = [];
 
     // SVG plans carry exact geometry — check the RAW upload (the sharpened
@@ -114,10 +136,19 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
     if (!isPdf && isSvgSource(rawDataUrl)) {
       try {
         const result = await detectRoomsFromSvgDetailed(rawDataUrl);
+        const svgText = await readSvgText(rawDataUrl).catch(() => "");
+        const viewBox = svgText ? parseSvgViewBox(svgText) : null;
         for (const r of result.rooms) {
-          rooms.push(blankRoom(r.label, r.guessedType, r.widthFt, r.lengthFt, r.floor ?? 1));
+          const room = blankRoom(r.label, r.guessedType, r.widthFt, r.lengthFt, r.floor ?? 1);
+          // Anchor each room onto the plan so Install Guide pages can show a
+          // per-room crop instead of the whole plan.
+          if (r.svgBBox && viewBox && planIsImage) {
+            room.annotation = annotationFromSvgBBox(r.svgBBox, viewBox, planId) ?? undefined;
+            room.svgBBox = r.svgBBox;
+          }
+          rooms.push(room);
         }
-        if (rooms.length > 0) return rooms;
+        if (rooms.length > 0) return { rooms, method: "svg" };
       } catch { /* fall through to AI vision */ }
     }
 
@@ -130,9 +161,9 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageDataUrl: payload }),
     });
-    if (!res.ok) return [];
+    if (!res.ok) return { rooms: [], method: "ai" };
     const result = await res.json();
-    if (!result.ok || !result.rooms?.length) return [];
+    if (!result.ok || !result.rooms?.length) return { rooms: [], method: "ai" };
 
     for (const r of result.rooms as Array<{
       name: string; type: string; widthM: number; lengthM: number; floor: number;
@@ -151,7 +182,7 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       }
       rooms.push(room);
     }
-    return rooms;
+    return { rooms, method: "ai" };
   }
 
   function blankRoom(name: string, type: RoomType, widthFt: number, lengthFt: number, floor: number): Room {
@@ -170,6 +201,8 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
 
   async function handleImport() {
     setNote(null);
+    setMpInfo(null);
+    setRedetectOffer(null);
     setImporting(true);
     try {
       const fresh = getProject(project.id);
@@ -212,11 +245,12 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       // 3. Room auto-detection — only when the project has no rooms yet,
       //    so we never clobber rooms a designer already shaped.
       let detectedCount = 0;
+      let detectedMethod: "svg" | "ai" = "ai";
       if (fresh.rooms.length === 0 && newPlans.length > 0) {
         setStatusText("Reading your floor plan…");
         for (const { plan, dataUrl, preview } of newPlans) {
           try {
-            const detected = await detectRooms(
+            const { rooms: detected, method } = await detectRooms(
               dataUrl,
               preview,
               plan.type === "pdf",
@@ -227,16 +261,72 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
               const current = getProject(project.id);
               if (!current) break;
               current.rooms = detected;
+              // Fill in bed/bath counts only when the listing didn't provide
+              // them — designer-entered counts stay untouched so the confirm
+              // step can cross-check detection against them.
               const bedTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
-              current.property.bedrooms = detected.filter(r => bedTypes.includes(r.type)).length || current.property.bedrooms;
-              current.property.bathrooms = detected.filter(r => r.type === "bathroom").length || current.property.bathrooms;
+              current.property.bedrooms = current.property.bedrooms || detected.filter(r => bedTypes.includes(r.type)).length;
+              current.property.bathrooms = current.property.bathrooms || detected.filter(r => r.type === "bathroom").length;
               current.property.floors = Math.max(...detected.map(r => r.floor), 1);
               saveProject(current);
               onUpdate();
               detectedCount = detected.length;
+              detectedMethod = method;
               break;
             }
           } catch { /* keep trying the next plan */ }
+        }
+      }
+
+      // 3.5 Matterport tour pull — when API tokens are configured on the
+      // server this fetches the tour's own room list + a panorama per room.
+      // No plan rooms yet → create rooms from the tour (sizes are starters).
+      // Plan rooms exist → just attach tour photos by label match.
+      let mpPulled = 0;
+      let mpPhotos = 0;
+      let mpNotice: string | null = null;
+      const modelId = getProject(project.id)?.property.matterportModelId;
+      if (link && modelId) {
+        setStatusText("Checking your Matterport tour for rooms…");
+        try {
+          const res = await fetch(`/api/matterport/model-rooms?modelId=${encodeURIComponent(modelId)}`);
+          const data = await res.json().catch(() => ({} as { ok?: boolean; rooms?: unknown[]; error?: string }));
+          const mpRooms = (data?.ok && Array.isArray(data.rooms) ? data.rooms : []) as Array<{
+            label: string; suggestedPanoUrl: string | null;
+          }>;
+          if (res.ok && mpRooms.length > 0) {
+            const current = getProject(project.id);
+            if (current) {
+              const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+              if (current.rooms.length === 0) {
+                current.rooms = mpRooms.map((mp) => {
+                  const type = guessRoomType(mp.label || "bedroom");
+                  const d = DEFAULT_DIMS[type] ?? { w: 12, l: 11 };
+                  const room = blankRoom(prettifyLabel(mp.label || "Room", type), type, d.w, d.l, 1);
+                  if (mp.suggestedPanoUrl) { room.referenceImageUrl = mp.suggestedPanoUrl; mpPhotos++; }
+                  return room;
+                });
+                mpPulled = current.rooms.length;
+              } else {
+                for (const mp of mpRooms) {
+                  if (!mp.suggestedPanoUrl) continue;
+                  const target = current.rooms.find(r =>
+                    !r.referenceImageUrl &&
+                    (norm(r.name).includes(norm(mp.label)) || norm(mp.label).includes(norm(r.name)))
+                  );
+                  if (target) { target.referenceImageUrl = mp.suggestedPanoUrl; mpPhotos++; }
+                }
+              }
+              saveProject(current);
+              onUpdate();
+            }
+          } else if (res.status === 400) {
+            mpNotice = "Your tour link is saved. (Matterport's API isn't connected, so room photos can't auto-pull — screenshot rooms in the tour and add them in the Review step.)";
+          } else {
+            mpNotice = "Your tour link is saved, but we couldn't reach Matterport's room list just now — you can add room photos by hand in the Review step.";
+          }
+        } catch {
+          mpNotice = "Your tour link is saved, but we couldn't reach Matterport's room list just now — you can add room photos by hand in the Review step.";
         }
       }
 
@@ -245,17 +335,92 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       setScanLink(link);
 
       if (detectedCount > 0) {
-        setNote({ tone: "success", text: `Done! We found ${detectedCount} room${detectedCount === 1 ? "" : "s"} on your plan — you'll confirm them in the next step.` });
+        const plural = detectedCount === 1 ? "" : "s";
+        setNote({
+          tone: "success",
+          text: detectedMethod === "svg"
+            ? `Done! We found ${detectedCount} room${plural} on your plan (read from your Matterport plan) — you'll confirm them in the next step.`
+            : `Done! We found ${detectedCount} room${plural} on your plan (read by AI — double-check sizes in the next step).`,
+        });
       } else if (newPlans.length > 0 && fresh.rooms.length === 0) {
         setNote({ tone: "warn", text: "Your plan is saved, but we couldn't read the rooms off it automatically. No problem — add them by hand in the next step." });
+      } else if (newPlans.length > 0 && fresh.rooms.length > 0) {
+        // The project already has rooms, so we never clobber them silently.
+        // Offer a re-detect instead (notice with button rendered above).
+        setRedetectOffer(newPlans);
+        setNote(null);
+      } else if (mpPulled > 0) {
+        const p = mpPulled === 1 ? "" : "s";
+        setNote({
+          tone: "success",
+          text: `Done! We pulled ${mpPulled} room${p} from your Matterport tour${mpPhotos > 0 ? ` with ${mpPhotos} room photo${mpPhotos === 1 ? "" : "s"}` : ""} — sizes are starters, so give them a quick check in the next step.`,
+        });
       } else {
         setNote({ tone: "success", text: "Imported! Check the preview below, then continue." });
+      }
+
+      // Quieter second line for tour-pull side results.
+      if (mpPhotos > 0 && mpPulled === 0) {
+        setMpInfo(`We also matched ${mpPhotos} room photo${mpPhotos === 1 ? "" : "s"} from your Matterport tour — they'll power the renders in the Review step.`);
+      } else if (mpNotice) {
+        setMpInfo(mpNotice);
       }
     } catch {
       setNote({ tone: "error", text: "Something went wrong importing. Your work is safe — try again, or continue and add rooms manually in the next step." });
     } finally {
       setImporting(false);
       setStatusText("");
+    }
+  }
+
+  /** Designer chose to re-read a newly imported plan even though the project
+   *  already has rooms: confirm (it discards their edits), then re-run
+   *  detection and REPLACE the room list. */
+  async function redetectFromNewPlan() {
+    if (!redetectOffer || redetectOffer.length === 0) return;
+    const existingCount = getProject(project.id)?.rooms.length ?? 0;
+    const ok = window.confirm(
+      `Replace your ${existingCount} existing room${existingCount === 1 ? "" : "s"} with what we read off the new plan? Any edits you've made to those rooms (names, sizes, bed setups, notes) will be lost.`
+    );
+    if (!ok) return;
+    setRedetecting(true);
+    setNote(null);
+    try {
+      for (const { plan, dataUrl, preview } of redetectOffer) {
+        try {
+          const { rooms: detected, method } = await detectRooms(
+            dataUrl,
+            preview,
+            plan.type === "pdf",
+            plan.id,
+            plan.type === "image"
+          );
+          if (detected.length > 0) {
+            const current = getProject(project.id);
+            if (!current) break;
+            current.rooms = detected;
+            const bedTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
+            current.property.bedrooms = current.property.bedrooms || detected.filter(r => bedTypes.includes(r.type)).length;
+            current.property.bathrooms = current.property.bathrooms || detected.filter(r => r.type === "bathroom").length;
+            current.property.floors = Math.max(...detected.map(r => r.floor), 1);
+            saveProject(current);
+            logActivity(project.id, "imported", `Re-detected ${detected.length} room(s) from a new floor plan`);
+            onUpdate();
+            setRedetectOffer(null);
+            const plural = detected.length === 1 ? "" : "s";
+            setNote({
+              tone: "success",
+              text: method === "svg"
+                ? `Done! We replaced your rooms with ${detected.length} room${plural} from the new plan (read from your Matterport plan) — you'll confirm them in the next step.`
+                : `Done! We replaced your rooms with ${detected.length} room${plural} from the new plan (read by AI — double-check sizes in the next step).`,
+            });
+            return;
+          }
+        } catch { /* keep trying the next plan */ }
+      }
+      setNote({ tone: "warn", text: "We couldn't read rooms off the new plan, so your existing rooms are untouched." });
+    } finally {
+      setRedetecting(false);
     }
   }
 
@@ -271,6 +436,25 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
 
       <div className="space-y-4">
         {note && <StepNotice tone={note.tone}>{note.text}</StepNotice>}
+        {mpInfo && <StepNotice tone="info">{mpInfo}</StepNotice>}
+
+        {redetectOffer && (
+          <StepNotice tone="warn">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span>
+                You already have {project.rooms.length} room{project.rooms.length === 1 ? "" : "s"}, so we kept them. Want us to re-read the new plan instead?
+              </span>
+              <button
+                type="button"
+                onClick={() => void redetectFromNewPlan()}
+                disabled={redetecting}
+                className="shrink-0 rounded-xl border border-amber/40 bg-amber/10 px-3 py-1.5 text-xs font-semibold text-amber-dark hover:bg-amber/20 transition disabled:opacity-50"
+              >
+                {redetecting ? "Re-detecting…" : "Re-detect rooms from this plan"}
+              </button>
+            </div>
+          </StepNotice>
+        )}
 
         {/* Scan link */}
         <div className="card">
@@ -299,6 +483,9 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
               <>
                 <p className="text-sm text-brand-600">Drop your floor plan here, or click to choose a file</p>
                 <p className="text-[11px] text-brand-600/60 mt-1">Image or PDF — up to {MAX_UPLOAD_MB}MB</p>
+                <p className="text-[11px] text-brand-600/60 mt-1">
+                  Tip: in your Matterport tour, open the floor-plan view and screenshot it — that image works here.
+                </p>
               </>
             ) : (
               <div className="flex items-center justify-center gap-3 flex-wrap">

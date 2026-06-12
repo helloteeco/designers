@@ -1,11 +1,13 @@
 import type { Property } from "@/lib/types";
 import {
   DEFAULT_BEDROOM_TIPS,
+  isPhotoFallback,
   parseTipLines,
   type RoomBoardDescriptor,
 } from "./page-list";
 import {
   BoardPlaceholder,
+  FurnitureList,
   GuidePage,
   KeyLegend,
   PageTitle,
@@ -25,8 +27,12 @@ export default function RoomBoardPage({
   pageCount: number;
 }) {
   const { room, displayName, boardImageUrl, boardIndex, boardCount, showTips } = descriptor;
-  const overline =
-    boardCount > 1 ? `Design Board ${boardIndex + 1} of ${boardCount}` : "Design Board";
+  const photoFallback = isPhotoFallback(room, boardImageUrl);
+  const overline = photoFallback
+    ? "Room Photo — Design Board to Follow"
+    : boardCount > 1
+      ? `Design Board ${boardIndex + 1} of ${boardCount}`
+      : "Design Board";
   const tipLines = showTips
     ? room.installTips?.trim()
       ? parseTipLines(room.installTips)
@@ -51,9 +57,15 @@ export default function RoomBoardPage({
         )}
       </div>
 
-      {/* Bottom bar: tips (bedrooms) · key legend · plan thumbnail */}
+      {/* Bottom bar: tips (bedrooms) / furniture list (others) · key · plan thumb */}
       <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-end gap-6">
-        <div>{showTips && <TipsBlock lines={tipLines} />}</div>
+        <div>
+          {showTips ? (
+            <TipsBlock lines={tipLines} />
+          ) : (
+            boardIndex === 0 && <FurnitureList room={room} />
+          )}
+        </div>
         <div className="flex justify-center pb-2">
           <KeyLegend />
         </div>
