@@ -9,12 +9,14 @@ import { isConfigured, dbGetTeamMembers } from "@/lib/supabase";
 import {
   getStudioSettings,
   saveStudioSettings,
+  setAdvancedMode,
   downloadBackup,
   importBackup,
   exportAllData,
   type StudioSettings,
   type BackupPayload,
 } from "@/lib/studio-settings";
+import { useAdvancedMode } from "@/components/guided/useAdvancedMode";
 
 interface TeamMember {
   id: string;
@@ -29,6 +31,7 @@ type Tab = "studio" | "pricing" | "team" | "data" | "cloud";
 export default function SettingsPage() {
   const router = useRouter();
   const toast = useToast();
+  const advancedNow = useAdvancedMode();
   const [profile, setProfileState] = useState(getProfile());
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +75,15 @@ export default function SettingsPage() {
   function updateSetting<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) {
     setStudioSettings(prev => ({ ...prev, [key]: value }));
   }
+
+  // Keep the local form copy in sync when the navbar pill flips Advanced
+  // Mode while this page is open — otherwise "Save Settings" would write
+  // the stale value back.
+  useEffect(() => {
+    setStudioSettings(prev =>
+      prev.advancedMode === advancedNow ? prev : { ...prev, advancedMode: advancedNow }
+    );
+  }, [advancedNow]);
 
   function saveSettings() {
     saveStudioSettings(studioSettings);
@@ -165,6 +177,54 @@ export default function SettingsPage() {
         {/* STUDIO PROFILE */}
         {tab === "studio" && (
           <div className="space-y-6">
+            <section className="card">
+              <h2 className="text-lg font-semibold mb-1">Workflow</h2>
+              <p className="text-sm text-brand-600 mb-4">
+                How much of the app you see while you work.
+              </p>
+              <div className="space-y-5">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-brand-900/20"
+                    checked={advancedNow}
+                    onChange={e => setAdvancedMode(e.target.checked)}
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-brand-900">Advanced Mode</div>
+                    <div className="text-[10px] text-brand-600">
+                      Off = the calm guided flow with one step at a time. On = every tab and
+                      power control. Same switch as the &quot;Advanced&quot; pill in the top bar.
+                    </div>
+                  </div>
+                </label>
+
+                <div>
+                  <label className="label">Tax &amp; shipping rate (%)</label>
+                  <div className="relative w-40">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      className="input pr-8"
+                      value={studioSettings.taxShippingRatePercent}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value);
+                        const rate = Number.isFinite(v) && v >= 0 ? v : 0;
+                        updateSetting("taxShippingRatePercent", rate);
+                        saveStudioSettings({ taxShippingRatePercent: rate });
+                      }}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-600 text-sm">%</span>
+                  </div>
+                  <div className="text-[10px] text-brand-600 mt-1">
+                    Used in the Masterlist T&amp;S column. Teeco standard: 7%.
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section className="card">
               <h2 className="text-lg font-semibold mb-1">Studio Branding</h2>
               <p className="text-sm text-brand-600 mb-4">

@@ -9,7 +9,9 @@ import RoomPlanner from "@/components/RoomPlanner";
 import DesignWorkspace from "@/components/DesignWorkspace";
 import RenovationHub from "@/components/RenovationHub";
 import DeliverWorkspace from "@/components/DeliverWorkspace";
+import GuidedFlow from "@/components/GuidedFlow";
 import ShareLinkButton from "@/components/ShareLinkButton";
+import { useAdvancedMode } from "@/components/guided/useAdvancedMode";
 import { SaveIndicator, useToast } from "@/components/Toast";
 import {
   getProject,
@@ -73,20 +75,34 @@ export default function ProjectDetailPage() {
   const toast = useToast();
   const projectId = params.id as string;
 
+  const advanced = useAdvancedMode();
   const [project, setProject] = useState<Project | null>(null);
   const [tab, setTab] = useState<Tab>("brief");
   const [loading, setLoading] = useState(true);
+  // Per-page override of the global Advanced Mode default view:
+  //   advanced OFF → guided flow; advanced ON → tab hub (with a banner
+  //   that lets the designer hop back into the guided view).
+  const [forcedView, setForcedView] = useState<"guided" | "tabs" | null>(null);
+  const view: "guided" | "tabs" = forcedView ?? (advanced ? "tabs" : "guided");
+
+  // When the global toggle flips, drop any per-page override so the
+  // navbar pill always does what it says.
+  useEffect(() => {
+    setForcedView(null);
+  }, [advanced]);
 
   const reload = useCallback(() => {
     setProject(getProject(projectId));
   }, [projectId]);
 
-  // Listen for tab-navigation events from child components (e.g., next-step banner)
+  // Listen for tab-navigation events from child components (e.g., next-step
+  // banner, or guided-flow "open Advanced workspace" links).
   useEffect(() => {
     function handleNavigateTab(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail && typeof detail === "string") {
         setTab(detail as Tab);
+        setForcedView("tabs");
       }
     }
     window.addEventListener("navigate-tab", handleNavigateTab);
@@ -161,6 +177,50 @@ export default function ProjectDetailPage() {
     reload();
   }
 
+  // ── Guided view (default when Advanced Mode is off) ──
+  if (view === "guided") {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Navbar />
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 animate-in">
+          <div className="mx-auto max-w-3xl mb-6">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="mb-3 text-sm text-brand-600 hover:text-brand-900 transition"
+            >
+              &larr; All Projects
+            </button>
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-brand-900 truncate">
+                  {project.name || "Untitled"}
+                </h1>
+                <p className="text-xs sm:text-sm text-brand-600 mt-0.5 truncate">
+                  {[project.property.address, project.client.name].filter(Boolean).join(" · ") || "Let's get this one ready"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <SaveIndicator updatedAt={project.updatedAt} />
+                {advanced && (
+                  <button
+                    onClick={() => setForcedView("tabs")}
+                    className="text-xs text-brand-600 hover:text-brand-900 underline decoration-brand-900/20 transition"
+                  >
+                    Open Advanced workspace &rarr;
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <GuidedFlow project={project} onUpdate={reload} />
+        </main>
+      </div>
+    );
+  }
+
+  // ── Advanced view (6-tab hub) ──
+
   // Filter tabs based on project type
   const visibleTabs = ALL_TABS.filter(t => !t.visible || t.visible(project));
 
@@ -181,6 +241,19 @@ export default function ProjectDetailPage() {
       <Navbar />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 animate-in">
+        {/* Slim banner back to the guided path */}
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber/30 bg-amber/10 px-4 py-2">
+          <span className="text-xs text-brand-700">
+            You&apos;re in the Advanced workspace — every tab and power control.
+          </span>
+          <button
+            onClick={() => setForcedView("guided")}
+            className="text-xs font-semibold text-amber-dark hover:text-brand-900 transition shrink-0"
+          >
+            Switch to Guided view &rarr;
+          </button>
+        </div>
+
         {/* Back + Title */}
         <div className="mb-6">
           <button

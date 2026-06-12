@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { useAdvancedMode } from "@/components/guided/useAdvancedMode";
 import { createEmptyProject, saveProject, logActivity, generateId } from "@/lib/store";
 import { TEMPLATES } from "@/lib/project-templates";
 import { detectRoomsFromImage, type DetectedRoom } from "@/lib/floor-plan-ocr";
@@ -39,9 +40,14 @@ type DimUnit = "ft" | "m";
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const advanced = useAdvancedMode();
   const [project, setProject] = useState(() => createEmptyProject());
   const [error, setError] = useState("");
   const [step, setStep] = useState<FlowStep>("import");
+
+  // Simple-mode exterior photo upload
+  const heroInputRef = useRef<HTMLInputElement>(null);
+  const [creating, setCreating] = useState(false);
 
   // Import fields
   const [listingUrl, setListingUrl] = useState("");
@@ -199,11 +205,13 @@ export default function NewProjectPage() {
         }
       }
 
-      if (rooms.length === 0 && file.type.startsWith("image/") && !isSvg) {
-        // GPT Vision path — reliable extraction from PNG/JPG floor plans
+      const isPdf = file.type === "application/pdf";
+      if (rooms.length === 0 && (file.type.startsWith("image/") || isPdf) && !isSvg) {
+        // AI vision path — reliable extraction from PNG/JPG (and PDF) floor plans
         try {
-          // Resize to reduce payload size (GPT vision doesn't need full res)
-          const resizedDataUrl = await resizeForVision(dataUrl, 1500);
+          // Resize images to reduce payload size; PDFs go through as-is —
+          // the extraction API accepts PDF data URLs directly now.
+          const resizedDataUrl = isPdf ? dataUrl : await resizeForVision(dataUrl, 1500);
           console.log("[FloorPlan] Sending to /api/extract-floorplan, payload size:", Math.round(resizedDataUrl.length / 1024), "KB");
           const res = await fetch("/api/extract-floorplan", {
             method: "POST",
@@ -570,7 +578,171 @@ export default function NewProjectPage() {
     router.push(`/projects/${finalProject.id}`);
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  // ── Simple create (default — Advanced Mode off) ────────────────────────
+
+  function handleHeroPhoto(file: File) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError(`That photo is bigger than ${MAX_UPLOAD_MB}MB — try a smaller one.`);
+      return;
+    }
+    setError("");
+    fileToDataUrl(file).then(dataUrl => {
+      setProject(prev => ({
+        ...prev,
+        property: { ...prev.property, heroImageUrl: dataUrl },
+      }));
+    });
+  }
+
+  function handleSimpleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    const clientName = project.client.name.trim();
+    const address = project.property.address.trim();
+    if (!clientName && !address) {
+      setError("Add a client name or the property address so we can name the project.");
+      return;
+    }
+    setCreating(true);
+    const name = address || `${clientName}'s place`;
+    const finalProject = { ...project, name };
+    if (!finalProject.property.floorPlans) finalProject.property.floorPlans = [];
+    saveProject(finalProject);
+    logActivity(finalProject.id, "created", `Created project: ${name}`);
+    router.push(`/projects/${finalProject.id}`);
+  }
+
+  if (!advanced) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Navbar />
+        <main className="mx-auto max-w-xl px-6 py-10 animate-in">
+          <button
+            onClick={() => router.back()}
+            className="mb-6 text-sm text-brand-600 hover:text-brand-900 transition"
+          >
+            &larr; Back to Projects
+          </button>
+
+          <form onSubmit={handleSimpleCreate} className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-bold text-brand-900 mb-1">New project</h1>
+              <p className="text-sm text-brand-600">
+                Who&apos;s it for and where is it? Everything else happens inside the project.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <section className="card space-y-4">
+              <div>
+                <label className="label">Client name(s)</label>
+                <input
+                  className="input"
+                  placeholder="e.g. Sarah & Mike Thompson"
+                  value={project.client.name}
+                  onChange={(e) => update("client.name", e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="label">Property address</label>
+                <input
+                  className="input"
+                  placeholder="123 Mountain View Dr"
+                  value={project.property.address}
+                  onChange={(e) => update("property.address", e.target.value)}
+                />
+              </div>
+              <div className="grid gap-4 grid-cols-2">
+                <div>
+                  <label className="label">City</label>
+                  <input
+                    className="input"
+                    placeholder="Gatlinburg"
+                    value={project.property.city}
+                    onChange={(e) => update("property.city", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label">State</label>
+                  <input
+                    className="input"
+                    placeholder="TN"
+                    value={project.property.state}
+                    onChange={(e) => update("property.state", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="label">
+                  Exterior photo <span className="text-brand-600/60 font-normal normal-case">(optional — used on the Install Guide cover)</span>
+                </label>
+                <div
+                  onClick={() => heroInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const f = e.dataTransfer.files?.[0];
+                    if (f && f.type.startsWith("image/")) handleHeroPhoto(f);
+                  }}
+                  className="border-2 border-dashed border-brand-900/15 rounded-xl p-5 text-center cursor-pointer hover:border-amber/40 transition"
+                >
+                  {project.property.heroImageUrl ? (
+                    <div className="flex items-center justify-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={project.property.heroImageUrl}
+                        alt="Exterior"
+                        className="h-24 rounded-lg border border-brand-900/10 object-cover"
+                      />
+                      <span className="text-xs text-brand-600">Click to swap the photo</span>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-brand-600">Drop a photo of the property here, or click to choose</p>
+                      <p className="text-[11px] text-brand-600/60 mt-1">JPG or PNG — up to {MAX_UPLOAD_MB}MB</p>
+                    </>
+                  )}
+                  <input
+                    ref={heroInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleHeroPhoto(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[11px] text-brand-600/60">
+                Need listing import, templates, or budgets up front? Turn on Advanced in the top bar.
+              </p>
+              <button
+                type="submit"
+                disabled={creating}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber px-8 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-amber-dark active:scale-[0.98] disabled:opacity-60 shrink-0"
+              >
+                {creating ? "Creating…" : "Create project"}
+              </button>
+            </div>
+          </form>
+        </main>
+      </div>
+    );
+  }
+
+  // ── Render (Advanced Mode — full wizard) ───────────────────────────────
 
   return (
     <div className="min-h-screen bg-cream">
