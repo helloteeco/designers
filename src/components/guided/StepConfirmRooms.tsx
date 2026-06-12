@@ -17,6 +17,10 @@ interface Props {
 
 const BEDROOM_TYPES = new Set<RoomType>(["primary-bedroom", "bedroom", "loft", "bonus-room"]);
 
+/** Types that count against the listing's bedroom number for the sanity
+ *  check (lofts/bonus rooms don't — listings don't count those as bedrooms). */
+const LISTED_BEDROOM_TYPES = new Set<RoomType>(["primary-bedroom", "bedroom"]);
+
 const TYPE_OPTIONS: { value: RoomType; label: string }[] = [
   { value: "primary-bedroom", label: "Primary bedroom" },
   { value: "bedroom", label: "Bedroom" },
@@ -41,7 +45,49 @@ export default function StepConfirmRooms({ project, onUpdate, onComplete, onBack
   const [showAnnotator, setShowAnnotator] = useState(false);
   const [redetecting, setRedetecting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  /** Room currently hovered/focused in the list (or hovered on the plan) —
+   *  drives the amber highlight on its plan outline so the designer can
+   *  visually confirm "this row = this room on the plan". */
+  const [highlightedRoomId, setHighlightedRoomId] = useState<string | null>(null);
   const rooms = project.rooms;
+
+  // ── Plan side-panel: the primary plan, else the most recent image plan ──
+  const plans = project.property.floorPlans ?? [];
+  const panelPlan =
+    plans.find(p => p.isPrimary && p.type !== "link") ??
+    [...plans]
+      .filter(p => p.type === "image")
+      .sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""))[0] ??
+    null;
+  const annotatedRooms =
+    panelPlan && panelPlan.type === "image"
+      ? rooms.filter(r => r.annotation?.floorPlanId === panelPlan.id)
+      : [];
+
+  // ── Sanity check: detected bed/bath counts vs what the listing says ──
+  const listedBeds = project.property.bedrooms || 0;
+  const listedBaths = project.property.bathrooms || 0;
+  const foundBeds = rooms.filter(r => LISTED_BEDROOM_TYPES.has(r.type)).length;
+  const foundBaths = rooms.filter(r => r.type === "bathroom").length;
+  const countWarnings: string[] = [];
+  if (rooms.length > 0) {
+    if (listedBeds > 0 && foundBeds !== listedBeds) {
+      countWarnings.push(
+        foundBeds > listedBeds
+          ? `the listing says ${listedBeds} bedroom${listedBeds === 1 ? "" : "s"} but we detected ${foundBeds} — remove the extra room or tap it to check it on the plan.`
+          : `the listing says ${listedBeds} bedroom${listedBeds === 1 ? "" : "s"} but we only detected ${foundBeds} — add the missing room, or check if one got the wrong type.`
+      );
+    }
+    // Half-baths are common ("2.5 baths"), so only flag counts that fall
+    // outside the floor..ceil range of the listed number.
+    if (listedBaths > 0 && (foundBaths < Math.floor(listedBaths) || foundBaths > Math.ceil(listedBaths))) {
+      countWarnings.push(
+        foundBaths > listedBaths
+          ? `the listing says ${listedBaths} bathroom${listedBaths === 1 ? "" : "s"} but we detected ${foundBaths} — remove the extra room or tap it to check it on the plan.`
+          : `the listing says ${listedBaths} bathroom${listedBaths === 1 ? "" : "s"} but we only detected ${foundBaths} — add the missing room, or check if one got the wrong type.`
+      );
+    }
+  }
 
   function mutate(fn: (p: Project) => void) {
     const fresh = getProject(project.id);
@@ -158,8 +204,16 @@ export default function StepConfirmRooms({ project, onUpdate, onComplete, onBack
       />
 
       <div className="space-y-4">
+        {countWarnings.length > 0 && (
+          <StepNotice tone="warn">Heads up: {countWarnings.join(" Also, ")}</StepNotice>
+        )}
         {note && <StepNotice tone="info">{note}</StepNotice>}
 
+        {/* Plan panel sits to the right on wide screens, on top on narrow
+            ones, so the designer can verify the list against the plan.
+            Without a plan, the list keeps its full width. */}
+        <div className={panelPlan ? "flex flex-col-reverse gap-4 lg:flex-row lg:items-start" : undefined}>
+        <div className={panelPlan ? "flex-1 min-w-0" : undefined}>
         <div className="card">
           {rooms.length === 0 ? (
             <div className="text-center py-8">
@@ -172,7 +226,14 @@ export default function StepConfirmRooms({ project, onUpdate, onComplete, onBack
               {rooms.map(room => (
                 <div
                   key={room.id}
-                  className="flex items-center gap-3 rounded-lg border border-brand-900/10 px-3 sm:px-4 py-2.5 group flex-wrap sm:flex-nowrap"
+                  onMouseEnter={() => setHighlightedRoomId(room.id)}
+                  onMouseLeave={() => setHighlightedRoomId(prev => (prev === room.id ? null : prev))}
+                  onFocus={() => setHighlightedRoomId(room.id)}
+                  onBlur={() => setHighlightedRoomId(prev => (prev === room.id ? null : prev))}
+                  onClick={() => setHighlightedRoomId(room.id)}
+                  className={`flex items-center gap-3 rounded-lg border px-3 sm:px-4 py-2.5 group flex-wrap sm:flex-nowrap transition-colors ${
+                    highlightedRoomId === room.id ? "border-amber/60 bg-amber/5" : "border-brand-900/10"
+                  }`}
                 >
                   <input
                     className="flex-1 min-w-[120px] text-sm font-medium text-brand-900 bg-transparent border-none outline-none focus:ring-0 p-0"
@@ -285,6 +346,77 @@ export default function StepConfirmRooms({ project, onUpdate, onComplete, onBack
               </div>
             )}
           </div>
+        </div>
+        </div>
+
+        {panelPlan && (
+          <div className="lg:w-[340px] xl:w-[400px] shrink-0 lg:sticky lg:top-4">
+            <div className="card">
+              <div className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-2">
+                Check against the plan
+              </div>
+              {panelPlan.type === "image" ? (
+                <>
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={panelPlan.url}
+                      alt={panelPlan.name}
+                      className="w-full rounded-lg border border-brand-900/10 bg-white"
+                      draggable={false}
+                    />
+                    {annotatedRooms.map(room => {
+                      const ann = room.annotation!;
+                      const hot = highlightedRoomId === room.id;
+                      return (
+                        <div
+                          key={room.id}
+                          onMouseEnter={() => setHighlightedRoomId(room.id)}
+                          onMouseLeave={() => setHighlightedRoomId(prev => (prev === room.id ? null : prev))}
+                          className={`absolute rounded border-2 transition-colors ${
+                            hot ? "border-amber bg-amber/20 z-10" : "border-brand-900/25"
+                          }`}
+                          style={{
+                            left: `${ann.x}%`,
+                            top: `${ann.y}%`,
+                            width: `${ann.width}%`,
+                            height: `${ann.height}%`,
+                          }}
+                          title={`${room.name} · ${room.widthFt}' × ${room.lengthFt}'`}
+                        >
+                          <span
+                            className={`absolute left-0 top-0 max-w-full truncate rounded-br px-1 py-px text-[9px] font-medium leading-snug ${
+                              hot ? "bg-amber text-white" : "bg-white/85 text-brand-700"
+                            }`}
+                          >
+                            {room.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-brand-600/60 mt-2">
+                    {annotatedRooms.length > 0
+                      ? "Hover or tap a room in the list to see where it sits on the plan."
+                      : "Use the plan to double-check the room list looks right."}
+                  </p>
+                </>
+              ) : (
+                <div className="rounded-xl border border-brand-900/10 bg-brand-900/5 p-4 text-center">
+                  <p className="text-sm text-brand-700 mb-2">PDF plan — open it side by side</p>
+                  <a
+                    href={panelPlan.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-amber-dark hover:underline"
+                  >
+                    Open {panelPlan.name}.pdf &rarr;
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         </div>
       </div>
 

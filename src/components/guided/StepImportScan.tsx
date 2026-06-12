@@ -63,6 +63,11 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
   const [importing, setImporting] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [note, setNote] = useState<{ tone: "info" | "warn" | "error" | "success"; text: string } | null>(null);
+  /** Plans imported while the project ALREADY had rooms — kept around so the
+   *  designer can choose to re-read them and replace the room list, instead
+   *  of us silently leaving the old rooms in place. */
+  const [redetectOffer, setRedetectOffer] = useState<{ plan: FloorPlan; dataUrl: string; preview: string }[] | null>(null);
+  const [redetecting, setRedetecting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const existingPlans = project.property.floorPlans ?? [];
@@ -99,14 +104,16 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
     if (accepted.length > 0) setFiles(prev => [...prev, ...accepted]);
   }
 
-  /** Detect rooms from one plan. Returns [] when nothing could be read. */
+  /** Detect rooms from one plan. Returns no rooms when nothing could be
+   *  read. `method` records HOW the rooms were read — exact SVG geometry
+   *  ("svg") vs AI vision ("ai") — so notices can say so. */
   async function detectRooms(
     rawDataUrl: string,
     previewDataUrl: string,
     isPdf: boolean,
     planId: string,
     planIsImage: boolean
-  ): Promise<Room[]> {
+  ): Promise<{ rooms: Room[]; method: "svg" | "ai" }> {
     const rooms: Room[] = [];
 
     // SVG plans carry exact geometry — check the RAW upload (the sharpened
@@ -126,7 +133,7 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
           }
           rooms.push(room);
         }
-        if (rooms.length > 0) return rooms;
+        if (rooms.length > 0) return { rooms, method: "svg" };
       } catch { /* fall through to AI vision */ }
     }
 
@@ -139,9 +146,9 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageDataUrl: payload }),
     });
-    if (!res.ok) return [];
+    if (!res.ok) return { rooms: [], method: "ai" };
     const result = await res.json();
-    if (!result.ok || !result.rooms?.length) return [];
+    if (!result.ok || !result.rooms?.length) return { rooms: [], method: "ai" };
 
     for (const r of result.rooms as Array<{
       name: string; type: string; widthM: number; lengthM: number; floor: number;
@@ -160,7 +167,7 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       }
       rooms.push(room);
     }
-    return rooms;
+    return { rooms, method: "ai" };
   }
 
   function blankRoom(name: string, type: RoomType, widthFt: number, lengthFt: number, floor: number): Room {
@@ -179,6 +186,7 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
 
   async function handleImport() {
     setNote(null);
+    setRedetectOffer(null);
     setImporting(true);
     try {
       const fresh = getProject(project.id);
@@ -221,11 +229,12 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       // 3. Room auto-detection — only when the project has no rooms yet,
       //    so we never clobber rooms a designer already shaped.
       let detectedCount = 0;
+      let detectedMethod: "svg" | "ai" = "ai";
       if (fresh.rooms.length === 0 && newPlans.length > 0) {
         setStatusText("Reading your floor plan…");
         for (const { plan, dataUrl, preview } of newPlans) {
           try {
-            const detected = await detectRooms(
+            const { rooms: detected, method } = await detectRooms(
               dataUrl,
               preview,
               plan.type === "pdf",
@@ -236,13 +245,17 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
               const current = getProject(project.id);
               if (!current) break;
               current.rooms = detected;
+              // Fill in bed/bath counts only when the listing didn't provide
+              // them — designer-entered counts stay untouched so the confirm
+              // step can cross-check detection against them.
               const bedTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
-              current.property.bedrooms = detected.filter(r => bedTypes.includes(r.type)).length || current.property.bedrooms;
-              current.property.bathrooms = detected.filter(r => r.type === "bathroom").length || current.property.bathrooms;
+              current.property.bedrooms = current.property.bedrooms || detected.filter(r => bedTypes.includes(r.type)).length;
+              current.property.bathrooms = current.property.bathrooms || detected.filter(r => r.type === "bathroom").length;
               current.property.floors = Math.max(...detected.map(r => r.floor), 1);
               saveProject(current);
               onUpdate();
               detectedCount = detected.length;
+              detectedMethod = method;
               break;
             }
           } catch { /* keep trying the next plan */ }
@@ -254,9 +267,20 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
       setScanLink(link);
 
       if (detectedCount > 0) {
-        setNote({ tone: "success", text: `Done! We found ${detectedCount} room${detectedCount === 1 ? "" : "s"} on your plan — you'll confirm them in the next step.` });
+        const plural = detectedCount === 1 ? "" : "s";
+        setNote({
+          tone: "success",
+          text: detectedMethod === "svg"
+            ? `Done! We found ${detectedCount} room${plural} on your plan (read from your Matterport plan) — you'll confirm them in the next step.`
+            : `Done! We found ${detectedCount} room${plural} on your plan (read by AI — double-check sizes in the next step).`,
+        });
       } else if (newPlans.length > 0 && fresh.rooms.length === 0) {
         setNote({ tone: "warn", text: "Your plan is saved, but we couldn't read the rooms off it automatically. No problem — add them by hand in the next step." });
+      } else if (newPlans.length > 0 && fresh.rooms.length > 0) {
+        // The project already has rooms, so we never clobber them silently.
+        // Offer a re-detect instead (notice with button rendered above).
+        setRedetectOffer(newPlans);
+        setNote(null);
       } else {
         setNote({ tone: "success", text: "Imported! Check the preview below, then continue." });
       }
@@ -265,6 +289,57 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
     } finally {
       setImporting(false);
       setStatusText("");
+    }
+  }
+
+  /** Designer chose to re-read a newly imported plan even though the project
+   *  already has rooms: confirm (it discards their edits), then re-run
+   *  detection and REPLACE the room list. */
+  async function redetectFromNewPlan() {
+    if (!redetectOffer || redetectOffer.length === 0) return;
+    const existingCount = getProject(project.id)?.rooms.length ?? 0;
+    const ok = window.confirm(
+      `Replace your ${existingCount} existing room${existingCount === 1 ? "" : "s"} with what we read off the new plan? Any edits you've made to those rooms (names, sizes, bed setups, notes) will be lost.`
+    );
+    if (!ok) return;
+    setRedetecting(true);
+    setNote(null);
+    try {
+      for (const { plan, dataUrl, preview } of redetectOffer) {
+        try {
+          const { rooms: detected, method } = await detectRooms(
+            dataUrl,
+            preview,
+            plan.type === "pdf",
+            plan.id,
+            plan.type === "image"
+          );
+          if (detected.length > 0) {
+            const current = getProject(project.id);
+            if (!current) break;
+            current.rooms = detected;
+            const bedTypes = ["primary-bedroom", "bedroom", "loft", "bonus-room"];
+            current.property.bedrooms = current.property.bedrooms || detected.filter(r => bedTypes.includes(r.type)).length;
+            current.property.bathrooms = current.property.bathrooms || detected.filter(r => r.type === "bathroom").length;
+            current.property.floors = Math.max(...detected.map(r => r.floor), 1);
+            saveProject(current);
+            logActivity(project.id, "imported", `Re-detected ${detected.length} room(s) from a new floor plan`);
+            onUpdate();
+            setRedetectOffer(null);
+            const plural = detected.length === 1 ? "" : "s";
+            setNote({
+              tone: "success",
+              text: method === "svg"
+                ? `Done! We replaced your rooms with ${detected.length} room${plural} from the new plan (read from your Matterport plan) — you'll confirm them in the next step.`
+                : `Done! We replaced your rooms with ${detected.length} room${plural} from the new plan (read by AI — double-check sizes in the next step).`,
+            });
+            return;
+          }
+        } catch { /* keep trying the next plan */ }
+      }
+      setNote({ tone: "warn", text: "We couldn't read rooms off the new plan, so your existing rooms are untouched." });
+    } finally {
+      setRedetecting(false);
     }
   }
 
@@ -280,6 +355,24 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
 
       <div className="space-y-4">
         {note && <StepNotice tone={note.tone}>{note.text}</StepNotice>}
+
+        {redetectOffer && (
+          <StepNotice tone="warn">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span>
+                You already have {project.rooms.length} room{project.rooms.length === 1 ? "" : "s"}, so we kept them. Want us to re-read the new plan instead?
+              </span>
+              <button
+                type="button"
+                onClick={() => void redetectFromNewPlan()}
+                disabled={redetecting}
+                className="shrink-0 rounded-xl border border-amber/40 bg-amber/10 px-3 py-1.5 text-xs font-semibold text-amber-dark hover:bg-amber/20 transition disabled:opacity-50"
+              >
+                {redetecting ? "Re-detecting…" : "Re-detect rooms from this plan"}
+              </button>
+            </div>
+          </StepNotice>
+        )}
 
         {/* Scan link */}
         <div className="card">
