@@ -151,7 +151,7 @@ async function svgToPng(page: Page, svg: string, outPath: string, w: number, h: 
   // Paste the Matterport share link a client would send.
   const linkInput = page.locator('input[placeholder*="matterport" i], input[placeholder*="scan" i], input[placeholder*="link" i]').first();
   if (await linkInput.isVisible().catch(() => false)) {
-    await linkInput.fill("https://my.matterport.com/show/?m=PelfreyDr251Demo");
+    await linkInput.fill("https://my.matterport.com/show/?m=SxQL3iGyoDo");
     log("pasted Matterport link");
   } else {
     log("!! no scan-link input found on step 1");
