@@ -163,7 +163,23 @@ export function KeyLegend({
 export function PlanThumb({ property, room }: { property: Property; room: Room }) {
   const result = getPlanForRoom(property, room);
   if (!result) return null;
-  const { plan, annotation } = result;
+  const { plan, annotation: tight } = result;
+  // Pad the crop ~10% per side so room labels at the bbox edge don't clip.
+  const annotation = tight
+    ? (() => {
+        const padX = tight.width * 0.1;
+        const padY = tight.height * 0.1;
+        const x = Math.max(0, tight.x - padX);
+        const y = Math.max(0, tight.y - padY);
+        return {
+          ...tight,
+          x,
+          y,
+          width: Math.min(100 - x, tight.width + padX * 2),
+          height: Math.min(100 - y, tight.height + padY * 2),
+        };
+      })()
+    : tight;
 
   return (
     <figure className="flex flex-col items-end gap-1">

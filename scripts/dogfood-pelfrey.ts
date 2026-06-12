@@ -268,8 +268,9 @@ async function svgToPng(page: Page, svg: string, outPath: string, w: number, h: 
   await guide.locator(".guide-page").first().waitFor({ timeout: 15000 });
   const pages = await guide.locator(".guide-page").count();
   log(`install guide pages: ${pages}`);
-  for (const [idx, name] of [[0, "cover"], [1, "floorplan"], [2, "room1"], [3, "room2"]] as const) {
-    if (idx < pages) await guide.locator(".guide-page").nth(idx).screenshot({ path: path.join(OUT, `guide-${name}.png`) });
+  for (let idx = 0; idx < pages; idx++) {
+    const tag = String(idx + 1).padStart(2, "0");
+    await guide.locator(".guide-page").nth(idx).screenshot({ path: path.join(OUT, `guide-p${tag}.png`) });
   }
   await guide.emulateMedia({ media: "print" });
   await guide.pdf({ path: path.join(OUT, "pelfrey-install-guide.pdf"), preferCSSPageSize: true, printBackground: true });
