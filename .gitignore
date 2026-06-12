@@ -9,3 +9,6 @@ next-env.d.ts
 
 # Local Claude Code worktrees
 .claude/worktrees/
+
+# stray nested repo, not part of this project
+PostBuilder/
