@@ -40,11 +40,62 @@ function friendlyRenderError(raw: string): string {
   return "The render didn't come through. Try again — this usually works on the second attempt.";
 }
 
+/** Downscale + lightly compress a room screenshot for storage. */
+async function compressRoomPhoto(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const MAX = 1600;
+  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
 export default function StepReviewRenders({ project, onUpdate, onComplete, onBack, goToStep, advanced }: Props) {
   const [generating, setGenerating] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, RenderError>>({});
   const [autoFillNote, setAutoFillNote] = useState<string | null>(null);
   const autoFillRan = useRef(false);
+  // One shared hidden input — photoRoomId tracks which room the designer is
+  // attaching their Matterport screenshot to.
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoRoomIdRef = useRef<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState<string | null>(null);
+
+  function pickPhotoFor(roomId: string) {
+    photoRoomIdRef.current = roomId;
+    photoInputRef.current?.click();
+  }
+
+  async function handlePhotoFile(file: File | undefined) {
+    const roomId = photoRoomIdRef.current;
+    photoRoomIdRef.current = null;
+    if (!file || !roomId) return;
+    if (!file.type.startsWith("image/")) {
+      setErrors(prev => ({ ...prev, [roomId]: { message: "That file isn't an image — upload a JPG or PNG screenshot of the room.", offerNoPhoto: false } }));
+      return;
+    }
+    setPhotoBusy(roomId);
+    try {
+      const dataUrl = await compressRoomPhoto(file);
+      // Host when storage is configured so localStorage stays light.
+      const hosted = (await ensureHostedUrl(dataUrl, "scenes")) ?? dataUrl;
+      const fresh = getProject(project.id);
+      const room = fresh?.rooms.find(r => r.id === roomId);
+      if (!fresh || !room) return;
+      room.referenceImageUrl = hosted;
+      saveProject(fresh);
+      onUpdate();
+      setErrors(prev => { const n = { ...prev }; delete n[roomId]; return n; });
+    } catch {
+      setErrors(prev => ({ ...prev, [roomId]: { message: "We couldn't read that photo. Try a different screenshot.", offerNoPhoto: false } }));
+    } finally {
+      setPhotoBusy(null);
+    }
+  }
 
   // Auto-fill furniture for empty rooms on entry, so the designer reviews
   // a starting point instead of staring at blank rooms.
@@ -170,7 +221,19 @@ export default function StepReviewRenders({ project, onUpdate, onComplete, onBac
     <div>
       <StepHeading
         title="Review furniture & renders"
-        subtitle="Each room comes pre-furnished in your style. Generate a render when you want to see the room come to life."
+        subtitle="Each room comes pre-furnished in your style. Add a screenshot of each room from your 3D tour, then generate renders that match the real space."
+      />
+
+      {/* Shared hidden input for per-room photo uploads */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          void handlePhotoFile(e.target.files?.[0]);
+          e.target.value = "";
+        }}
       />
 
       <div className="space-y-4">
@@ -197,29 +260,50 @@ export default function StepReviewRenders({ project, onUpdate, onComplete, onBac
             const items = room.furniture;
             return (
               <div key={room.id} className="rounded-xl border border-brand-900/10 bg-white overflow-hidden">
-                {/* Render thumbnail / placeholder */}
+                {/* Render thumbnail / room photo / placeholder */}
                 {url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={url} alt={`${room.name} render`} className="w-full aspect-video object-cover bg-brand-900/5" />
+                ) : busy ? (
+                  <div className="w-full aspect-video bg-parchment flex flex-col items-center justify-center gap-2">
+                    <span className="inline-block h-6 w-6 rounded-full border-2 border-amber border-t-transparent animate-spin" />
+                    <span className="text-xs text-brand-600">Rendering — takes about 30 seconds…</span>
+                  </div>
+                ) : room.referenceImageUrl ? (
+                  <div className="relative w-full aspect-video bg-brand-900/5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={room.referenceImageUrl} alt={`${room.name} photo`} className="h-full w-full object-cover" />
+                    <span className="absolute left-2 top-2 rounded bg-white/85 px-1.5 py-0.5 text-[10px] font-medium text-brand-900">
+                      Your room photo
+                    </span>
+                    <button
+                      onClick={() => void generateRender(room.id)}
+                      className="absolute bottom-2 right-2 text-xs font-semibold rounded-lg bg-amber px-3 py-1.5 text-white hover:bg-amber-dark transition shadow"
+                    >
+                      Generate render
+                    </button>
+                  </div>
                 ) : (
                   <div className="w-full aspect-video bg-parchment flex flex-col items-center justify-center gap-2">
-                    {busy ? (
-                      <>
-                        <span className="inline-block h-6 w-6 rounded-full border-2 border-amber border-t-transparent animate-spin" />
-                        <span className="text-xs text-brand-600">Rendering — takes about 30 seconds…</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-2xl opacity-40">🖼️</span>
-                        <span className="text-xs text-brand-600">No render yet</span>
-                        <button
-                          onClick={() => void generateRender(room.id)}
-                          className="text-xs font-semibold rounded-lg bg-amber px-3 py-1.5 text-white hover:bg-amber-dark transition"
-                        >
-                          Generate render
-                        </button>
-                      </>
-                    )}
+                    <span className="text-xs text-brand-600">No photo or render yet</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => pickPhotoFor(room.id)}
+                        disabled={photoBusy === room.id}
+                        className="text-xs font-semibold rounded-lg border border-amber/60 px-3 py-1.5 text-amber-dark hover:bg-amber/10 transition disabled:opacity-50"
+                      >
+                        {photoBusy === room.id ? "Adding…" : "📷 Add room photo"}
+                      </button>
+                      <button
+                        onClick={() => void generateRender(room.id)}
+                        className="text-xs font-semibold rounded-lg bg-amber px-3 py-1.5 text-white hover:bg-amber-dark transition"
+                      >
+                        Generate render
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-brand-600/60 px-4 text-center">
+                      Tip: screenshot the room in your Matterport tour — renders will match the real walls.
+                    </span>
                   </div>
                 )}
 
@@ -234,15 +318,25 @@ export default function StepReviewRenders({ project, onUpdate, onComplete, onBac
                         )}
                       </div>
                     </div>
-                    {url && (
+                    <div className="flex items-center gap-3 shrink-0">
                       <button
-                        onClick={() => void generateRender(room.id)}
-                        disabled={busy}
-                        className="text-[11px] font-medium text-amber-dark hover:text-brand-900 transition shrink-0 disabled:opacity-50"
+                        onClick={() => pickPhotoFor(room.id)}
+                        disabled={photoBusy === room.id}
+                        className="text-[11px] font-medium text-brand-600 hover:text-brand-900 transition disabled:opacity-50"
+                        title="Upload a screenshot of this room from your 3D tour"
                       >
-                        {busy ? "Rendering…" : "Regenerate"}
+                        {photoBusy === room.id ? "Adding…" : room.referenceImageUrl ? "Swap photo" : "📷 Add photo"}
                       </button>
-                    )}
+                      {url && (
+                        <button
+                          onClick={() => void generateRender(room.id)}
+                          disabled={busy}
+                          className="text-[11px] font-medium text-amber-dark hover:text-brand-900 transition disabled:opacity-50"
+                        >
+                          {busy ? "Rendering…" : "Regenerate"}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Short item list */}

@@ -159,9 +159,22 @@ function nonEmpty(value: string | undefined | null): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-/** Primary design board first (sceneSnapshot), then any extra board images. */
+/** Primary design board first (sceneSnapshot), then any extra board images.
+ *  When no board exists yet, falls back to the designer's room photo so the
+ *  page shows the real space instead of an empty card. */
 export function getBoardImages(room: Room): string[] {
-  return [room.sceneSnapshot, ...(room.extraBoardImageUrls ?? [])].filter(nonEmpty);
+  const boards = [room.sceneSnapshot, ...(room.extraBoardImageUrls ?? [])].filter(nonEmpty);
+  if (boards.length > 0) return boards;
+  return [room.referenceImageUrl].filter(nonEmpty);
+}
+
+/** True when this board page is showing the room photo stand-in, not a real board. */
+export function isPhotoFallback(room: Room, boardImageUrl: string | null): boolean {
+  return (
+    !!boardImageUrl &&
+    !nonEmpty(room.sceneSnapshot) &&
+    boardImageUrl === room.referenceImageUrl
+  );
 }
 
 /** 1–2 AI renders: aiRenderUrls when present, else legacy originalRenderUrl. */

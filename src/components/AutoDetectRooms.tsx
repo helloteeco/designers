@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
 import { detectRoomsFromImage, matchDetectedToExisting, annotationFromBBox, type DetectedRoom, type RoomMatch } from "@/lib/floor-plan-ocr";
-import { detectRoomsFromSvg, isSvgSource, readSvgText, type SvgDetectedRoom, type SvgBBox } from "@/lib/floor-plan-svg";
+import { detectRoomsFromSvg, isSvgSource, readSvgText, parseSvgViewBox, annotationFromSvgBBox, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
 import type { Project, FloorPlan, Room, RoomType, RoomAnnotation } from "@/lib/types";
 
@@ -29,44 +29,6 @@ function loadImageDims(url: string): Promise<{ w: number; h: number } | null> {
   });
 }
 
-/** Parse the viewBox (or width/height fallback) from raw SVG text. */
-function parseSvgViewBox(svgText: string): { x: number; y: number; width: number; height: number } | null {
-  if (typeof DOMParser === "undefined") return null;
-  try {
-    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
-    const svg = doc.querySelector("svg");
-    if (!svg) return null;
-    const vbAttr = svg.getAttribute("viewBox");
-    if (vbAttr) {
-      const p = vbAttr.split(/[\s,]+/).map(Number);
-      if (p.length === 4 && p.every(Number.isFinite) && p[2] > 0 && p[3] > 0) {
-        return { x: p[0], y: p[1], width: p[2], height: p[3] };
-      }
-    }
-    const w = parseFloat(svg.getAttribute("width") ?? "");
-    const h = parseFloat(svg.getAttribute("height") ?? "");
-    if (w > 0 && h > 0) return { x: 0, y: 0, width: w, height: h };
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/** Convert an SVG-coordinate room bbox to a %-of-plan RoomAnnotation. */
-function annotationFromSvgBBox(
-  bbox: SvgBBox,
-  viewBox: { x: number; y: number; width: number; height: number },
-  floorPlanId: string
-): RoomAnnotation | null {
-  const clamp = (v: number) => Math.max(0, Math.min(100, v));
-  const round2 = (v: number) => Math.round(v * 100) / 100;
-  const x0 = clamp(((bbox.x - viewBox.x) / viewBox.width) * 100);
-  const y0 = clamp(((bbox.y - viewBox.y) / viewBox.height) * 100);
-  const x1 = clamp(((bbox.x + bbox.width - viewBox.x) / viewBox.width) * 100);
-  const y1 = clamp(((bbox.y + bbox.height - viewBox.y) / viewBox.height) * 100);
-  if (x1 - x0 < 0.5 || y1 - y0 < 0.5) return null; // degenerate after clamping
-  return { floorPlanId, x: round2(x0), y: round2(y0), width: round2(x1 - x0), height: round2(y1 - y0) };
-}
 
 /**
  * Auto-detect rooms from a Matterport-style floor plan using OCR.

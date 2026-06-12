@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import ScanViewer from "@/components/ScanViewer";
 import { getProject, saveProject, generateId, logActivity } from "@/lib/store";
-import { detectRoomsFromSvgDetailed, isSvgSource } from "@/lib/floor-plan-svg";
+import { detectRoomsFromSvgDetailed, isSvgSource, readSvgText, parseSvgViewBox, annotationFromSvgBBox } from "@/lib/floor-plan-svg";
 import { sharpenImage } from "@/lib/sharpen-image";
 import type { FloorPlan, Project, Room, RoomType } from "@/lib/types";
 import { StepHeading, StepFooter, StepNotice } from "./StepShell";
@@ -114,8 +114,17 @@ export default function StepImportScan({ project, onUpdate, onComplete, onSkipTo
     if (!isPdf && isSvgSource(rawDataUrl)) {
       try {
         const result = await detectRoomsFromSvgDetailed(rawDataUrl);
+        const svgText = await readSvgText(rawDataUrl).catch(() => "");
+        const viewBox = svgText ? parseSvgViewBox(svgText) : null;
         for (const r of result.rooms) {
-          rooms.push(blankRoom(r.label, r.guessedType, r.widthFt, r.lengthFt, r.floor ?? 1));
+          const room = blankRoom(r.label, r.guessedType, r.widthFt, r.lengthFt, r.floor ?? 1);
+          // Anchor each room onto the plan so Install Guide pages can show a
+          // per-room crop instead of the whole plan.
+          if (r.svgBBox && viewBox && planIsImage) {
+            room.annotation = annotationFromSvgBBox(r.svgBBox, viewBox, planId) ?? undefined;
+            room.svgBBox = r.svgBBox;
+          }
+          rooms.push(room);
         }
         if (rooms.length > 0) return rooms;
       } catch { /* fall through to AI vision */ }

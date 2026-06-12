@@ -1,6 +1,7 @@
 import type { Property } from "@/lib/types";
 import {
   BATHROOM_HEIGHT_TIPS,
+  isPhotoFallback,
   parseTipLines,
   type BathroomDescriptor,
 } from "./page-list";
@@ -31,7 +32,10 @@ export default function BathroomPage({
 
   return (
     <GuidePage pageNumber={pageNumber} pageCount={pageCount}>
-      <PageTitle overline="Design Board" title={displayName} />
+      <PageTitle
+        overline={isPhotoFallback(room, boardImageUrl) ? "Room Photo — Design Board to Follow" : "Design Board"}
+        title={displayName}
+      />
 
       <div className="mt-3 flex min-h-0 flex-1 gap-[0.4in]">
         {/* Board image */}

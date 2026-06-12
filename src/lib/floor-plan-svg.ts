@@ -12,6 +12,7 @@
 
 import type { DetectedRoom } from "./floor-plan-ocr";
 import { ROOM_KEYWORDS, parseDimensionOnly, prettifyLabel, guessRoomType } from "./floor-plan-ocr";
+import type { RoomAnnotation } from "./types";
 
 /**
  * Per-room SVG bounding box: where in the SVG's coordinate space this room
@@ -42,6 +43,47 @@ export interface SvgDetectionResult {
   warnings: SvgDetectionWarning[];
   /** Number of distinct "FLOOR N" banners found in the SVG. */
   floorCount: number;
+}
+
+/** Parse an SVG's viewBox (falling back to width/height) from raw SVG text. */
+export function parseSvgViewBox(
+  svgText: string
+): { x: number; y: number; width: number; height: number } | null {
+  if (typeof DOMParser === "undefined") return null;
+  try {
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    const svg = doc.querySelector("svg");
+    if (!svg) return null;
+    const vbAttr = svg.getAttribute("viewBox");
+    if (vbAttr) {
+      const p = vbAttr.split(/[\s,]+/).map(Number);
+      if (p.length === 4 && p.every(Number.isFinite) && p[2] > 0 && p[3] > 0) {
+        return { x: p[0], y: p[1], width: p[2], height: p[3] };
+      }
+    }
+    const w = parseFloat(svg.getAttribute("width") ?? "");
+    const h = parseFloat(svg.getAttribute("height") ?? "");
+    if (w > 0 && h > 0) return { x: 0, y: 0, width: w, height: h };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Convert an SVG-coordinate room bbox to a %-of-plan RoomAnnotation. */
+export function annotationFromSvgBBox(
+  bbox: SvgBBox,
+  viewBox: { x: number; y: number; width: number; height: number },
+  floorPlanId: string
+): RoomAnnotation | null {
+  const clamp = (v: number) => Math.max(0, Math.min(100, v));
+  const round2 = (v: number) => Math.round(v * 100) / 100;
+  const x0 = clamp(((bbox.x - viewBox.x) / viewBox.width) * 100);
+  const y0 = clamp(((bbox.y - viewBox.y) / viewBox.height) * 100);
+  const x1 = clamp(((bbox.x + bbox.width - viewBox.x) / viewBox.width) * 100);
+  const y1 = clamp(((bbox.y + bbox.height - viewBox.y) / viewBox.height) * 100);
+  if (x1 - x0 < 0.5 || y1 - y0 < 0.5) return null; // degenerate after clamping
+  return { floorPlanId, x: round2(x0), y: round2(y0), width: round2(x1 - x0), height: round2(y1 - y0) };
 }
 
 /** True if the data: URL or raw text appears to be SVG. */

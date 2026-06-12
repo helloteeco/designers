@@ -1,6 +1,7 @@
 import type { Property } from "@/lib/types";
 import {
   DEFAULT_BEDROOM_TIPS,
+  isPhotoFallback,
   parseTipLines,
   type RoomBoardDescriptor,
 } from "./page-list";
@@ -25,8 +26,12 @@ export default function RoomBoardPage({
   pageCount: number;
 }) {
   const { room, displayName, boardImageUrl, boardIndex, boardCount, showTips } = descriptor;
-  const overline =
-    boardCount > 1 ? `Design Board ${boardIndex + 1} of ${boardCount}` : "Design Board";
+  const photoFallback = isPhotoFallback(room, boardImageUrl);
+  const overline = photoFallback
+    ? "Room Photo — Design Board to Follow"
+    : boardCount > 1
+      ? `Design Board ${boardIndex + 1} of ${boardCount}`
+      : "Design Board";
   const tipLines = showTips
     ? room.installTips?.trim()
       ? parseTipLines(room.installTips)
