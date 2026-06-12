@@ -9,7 +9,7 @@
  * Designer always confirms results before we create/update rooms.
  */
 
-import type { RoomType } from "./types";
+import type { RoomType, RoomAnnotation } from "./types";
 
 export interface DetectedRoom {
   rawText: string;
@@ -80,6 +80,105 @@ function loadTesseract() {
   return _tesseractPromise;
 }
 
+// ── Canvas pre-processing ──
+//
+// Tesseract does noticeably better on floor plans when we hand it a large,
+// high-contrast grayscale image. Pipeline: upscale so the longest side is
+// at least 1600px (small phone photos / thumbnail exports), grayscale,
+// linear contrast stretch between the 1st/99th-percentile luminance, then
+// a LIGHT threshold that pushes near-white paper to pure white and near-
+// black ink to pure black while keeping midtones (pencil, shading) intact.
+//
+// Bounding boxes from Tesseract come back in the PREPROCESSED image's pixel
+// space — detectRoomsFromImage divides them back by `scale` so callers
+// always receive bboxes in the ORIGINAL image's pixel coordinates.
+
+const OCR_MIN_LONG_SIDE = 1600;
+
+interface PreprocessedImage {
+  /** Data URL (or the original input when preprocessing isn't possible). */
+  source: string;
+  /** Upscale factor applied (1 = none). Divide bboxes by this. */
+  scale: number;
+}
+
+async function preprocessImageForOcr(imageUrl: string): Promise<PreprocessedImage> {
+  if (typeof document === "undefined") return { source: imageUrl, scale: 1 };
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.crossOrigin = "anonymous";
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("image load failed"));
+      el.src = imageUrl;
+    });
+
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    if (!w || !h) return { source: imageUrl, scale: 1 };
+
+    const longSide = Math.max(w, h);
+    const scale = longSide < OCR_MIN_LONG_SIDE ? OCR_MIN_LONG_SIDE / longSide : 1;
+    const cw = Math.round(w * scale);
+    const ch = Math.round(h * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return { source: imageUrl, scale: 1 };
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.fillStyle = "#fff"; // flatten transparency (PNG plans) to white paper
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(img, 0, 0, cw, ch);
+
+    // getImageData throws on cross-origin-tainted canvases — fall back to
+    // the untouched source in that case.
+    const imageData = ctx.getImageData(0, 0, cw, ch);
+    const px = imageData.data;
+
+    // Luminance histogram → robust min/max (1st / 99th percentile) so a
+    // single stray pixel can't wreck the stretch.
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < px.length; i += 4) {
+      const lum = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) | 0;
+      hist[lum]++;
+    }
+    const total = cw * ch;
+    const cut = Math.max(1, Math.floor(total * 0.01));
+    let lo = 0;
+    let acc = 0;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= cut) { lo = v; break; } }
+    let hi = 255;
+    acc = 0;
+    for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= cut) { hi = v; break; } }
+    if (hi - lo < 16) { lo = 0; hi = 255; } // nearly flat image — skip stretch
+
+    const range = hi - lo;
+    for (let i = 0; i < px.length; i += 4) {
+      const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+      // Linear contrast stretch
+      let v = ((lum - lo) / range) * 255;
+      if (v < 0) v = 0;
+      else if (v > 255) v = 255;
+      // Light threshold: clean paper → white, ink → black, keep midtones
+      if (v >= 210) v = 255;
+      else if (v <= 50) v = 0;
+      px[i] = px[i + 1] = px[i + 2] = v;
+      px[i + 3] = 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    return { source: canvas.toDataURL("image/png"), scale };
+  } catch {
+    // Any failure (tainted canvas, decode error, memory) → OCR the original.
+    return { source: imageUrl, scale: 1 };
+  }
+}
+
 // ── Main OCR entry point ──
 
 export async function detectRoomsFromImage(
@@ -88,6 +187,9 @@ export async function detectRoomsFromImage(
 ): Promise<DetectedRoom[]> {
   const Tesseract = await loadTesseract();
   onProgress?.(5, "Loading OCR engine...");
+
+  onProgress?.(10, "Sharpening floor plan image...");
+  const pre = await preprocessImageForOcr(imageUrl);
 
   const worker = await Tesseract.createWorker("eng", 1, {
     logger: (m) => {
@@ -98,14 +200,61 @@ export async function detectRoomsFromImage(
   });
 
   try {
-    const { data } = await worker.recognize(imageUrl);
+    const { data } = await worker.recognize(pre.source);
     onProgress?.(95, "Parsing room data...");
     const rooms = parseRooms(data);
+    // Tesseract bboxes are in the preprocessed (possibly upscaled) image's
+    // pixel space — map back to ORIGINAL image pixels so downstream
+    // consumers (annotationFromBBox etc.) can use the plan's natural size.
+    if (pre.scale !== 1) {
+      for (const r of rooms) {
+        r.bbox = {
+          x0: r.bbox.x0 / pre.scale,
+          y0: r.bbox.y0 / pre.scale,
+          x1: r.bbox.x1 / pre.scale,
+          y1: r.bbox.y1 / pre.scale,
+        };
+      }
+    }
     onProgress?.(100, `Found ${rooms.length} rooms`);
     return rooms;
   } finally {
     await worker.terminate();
   }
+}
+
+// ── Pixel bbox → plan annotation ──
+
+/**
+ * Convert a pixel-space bounding box (e.g. a DetectedRoom.bbox from OCR)
+ * into a RoomAnnotation: percentages (0-100) of the plan image, clamped,
+ * with a small ~2% breathing-room padding on every side so the annotation
+ * comfortably covers the room label it came from.
+ */
+export function annotationFromBBox(
+  bbox: { x0: number; y0: number; x1: number; y1: number },
+  imageW: number,
+  imageH: number,
+  floorPlanId: string
+): RoomAnnotation {
+  const PAD_PCT = 2;
+  const w = Math.max(1, imageW);
+  const h = Math.max(1, imageH);
+  const clamp = (v: number) => Math.max(0, Math.min(100, v));
+  const round2 = (v: number) => Math.round(v * 100) / 100;
+
+  const x0 = clamp((Math.min(bbox.x0, bbox.x1) / w) * 100 - PAD_PCT);
+  const y0 = clamp((Math.min(bbox.y0, bbox.y1) / h) * 100 - PAD_PCT);
+  const x1 = clamp((Math.max(bbox.x0, bbox.x1) / w) * 100 + PAD_PCT);
+  const y1 = clamp((Math.max(bbox.y0, bbox.y1) / h) * 100 + PAD_PCT);
+
+  return {
+    floorPlanId,
+    x: round2(x0),
+    y: round2(y0),
+    width: round2(x1 - x0),
+    height: round2(y1 - y0),
+  };
 }
 
 // ── Parsing ──

@@ -24,8 +24,9 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              // Supabase + OpenAI + Tesseract language data CDN + Matterport/Polycam embed assets
-              "connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://api.openai.com https://unpkg.com https://cdn.jsdelivr.net https://tessdata.projectnaptha.com",
+              // Supabase + Tesseract language data CDN + Matterport/Polycam embed assets
+              // (all AI calls go server-side to Gemini — no client AI origins needed)
+              "connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://unpkg.com https://cdn.jsdelivr.net https://tessdata.projectnaptha.com",
               "frame-src https://my.matterport.com https://poly.cam https://www.spoak.com https://*.spoak.com",
             ].join("; "),
           },
