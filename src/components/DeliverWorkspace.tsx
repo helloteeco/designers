@@ -4,6 +4,7 @@ import { useState } from "react";
 import ReviewHub from "./ReviewHub";
 import OrderHub from "./OrderHub";
 import InstallHub from "./InstallHub";
+import { getExportBlockers } from "@/lib/project-readiness";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -27,9 +28,15 @@ export default function DeliverWorkspace({ project, projectId, onUpdate }: Props
     0
   );
   const itemCount = project.rooms.reduce((s, r) => s + r.furniture.length, 0);
+  const { blockers } = getExportBlockers(project);
 
   return (
     <div>
+      {blockers.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber/30 bg-amber/10 px-4 py-2.5 text-sm text-brand-700">
+          <span className="font-semibold">Before you export:</span> {blockers[0]}
+        </div>
+      )}
       <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-semibold">Deliver</h2>

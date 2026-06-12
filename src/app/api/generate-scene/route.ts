@@ -44,11 +44,19 @@ export async function POST(request: Request) {
     room,
     extraNotes,
     referenceImageDataUrl,
+    requireReference,
     mode,
   } = (body ?? {}) as {
     styleId?: string;
     room?: { name?: string; type: string; widthFt: number; lengthFt: number };
     extraNotes?: string;
+    /**
+     * When true, the caller insists the reference photo actually be used.
+     * If the reference can't be inlined (bad data URL, unfetchable hosted
+     * URL), we return 422 REFERENCE_UNAVAILABLE instead of silently
+     * degrading to text-to-image and inventing a random room.
+     */
+    requireReference?: boolean;
     /**
      * Optional existing photo of the empty room (e.g. a Matterport screenshot).
      * When provided, Gemini does image-to-image restyling — the walls,
@@ -85,6 +93,20 @@ export async function POST(request: Request) {
     !!referenceImageDataUrl &&
     (referenceImageDataUrl.startsWith("data:image/") ||
       /^https?:\/\//i.test(referenceImageDataUrl));
+  // Caller demands the reference be used, but what they sent isn't usable
+  // (missing, or neither a data:image/ URL nor an http(s) URL) — refuse
+  // instead of generating a made-up room.
+  if (requireReference && !hasReference) {
+    return NextResponse.json(
+      {
+        error: "REFERENCE_UNAVAILABLE",
+        detail: referenceImageDataUrl
+          ? `referenceImageDataUrl is neither a data:image/ URL nor an http(s) URL (got: ${String(referenceImageDataUrl).slice(0, 60)}…)`
+          : "requireReference is true but no referenceImageDataUrl was provided",
+      },
+      { status: 422 }
+    );
+  }
   const effectiveMode = mode ?? "install-guide-bg";
   const basePrompt = buildScenePrompt(preset, room, extraNotes, effectiveMode);
 
@@ -169,19 +191,34 @@ export async function POST(request: Request) {
   // URLs, leaving echo-skip inactive whenever the reference was in Supabase.
   let referenceBase64ForEchoCheck: string | null = null;
   if (hasReference && referenceImageDataUrl) {
-    try {
-      const inline = await imageToInlineBase64(referenceImageDataUrl);
-      userParts.push({ inlineData: { data: inline.data, mimeType: inline.mimeType } });
-      referenceBase64ForEchoCheck = inline.data;
-    } catch (err) {
-      return NextResponse.json(
-        {
-          error: `Could not load reference photo: ${err instanceof Error ? err.message : String(err)}`,
-        },
-        { status: 400 }
-      );
+    // Hosted https references get ONE retry (transient Supabase/CDN blips);
+    // data: URLs are deterministic, so retrying is pointless.
+    const isHosted = /^https?:\/\//i.test(referenceImageDataUrl);
+    const attempts = isHosted ? 2 : 1;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < attempts && !referenceBase64ForEchoCheck; attempt++) {
+      try {
+        const inline = await imageToInlineBase64(referenceImageDataUrl);
+        userParts.push({ inlineData: { data: inline.data, mimeType: inline.mimeType } });
+        referenceBase64ForEchoCheck = inline.data;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (!referenceBase64ForEchoCheck) {
+      const detail = `Could not load reference photo: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`;
+      if (requireReference) {
+        return NextResponse.json({ error: "REFERENCE_UNAVAILABLE", detail }, { status: 422 });
+      }
+      // Degrade EXPLICITLY (usedReference=false in the response): swap the
+      // preserve-this-exact-room prompt for the plain no-reference prompt so
+      // the model isn't told to preserve a photo it never received.
+      console.warn("generate-scene: proceeding without reference —", detail);
+      prompt = basePrompt;
+      userParts[0] = { text: prompt };
     }
   }
+  const usedReference = referenceBase64ForEchoCheck !== null;
 
   // Model fallback chain covering every current Google image-gen surface.
   // Order: Nano Banana family (via generateContent) → Imagen family (via
@@ -284,6 +321,7 @@ export async function POST(request: Request) {
         promptUsed: prompt,
         presetId: preset.id,
         modelUsed: model,
+        usedReference,
       });
     } catch (err) {
       errors.push({
@@ -315,6 +353,9 @@ export async function POST(request: Request) {
         promptUsed: prompt,
         presetId: preset.id,
         modelUsed: model,
+        // Imagen's generateImages is prompt-only — the reference photo is
+        // never passed to it, so be honest that it wasn't used.
+        usedReference: false,
       });
     } catch (err) {
       errors.push({

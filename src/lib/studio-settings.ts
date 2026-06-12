@@ -31,6 +31,16 @@ export interface StudioSettings {
   showPricingToClient: boolean;
   showVendorLinksToClient: boolean;
   briefFooterNote: string;
+
+  /** Global Advanced Mode. OFF (default) hides every power-user control and
+   *  keeps the guided flow to one primary action per step. ON unlocks manual
+   *  room/dimension editing, furniture swaps, prompt tuning, marker control,
+   *  masterlist rate editing, etc. */
+  advancedMode: boolean;
+
+  /** Tax & shipping percentage used in Masterlist T&S column formulas.
+   *  Advanced-Mode editable; Teeco standard is 7. */
+  taxShippingRatePercent: number;
 }
 
 const SETTINGS_KEY = "designStudio_settings";
@@ -54,7 +64,27 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   showPricingToClient: true,
   showVendorLinksToClient: true,
   briefFooterNote: "Thank you for trusting us with your design. Questions? Reach out any time.",
+  advancedMode: false,
+  taxShippingRatePercent: 7,
 };
+
+// ── Advanced Mode helpers ──
+// Thin wrappers so components can toggle/read the global Advanced Mode
+// without pulling the whole settings object. Fires a window event so all
+// mounted components re-render in sync when the toggle flips.
+
+export const ADVANCED_MODE_EVENT = "studio:advanced-mode-changed";
+
+export function isAdvancedMode(): boolean {
+  return getStudioSettings().advancedMode;
+}
+
+export function setAdvancedMode(on: boolean): void {
+  saveStudioSettings({ advancedMode: on });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(ADVANCED_MODE_EVENT, { detail: on }));
+  }
+}
 
 export function getStudioSettings(): StudioSettings {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;

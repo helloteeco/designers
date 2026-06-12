@@ -6,6 +6,7 @@ import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import { logActivity } from "@/lib/store";
 import { getStudioSettings } from "@/lib/studio-settings";
 import { downloadMasterlistXlsx } from "@/lib/masterlist-export";
+import { getExportBlockers } from "@/lib/project-readiness";
 import { useToast } from "@/components/Toast";
 
 interface Props {
@@ -22,8 +23,11 @@ export default function ExportPanel({ project }: Props) {
   const settings = getStudioSettings();
   const toast = useToast();
   const [generating, setGenerating] = useState(false);
+  const { blockers } = getExportBlockers(project);
+  const exportBlocked = blockers.length > 0;
 
   async function downloadXlsx() {
+    if (exportBlocked) return;
     setGenerating(true);
     try {
       await downloadMasterlistXlsx(project);
@@ -408,10 +412,14 @@ export default function ExportPanel({ project }: Props) {
           <button
             onClick={downloadXlsx}
             className="btn-primary btn-sm w-full mb-2"
-            disabled={generating || rows.length === 0}
+            disabled={generating || rows.length === 0 || exportBlocked}
+            title={exportBlocked ? blockers[0] : undefined}
           >
             {generating ? "Generating..." : "Download .xlsx"}
           </button>
+          {exportBlocked && (
+            <p className="text-[10px] text-amber-dark mb-2">{blockers[0]}</p>
+          )}
           <button
             onClick={downloadTeecoMasterlist}
             className="text-[10px] text-brand-600 hover:text-amber-dark hover:underline"

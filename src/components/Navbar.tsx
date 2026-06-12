@@ -4,10 +4,13 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getUser, getProfile, clearUser } from "@/lib/store";
 import { isConfigured, signOut } from "@/lib/supabase";
+import { setAdvancedMode } from "@/lib/studio-settings";
+import { useAdvancedMode } from "@/components/guided/useAdvancedMode";
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const advanced = useAdvancedMode();
   const [userName, setUserName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -63,6 +66,28 @@ export default function Navbar() {
 
         {/* Right */}
         <div className="flex items-center gap-4">
+          {/* Advanced Mode pill — global power-user toggle */}
+          <button
+            onClick={() => setAdvancedMode(!advanced)}
+            title="Show power-user controls"
+            aria-pressed={advanced}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+              advanced
+                ? "border-amber bg-amber/15 text-amber-dark"
+                : "border-brand-900/15 bg-white text-brand-600 hover:text-brand-900 hover:border-brand-900/30"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full transition ${
+                advanced ? "bg-amber" : "bg-brand-900/20"
+              }`}
+            />
+            Advanced
+            <span className={`text-[9px] uppercase tracking-wider ${advanced ? "text-amber-dark/70" : "text-brand-600/50"}`}>
+              {advanced ? "on" : "off"}
+            </span>
+          </button>
+
           {/* Company + invite */}
           {companyName && (
             <div className="relative">

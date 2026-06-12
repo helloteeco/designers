@@ -6,6 +6,7 @@ import ProjectSummary from "./ProjectSummary";
 import ActivityFeed from "./ActivityFeed";
 import TeamChat from "./TeamChat";
 import { isConfigured } from "@/lib/supabase";
+import { getExportBlockers } from "@/lib/project-readiness";
 import type { Project } from "@/lib/types";
 
 interface Props {
@@ -80,6 +81,8 @@ function InstallGuidePanel({ project }: { project: Project }) {
   const hasFloorPlan = (project.property.floorPlans ?? []).some(p => p.type === "image");
   const hasHero = !!project.property.heroImageUrl;
   const totalRooms = project.rooms.length;
+  const { blockers } = getExportBlockers(project);
+  const guideBlocked = blockers.length > 0;
 
   return (
     <div>
@@ -92,13 +95,18 @@ function InstallGuidePanel({ project }: { project: Project }) {
               Opens in a new tab — use your browser&apos;s Print → Save as PDF.
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col items-end gap-1.5">
             <button
               onClick={() => window.open(`/projects/install-guide?id=${project.id}`, "_blank")}
-              className="btn-primary"
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={guideBlocked}
+              title={guideBlocked ? blockers[0] : undefined}
             >
               📖 Open Install Guide
             </button>
+            {guideBlocked && (
+              <p className="text-[10px] text-amber-dark text-right max-w-[220px]">{blockers[0]}</p>
+            )}
           </div>
         </div>
 

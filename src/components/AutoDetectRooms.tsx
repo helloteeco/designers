@@ -2,16 +2,70 @@
 
 import { useState } from "react";
 import { saveProject, getProject as getProjectFromStore, generateId, logActivity } from "@/lib/store";
-import { detectRoomsFromImage, matchDetectedToExisting, type DetectedRoom, type RoomMatch } from "@/lib/floor-plan-ocr";
-import { detectRoomsFromSvg, isSvgSource, readSvgText, type SvgDetectedRoom } from "@/lib/floor-plan-svg";
+import { detectRoomsFromImage, matchDetectedToExisting, annotationFromBBox, type DetectedRoom, type RoomMatch } from "@/lib/floor-plan-ocr";
+import { detectRoomsFromSvg, isSvgSource, readSvgText, type SvgDetectedRoom, type SvgBBox } from "@/lib/floor-plan-svg";
 import { useToast } from "./Toast";
-import type { Project, FloorPlan, Room, RoomType } from "@/lib/types";
+import type { Project, FloorPlan, Room, RoomType, RoomAnnotation } from "@/lib/types";
 
 interface Props {
   project: Project;
   plan: FloorPlan;
   onUpdate: () => void;
   onClose: () => void;
+}
+
+/** Load an image's natural pixel dimensions (null on failure / SSR). */
+function loadImageDims(url: string): Promise<{ w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    if (typeof Image === "undefined") { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      } else resolve(null);
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+/** Parse the viewBox (or width/height fallback) from raw SVG text. */
+function parseSvgViewBox(svgText: string): { x: number; y: number; width: number; height: number } | null {
+  if (typeof DOMParser === "undefined") return null;
+  try {
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    const svg = doc.querySelector("svg");
+    if (!svg) return null;
+    const vbAttr = svg.getAttribute("viewBox");
+    if (vbAttr) {
+      const p = vbAttr.split(/[\s,]+/).map(Number);
+      if (p.length === 4 && p.every(Number.isFinite) && p[2] > 0 && p[3] > 0) {
+        return { x: p[0], y: p[1], width: p[2], height: p[3] };
+      }
+    }
+    const w = parseFloat(svg.getAttribute("width") ?? "");
+    const h = parseFloat(svg.getAttribute("height") ?? "");
+    if (w > 0 && h > 0) return { x: 0, y: 0, width: w, height: h };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Convert an SVG-coordinate room bbox to a %-of-plan RoomAnnotation. */
+function annotationFromSvgBBox(
+  bbox: SvgBBox,
+  viewBox: { x: number; y: number; width: number; height: number },
+  floorPlanId: string
+): RoomAnnotation | null {
+  const clamp = (v: number) => Math.max(0, Math.min(100, v));
+  const round2 = (v: number) => Math.round(v * 100) / 100;
+  const x0 = clamp(((bbox.x - viewBox.x) / viewBox.width) * 100);
+  const y0 = clamp(((bbox.y - viewBox.y) / viewBox.height) * 100);
+  const x1 = clamp(((bbox.x + bbox.width - viewBox.x) / viewBox.width) * 100);
+  const y1 = clamp(((bbox.y + bbox.height - viewBox.y) / viewBox.height) * 100);
+  if (x1 - x0 < 0.5 || y1 - y0 < 0.5) return null; // degenerate after clamping
+  return { floorPlanId, x: round2(x0), y: round2(y0), width: round2(x1 - x0), height: round2(y1 - y0) };
 }
 
 /**
@@ -100,14 +154,37 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
     if (!fresh) return;
 
     // If we ran the SVG path, persist the raw SVG once at the property level
-    // so the Space Planner backdrop can crop it per-room.
+    // so the Space Planner backdrop can crop it per-room. Keep the text
+    // around — we also need its viewBox to convert svgBBox → % annotations.
+    let svgText: string | null = null;
     if (sourceKind === "svg") {
       try {
-        const svgText = await readSvgText(plan.url);
+        svgText = await readSvgText(plan.url);
         fresh.property.floorPlanSvgContent = svgText;
       } catch {
         // Non-fatal — we still apply the room dimensions.
       }
+    }
+
+    // Spatial anchoring inputs: SVG viewBox (SVG path) or the plan image's
+    // natural pixel size (OCR path — bboxes are in original image pixels).
+    const svgViewBox = svgText ? parseSvgViewBox(svgText) : null;
+    const imgDims = sourceKind === "ocr" ? await loadImageDims(plan.url) : null;
+
+    /** Best-effort plan annotation for a detection — undefined if unanchorable. */
+    function annotationFor(m: RoomMatch): RoomAnnotation | undefined {
+      const svgBBox = (m.detected as SvgDetectedRoom).svgBBox;
+      if (svgBBox && svgViewBox) {
+        return annotationFromSvgBBox(svgBBox, svgViewBox, plan.id) ?? undefined;
+      }
+      if (sourceKind === "ocr" && imgDims) {
+        const b = m.detected.bbox;
+        // Skip degenerate bboxes (fallback OCR lines carry {0,0,0,0})
+        if (b && b.x1 - b.x0 > 1 && b.y1 - b.y0 > 1) {
+          return annotationFromBBox(b, imgDims.w, imgDims.h, plan.id);
+        }
+      }
+      return undefined;
     }
 
     // Replace-all wipes existing rooms before creating any. Forces every
@@ -126,6 +203,10 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
     for (const m of matches) {
       if (m.action === "skip") continue;
       const svgBBox = (m.detected as SvgDetectedRoom).svgBBox;
+      // Auto-anchor: every applied room arrives spatially pinned to the plan
+      // (OCR text bbox or SVG room bbox → % annotation) so no manual
+      // annotator pass is needed afterwards.
+      const annotation = annotationFor(m);
       // After replaceAll, no existing room can be a target — coerce to create.
       const action = replaceAll ? "create" : m.action;
 
@@ -135,6 +216,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
         room.widthFt = m.detected.widthFt;
         room.lengthFt = m.detected.lengthFt;
         if (svgBBox) room.svgBBox = svgBBox;
+        if (annotation) room.annotation = annotation;
         // Don't overwrite name if user has set one — but update type if still default
         if (room.type !== m.detected.guessedType) {
           // Leave existing type; OCR type is just a guess
@@ -156,6 +238,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
           accentWall: null,
           notes: "",
           ...(svgBBox ? { svgBBox } : {}),
+          ...(annotation ? { annotation } : {}),
         };
         fresh.rooms.push(newRoom);
         created++;
@@ -284,7 +367,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
               <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3">
                 <div className="flex items-center gap-2 mb-0.5">
                   <div className="font-semibold text-emerald-900 text-sm">
-                    Found {detected.length} room{detected.length === 1 ? "" : "s"}
+                    We found {detected.length} room{detected.length === 1 ? "" : "s"} — do these look right?
                   </div>
                   <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
                     sourceKind === "svg" ? "bg-emerald-600 text-white" : "bg-amber-200 text-amber-900"
@@ -337,6 +420,7 @@ export default function AutoDetectRooms({ project, plan, onUpdate, onClose }: Pr
                     key={idx}
                     match={m}
                     existingRooms={project.rooms}
+                    showConfidence={sourceKind === "ocr"}
                     onActionChange={(a) => updateMatchAction(idx, a)}
                     onExistingChange={(id) => updateExistingRoomId(idx, id)}
                     onLabelChange={(label) => updateDetectedField(idx, "label", label)}
@@ -418,9 +502,36 @@ const ALL_TYPES: RoomType[] = [
   "game-room", "media-room", "bathroom", "hallway", "outdoor",
 ];
 
+/**
+ * Confidence badge for OCR detections. SVG detections are exact (vector
+ * text, no recognition step) so they show no badge at all.
+ */
+function ConfidenceBadge({ confidence }: { confidence: number }) {
+  if (confidence >= 0.85) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
+        high
+      </span>
+    );
+  }
+  if (confidence >= 0.6) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
+        check
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full bg-red-100 border border-red-300 text-red-800 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
+      low — please verify
+    </span>
+  );
+}
+
 function RoomMatchCard({
   match,
   existingRooms,
+  showConfidence,
   onActionChange,
   onExistingChange,
   onLabelChange,
@@ -430,6 +541,8 @@ function RoomMatchCard({
 }: {
   match: RoomMatch;
   existingRooms: Room[];
+  /** True for OCR detections; SVG detections are exact and show no badge. */
+  showConfidence: boolean;
   onActionChange: (a: RoomMatch["action"]) => void;
   onExistingChange: (id: string) => void;
   onLabelChange: (s: string) => void;
@@ -437,7 +550,7 @@ function RoomMatchCard({
   onLengthChange: (v: number) => void;
   onTypeChange: (t: RoomType) => void;
 }) {
-  const isLowConfidence = match.detected.confidence < 0.6;
+  const isLowConfidence = showConfidence && match.detected.confidence < 0.6;
   return (
     <div className={`rounded-lg border p-3 ${
       match.action === "skip"
@@ -445,7 +558,7 @@ function RoomMatchCard({
         : match.action === "update"
           ? "border-blue-200 bg-blue-50"
           : "border-emerald-200 bg-emerald-50"
-    }`}>
+    } ${isLowConfidence && match.action !== "skip" ? "ring-2 ring-red-300" : ""}`}>
       <div className="flex items-start gap-3">
         {/* Action toggle */}
         <div className="flex gap-1 shrink-0">
@@ -470,14 +583,18 @@ function RoomMatchCard({
         {/* Editable fields */}
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-2">
           <div className="sm:col-span-2">
-            <input
-              className="input text-sm"
-              value={match.detected.label}
-              onChange={e => onLabelChange(e.target.value)}
-            />
+            <div className="flex items-center gap-1.5">
+              <input
+                className="input text-sm flex-1"
+                value={match.detected.label}
+                onChange={e => onLabelChange(e.target.value)}
+              />
+              {showConfidence && typeof match.detected.confidence === "number" && (
+                <ConfidenceBadge confidence={match.detected.confidence} />
+              )}
+            </div>
             <div className="text-[9px] text-brand-600/70 mt-0.5 truncate font-mono">
               OCR: &quot;{match.detected.rawText}&quot;
-              {isLowConfidence && <span className="ml-2 text-amber-dark">⚠ low confidence</span>}
             </div>
           </div>
           <div>
