@@ -214,13 +214,17 @@ async function partB(ctx: BrowserContext) {
 
   const texts: string[] = await page.locator(".guide-page").allInnerTexts();
   const has = (i: number, re: RegExp) => re.test(texts[i] ?? "");
+  // Cover renders the headline on two lines and joins couple names with "+"
+  // (reference deliverable: "Kelly + Zyaire").
   ok("p1 Cover: DESIGN & INSTALL GUIDE + client + address",
-    has(0, /DESIGN & INSTALL GUIDE/i) && has(0, /Kelly & Zyaire/i) && has(0, /2 Hiddenwoods Ct/i));
+    has(0, /DESIGN &\s*INSTALL GUIDE/i) && has(0, /Kelly \+ Zyaire/i) && has(0, /2 Hiddenwoods Ct/i));
   ok("p2 Floor Plan: title + occupancy + Art/Mirror/TV key",
     has(1, /FLOOR PLAN/i) && has(1, /OCCUPANCY/i) && has(1, /\bART\b/i) && has(1, /\bMIRROR\b/i) && has(1, /\bTV\b/i));
   ok("p2 occupancy breakdown includes bunk line", has(1, /Queen over Queen Bunk/i));
   ok("p3–4 Living boards", has(2, /LIVING/i) && has(3, /LIVING/i));
-  ok("p5 Living AI render + disclaimer", has(4, /AI RENDER/i) && has(4, /AI generated/i));
+  ok("p5 Living AI render + verbatim disclaimer", has(4, /AI RENDER/i) &&
+    has(4, /\*This rendering is AI generated and is not exact/i) &&
+    has(4, /visual inspiration only/i));
   ok("p6 Dining board / p7 Dining AI (legacy render fallback)", has(5, /DINING/i) && has(6, /AI RENDER/i));
   ok("p8–9 Kitchen boards / p10 Kitchen AI", has(7, /KITCHEN/i) && has(8, /KITCHEN/i) && has(9, /AI RENDER/i));
   ok("p11–17 Bedrooms (boards + AI, Bedroom 2 ×2 boards)",

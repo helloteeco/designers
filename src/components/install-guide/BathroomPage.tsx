@@ -14,6 +14,12 @@ import {
   TipsBlock,
 } from "./chrome";
 
+/**
+ * Bathroom page — reference layout (p18–19): centered title, the board
+ * spanning nearly the full width, and a bottom band with the room-cropped
+ * plan thumbnail at left, the towel-line "KEY:" beside it, and the
+ * install-height TIPS bullets at right.
+ */
 export default function BathroomPage({
   descriptor,
   property,
@@ -27,39 +33,39 @@ export default function BathroomPage({
 }) {
   const { room, displayName, boardImageUrl } = descriptor;
   const tipLines = room.installTips?.trim()
-    ? parseTipLines(room.installTips)
+    ? parseTipLines(room.installTips, 5)
     : BATHROOM_HEIGHT_TIPS;
 
   return (
     <GuidePage pageNumber={pageNumber} pageCount={pageCount}>
       <PageTitle
-        overline={isPhotoFallback(room, boardImageUrl) ? "Room Photo — Design Board to Follow" : "Design Board"}
         title={displayName}
+        note={
+          isPhotoFallback(room, boardImageUrl)
+            ? "Room Photo — Design Board to Follow"
+            : undefined
+        }
       />
 
-      <div className="mt-3 flex min-h-0 flex-1 gap-[0.4in]">
-        {/* Board image */}
-        <div className="relative min-h-0 flex-1">
-          {boardImageUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={boardImageUrl}
-              alt={`${displayName} design board`}
-              className="absolute inset-0 h-full w-full object-contain"
-            />
-          ) : (
-            <BoardPlaceholder roomName={displayName} />
-          )}
-        </div>
+      {/* Board image — near-full width, fixed-height area */}
+      <div className="relative -mx-[0.45in] mt-2 min-h-0 flex-1 overflow-hidden">
+        {boardImageUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={boardImageUrl}
+            alt={`${displayName} design board`}
+            className="absolute inset-0 h-full w-full object-contain"
+          />
+        ) : (
+          <BoardPlaceholder roomName={displayName} />
+        )}
+      </div>
 
-        {/* Sidebar: install heights, expanded key, plan thumbnail */}
-        <aside className="flex w-[2.5in] shrink-0 flex-col gap-5 pt-1">
-          <TipsBlock heading="Tips" lines={tipLines} />
-          <KeyLegend expanded vertical />
-          <div className="mt-auto flex justify-end">
-            <PlanThumb property={property} room={room} />
-          </div>
-        </aside>
+      {/* Bottom band: plan crop · expanded towel key · height tips */}
+      <div className="mt-2 flex items-start gap-[0.35in]">
+        <PlanThumb property={property} room={room} width="1.55in" height="1.45in" />
+        <KeyLegend variant="bath" className="shrink-0 pt-1" />
+        <TipsBlock lines={tipLines} maxWidth="4in" />
       </div>
     </GuidePage>
   );

@@ -58,6 +58,8 @@ export interface ExteriorDescriptor {
   room: Room;
   displayName: string;
   boardImageUrl: string | null;
+  /** Optional second board image — shown as the circular inset (reference p20) */
+  insetImageUrl: string | null;
 }
 
 export type GuidePageDescriptor =
@@ -232,11 +234,13 @@ export function buildPageList(project: Project): GuidePageDescriptor[] {
   }
 
   for (const { room, displayName } of exteriors) {
+    const boards = getBoardImages(room);
     pages.push({
       kind: "exterior",
       room,
       displayName,
-      boardImageUrl: getBoardImages(room)[0] ?? null,
+      boardImageUrl: boards[0] ?? null,
+      insetImageUrl: boards[1] ?? null,
     });
   }
 
@@ -284,11 +288,12 @@ export function getPlanForRoom(
 
 // ── Occupancy ──
 
+/** Reference occupancy lines spell out "Queen Bed" for single mattresses. */
 const BED_TYPE_LABELS: Record<BedType, string> = {
-  king: "King",
-  queen: "Queen",
-  full: "Full",
-  twin: "Twin",
+  king: "King Bed",
+  queen: "Queen Bed",
+  full: "Full Bed",
+  twin: "Twin Bed",
   "queen-over-queen-bunk": "Queen over Queen Bunk",
   "twin-over-twin-bunk": "Twin over Twin Bunk",
   "twin-over-full-bunk": "Twin over Full Bunk",
@@ -309,7 +314,8 @@ export function formatBedConfig(config: BedConfiguration): string {
     .join(" + ");
 }
 
-/** Per-bed breakdown lines, e.g. "Bed 3 – (x2) Queen over Queen Bunk – 8 Guests". */
+/** Per-bed breakdown lines, e.g. "Bed 3 - (x2) Queen over Queen Bunk - 8 Guests"
+ *  (plain hyphen separators, matching the reference floor-plan sidebar). */
 export function buildOccupancyLines(rooms: Room[]): string[] {
   const { main, bathrooms, exteriors } = orderRoomsForGuide(rooms);
   return [...main, ...bathrooms, ...exteriors]
@@ -317,7 +323,7 @@ export function buildOccupancyLines(rooms: Room[]): string[] {
     .map(({ room }, i) => {
       const config = room.selectedBedConfig as BedConfiguration;
       const guests = config.totalSleeps;
-      return `Bed ${i + 1} – ${formatBedConfig(config)} – ${guests} Guest${guests === 1 ? "" : "s"}`;
+      return `Bed ${i + 1} - ${formatBedConfig(config)} - ${guests} Guest${guests === 1 ? "" : "s"}`;
     });
 }
 
@@ -333,15 +339,17 @@ export function parseTipLines(text: string | undefined, max = 4): string[] {
     .slice(0, max);
 }
 
+/** Verbatim bedroom TIPS from the reference deliverable (p11/13/14/16). */
 export const DEFAULT_BEDROOM_TIPS = [
-  'Layer euro shams behind standard pillows',
-  'Center art above the headboard at 60" eye level',
-  'Drape a throw across the foot of the bed',
+  "Each mattress gets one throw blanket + one throw pillow. Lay throw blankets across the bed from left to right.",
+  'Hang mirror 4" above baseboard.',
+  "Bend the branches on the plants to help make it look more realistic",
 ];
 
+/** Verbatim bathroom TIPS from the reference deliverable (p18). */
 export const BATHROOM_HEIGHT_TIPS = [
-  'Towel bar: 42–48" from floor',
-  'Towel hooks: 70" from floor',
-  'Towel ring: 20" above counter',
-  'Toilet-paper holder: 26" from floor',
+  'Install towel bar 42-48" from floor.',
+  'Install towel hooks 70" from floor.',
+  'Install towel ring 20" from vanity countertop.',
+  'Install Toilet paper holder 26" from the floor.',
 ];

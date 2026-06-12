@@ -15,6 +15,13 @@ import {
   TipsBlock,
 } from "./chrome";
 
+/**
+ * Room design-board page — reference layout (p3/4/6/8/9/11…): centered
+ * light title with no overline or "Design Board" label, the board filling
+ * nearly the full page width/height, and a small KEY + room-cropped plan
+ * thumbnail tucked in the bottom-right corner. Bedrooms carry the TIPS
+ * block bottom-left; other rooms keep the tiny furniture list there.
+ */
 export default function RoomBoardPage({
   descriptor,
   property,
@@ -26,13 +33,8 @@ export default function RoomBoardPage({
   pageNumber: number;
   pageCount: number;
 }) {
-  const { room, displayName, boardImageUrl, boardIndex, boardCount, showTips } = descriptor;
+  const { room, displayName, boardImageUrl, boardIndex, showTips } = descriptor;
   const photoFallback = isPhotoFallback(room, boardImageUrl);
-  const overline = photoFallback
-    ? "Room Photo — Design Board to Follow"
-    : boardCount > 1
-      ? `Design Board ${boardIndex + 1} of ${boardCount}`
-      : "Design Board";
   const tipLines = showTips
     ? room.installTips?.trim()
       ? parseTipLines(room.installTips)
@@ -41,10 +43,14 @@ export default function RoomBoardPage({
 
   return (
     <GuidePage pageNumber={pageNumber} pageCount={pageCount}>
-      <PageTitle overline={overline} title={displayName} />
+      <PageTitle
+        title={displayName}
+        note={photoFallback ? "Room Photo — Design Board to Follow" : undefined}
+      />
 
-      {/* Board image — fixed-height area so pagination never overflows */}
-      <div className="relative mt-3 min-h-0 flex-1">
+      {/* Board image — bleeds to the page edges like the reference; the
+          fixed-height area keeps pagination from ever overflowing. */}
+      <div className="relative -mx-[0.45in] mt-2 min-h-0 flex-1 overflow-hidden">
         {boardImageUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
@@ -57,19 +63,18 @@ export default function RoomBoardPage({
         )}
       </div>
 
-      {/* Bottom bar: tips (bedrooms) / furniture list (others) · key · plan thumb */}
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-end gap-6">
-        <div>
+      {/* Bottom band: tips (bedrooms) / furniture list (others) on the
+          left, tiny stacked KEY + cropped plan thumbnail bottom-right. */}
+      <div className="mt-2 flex items-end justify-between gap-4">
+        <div className="min-w-0">
           {showTips ? (
             <TipsBlock lines={tipLines} />
           ) : (
             boardIndex === 0 && <FurnitureList room={room} />
           )}
         </div>
-        <div className="flex justify-center pb-2">
-          <KeyLegend />
-        </div>
-        <div className="flex justify-end">
+        <div className="flex shrink-0 items-end gap-3">
+          <KeyLegend className="pb-0.5" />
           <PlanThumb property={property} room={room} />
         </div>
       </div>

@@ -1,8 +1,9 @@
 /**
- * Shared chrome for Install Guide pages: the fixed-size page shell with the
- * "Page X of N" footer, the title treatment (taupe overline + charcoal
- * title), the marker-color key legend, the cropped floor-plan thumbnail,
- * and the graceful board placeholder card.
+ * Shared chrome for Install Guide pages, styled to match the real Teeco
+ * client deliverable: the fixed-size page shell with the tiny "Page X of N"
+ * footer, the centered light-weight tracked title, the "KEY:" legend whose
+ * swatches are short colored line segments, the cropped floor-plan
+ * thumbnail, the TIPS block, and the graceful board placeholder card.
  */
 
 import type { ReactNode } from "react";
@@ -13,6 +14,15 @@ import { getPlanForRoom } from "./page-list";
 export const CHARCOAL = "#2B2B2B";
 export const TAUPE = "#A8987F";
 export const TAUPE_FILL = "#E9E2D6";
+
+/**
+ * Guide-only marker colors. The editor UI keeps PLAN_MARKER_COLORS; the
+ * printed guide matches the reference key, where the towel ring is orange.
+ */
+export const GUIDE_MARKER_COLORS: Record<PlanMarkerType, string> = {
+  ...PLAN_MARKER_COLORS,
+  "towel-ring": "#F57C00",
+};
 
 // ── Page shell ──
 
@@ -35,14 +45,15 @@ export function GuidePage({
     <section className="guide-page" style={{ color: CHARCOAL }}>
       <div
         className={
-          bleed ? "h-full w-full" : "flex h-full w-full flex-col px-[0.55in] pb-[0.5in] pt-[0.42in]"
+          bleed ? "h-full w-full" : "flex h-full w-full flex-col px-[0.45in] pb-[0.42in] pt-[0.3in]"
         }
       >
         {children}
       </div>
+      {/* Reference footer: tiny mixed-case "Page X of 26", bottom-right */}
       <div
-        className={`absolute bottom-[0.2in] right-[0.3in] text-[9px] uppercase tracking-[0.18em] ${
-          footerOnImage ? "rounded-sm bg-white/85 px-2 py-0.5" : ""
+        className={`absolute bottom-[0.14in] right-[0.22in] text-[8px] leading-none ${
+          footerOnImage ? "rounded-sm bg-white/85 px-1.5 py-0.5" : ""
         }`}
         style={{ color: CHARCOAL }}
       >
@@ -54,35 +65,36 @@ export function GuidePage({
 
 // ── Title treatment ──
 
+/**
+ * Reference title: centered, uppercase, light weight, gently tracked —
+ * no overline, no rules. `note` renders a small italic line underneath
+ * (used for the photo-fallback "Design Board to Follow" message).
+ */
 export function PageTitle({
-  overline,
   title,
-  center = false,
+  note,
   size = "lg",
 }: {
-  overline?: string;
   title: string;
-  center?: boolean;
-  size?: "lg" | "md";
+  /** Small italic line under the title (photo-fallback pages) */
+  note?: string;
+  size?: "lg" | "xl";
 }) {
   return (
-    <header className={center ? "text-center" : ""}>
-      {overline && (
-        <div
-          className="text-[9px] font-semibold uppercase tracking-[0.32em]"
-          style={{ color: TAUPE }}
-        >
-          {overline}
-        </div>
-      )}
+    <header className="text-center">
       <h2
-        className={`mt-1 font-bold uppercase leading-tight tracking-[0.08em] ${
-          size === "lg" ? "text-[26px]" : "text-[19px]"
+        className={`font-light uppercase leading-tight tracking-[0.12em] ${
+          size === "xl" ? "text-[30px]" : "text-[22px]"
         }`}
         style={{ color: CHARCOAL }}
       >
         {title}
       </h2>
+      {note && (
+        <p className="mt-0.5 text-[9px] italic" style={{ color: TAUPE }}>
+          {note}
+        </p>
+      )}
     </header>
   );
 }
@@ -94,73 +106,75 @@ interface KeyEntry {
   type: PlanMarkerType;
 }
 
+/** Core key on the floor plan + room board pages. */
 const CORE_KEY: KeyEntry[] = [
   { label: "Art", type: "art" },
   { label: "Mirror", type: "mirror" },
   { label: "TV", type: "tv" },
 ];
 
-const EXPANDED_KEY: KeyEntry[] = [
-  ...CORE_KEY,
-  { label: "Towel bar + art", type: "towel-bar" },
+/** Bathroom pages swap to the towel-centric key (reference p18–19). */
+const BATH_KEY: KeyEntry[] = [
+  { label: "Mirror", type: "mirror" },
+  { label: "Towel bar + art above", type: "towel-bar" },
   { label: "Towel hooks", type: "towel-hooks" },
   { label: "Towel ring", type: "towel-ring" },
 ];
 
-function KeyRow({ entry }: { entry: KeyEntry }) {
+/** Short colored line segment — the reference swatch (not a dot). */
+export function KeySwatch({ type, className = "" }: { type: PlanMarkerType; className?: string }) {
   return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white shadow-sm"
-        style={{ backgroundColor: PLAN_MARKER_COLORS[entry.type] }}
-      />
-      <span className="text-[9px] uppercase tracking-[0.12em]" style={{ color: CHARCOAL }}>
-        {entry.label}
-      </span>
-    </span>
+    <span
+      className={`inline-block h-[3px] w-[22px] shrink-0 rounded-full ${className}`}
+      style={{ backgroundColor: GUIDE_MARKER_COLORS[type] }}
+    />
   );
 }
 
+/**
+ * "KEY:" block — stacked rows of `Label -` followed by a colored line
+ * segment, mixed case, tiny, charcoal (reference treatment).
+ */
 export function KeyLegend({
-  expanded = false,
-  vertical = false,
+  variant = "core",
+  className = "",
 }: {
-  expanded?: boolean;
-  vertical?: boolean;
+  variant?: "core" | "bath";
+  className?: string;
 }) {
-  const entries = expanded ? EXPANDED_KEY : CORE_KEY;
-  if (vertical) {
-    return (
-      <div>
-        <div
-          className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.3em]"
-          style={{ color: TAUPE }}
-        >
-          Key
-        </div>
-        <div className="flex flex-col gap-1.5">
-          {entries.map((entry) => (
-            <KeyRow key={entry.label} entry={entry} />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const entries = variant === "bath" ? BATH_KEY : CORE_KEY;
   return (
-    <div className="flex items-center gap-4">
-      <span className="text-[9px] font-bold uppercase tracking-[0.3em]" style={{ color: TAUPE }}>
-        Key
-      </span>
-      {entries.map((entry) => (
-        <KeyRow key={entry.label} entry={entry} />
-      ))}
+    <div className={className}>
+      <div className="text-[9px] font-medium leading-snug" style={{ color: CHARCOAL }}>
+        KEY:
+      </div>
+      <div className="mt-0.5 flex flex-col gap-[3px]">
+        {entries.map((entry) => (
+          <span key={entry.label} className="flex items-center gap-1.5">
+            <span className="text-[8px] leading-none" style={{ color: CHARCOAL }}>
+              {entry.label} -
+            </span>
+            <KeySwatch type={entry.type} />
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
 // ── Floor-plan thumbnail (cropped to the room when annotated) ──
 
-export function PlanThumb({ property, room }: { property: Property; room: Room }) {
+export function PlanThumb({
+  property,
+  room,
+  width = "1.7in",
+  height = "1.3in",
+}: {
+  property: Property;
+  room: Room;
+  width?: string;
+  height?: string;
+}) {
   const result = getPlanForRoom(property, room);
   if (!result) return null;
   const { plan, annotation: tight } = result;
@@ -182,39 +196,34 @@ export function PlanThumb({ property, room }: { property: Property; room: Room }
     : tight;
 
   return (
-    <figure className="flex flex-col items-end gap-1">
-      <div
-        className="relative overflow-hidden bg-white"
-        style={{ width: "1.85in", height: "1.35in", border: `1px solid ${TAUPE}` }}
-      >
-        {annotation ? (
-          /* Crop: scale the plan so the room's % bbox fills the container,
-             then offset by the bbox origin. */
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={plan.url}
-            alt={`${room.name} location on floor plan`}
-            className="absolute max-w-none"
-            style={{
-              width: `${10000 / annotation.width}%`,
-              height: `${10000 / annotation.height}%`,
-              left: `-${(annotation.x * 100) / annotation.width}%`,
-              top: `-${(annotation.y * 100) / annotation.height}%`,
-            }}
-          />
-        ) : (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={plan.url}
-            alt="Floor plan"
-            className="absolute inset-0 h-full w-full object-contain"
-          />
-        )}
-      </div>
-      <figcaption className="text-[8px] uppercase tracking-[0.22em]" style={{ color: TAUPE }}>
-        Location on plan
-      </figcaption>
-    </figure>
+    <div
+      className="relative shrink-0 overflow-hidden bg-white"
+      style={{ width, height, border: "1px solid #E2DCD2" }}
+    >
+      {annotation ? (
+        /* Crop: scale the plan so the room's % bbox fills the container,
+           then offset by the bbox origin. */
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={plan.url}
+          alt={`${room.name} location on floor plan`}
+          className="absolute max-w-none"
+          style={{
+            width: `${10000 / annotation.width}%`,
+            height: `${10000 / annotation.height}%`,
+            left: `-${(annotation.x * 100) / annotation.width}%`,
+            top: `-${(annotation.y * 100) / annotation.height}%`,
+          }}
+        />
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={plan.url}
+          alt="Floor plan"
+          className="absolute inset-0 h-full w-full object-contain"
+        />
+      )}
+    </div>
   );
 }
 
@@ -243,23 +252,31 @@ export function BoardPlaceholder({ roomName }: { roomName: string }) {
 
 // ── Tips block ──
 
-export function TipsBlock({ heading = "Tips", lines }: { heading?: string; lines: string[] }) {
+export function TipsBlock({
+  heading = "TIPS",
+  lines,
+  maxWidth = "3.4in",
+}: {
+  heading?: string;
+  lines: string[];
+  maxWidth?: string;
+}) {
   if (lines.length === 0) return null;
   return (
-    <div className="max-w-[3in]">
-      <div className="text-[9px] font-bold uppercase tracking-[0.3em]" style={{ color: TAUPE }}>
+    <div style={{ maxWidth }}>
+      <div className="text-[10px] font-medium tracking-[0.04em]" style={{ color: CHARCOAL }}>
         {heading}
       </div>
-      <ul className="mt-1.5 space-y-1">
+      <ul className="mt-1 space-y-[3px]">
         {lines.map((line, i) => (
           <li
             key={i}
-            className="flex items-start gap-1.5 text-[9.5px] leading-snug"
+            className="flex items-start gap-1.5 text-[8.5px] leading-snug"
             style={{ color: CHARCOAL }}
           >
             <span
-              className="mt-[3px] h-1 w-1 shrink-0 rounded-full"
-              style={{ backgroundColor: TAUPE }}
+              className="mt-[3px] h-[3px] w-[3px] shrink-0 rounded-full"
+              style={{ backgroundColor: CHARCOAL }}
             />
             <span>{line}</span>
           </li>
@@ -280,10 +297,10 @@ export function FurnitureList({ room }: { room: Room }) {
   const shown = items.slice(0, MAX);
   return (
     <div className="max-w-[3.4in]">
-      <div className="text-[8px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#A8987F" }}>
+      <div className="text-[8px] font-semibold uppercase tracking-[0.18em]" style={{ color: TAUPE }}>
         Furniture &amp; Decor
       </div>
-      <ul className="mt-1 columns-2 gap-4 text-[8px] leading-[1.5]" style={{ color: "#2B2B2B" }}>
+      <ul className="mt-1 columns-2 gap-4 text-[8px] leading-[1.5]" style={{ color: CHARCOAL }}>
         {shown.map((f, i) => (
           <li key={i} className="break-inside-avoid truncate">
             &middot; {f.item.name}

@@ -16,12 +16,6 @@ export function CurtainDiagram({ variant }: { variant: "do" | "dont" }) {
   const isDo = variant === "do";
   return (
     <div className="flex flex-col items-center">
-      <div
-        className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.3em]"
-        style={{ color: isDo ? TAUPE : INK }}
-      >
-        {isDo ? "Do" : "Don't"}
-      </div>
       <svg viewBox="0 0 220 240" className="h-[1.95in] w-auto">
         {/* Floor */}
         <line x1="12" y1="228" x2="208" y2="228" stroke={INK} strokeWidth="2" />
