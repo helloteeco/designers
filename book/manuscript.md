@@ -209,7 +209,7 @@ Sit with that for a second. Three-quarters of a million dollars flowed through y
 
 Now run the alternative. Take the same person with $50,000 in liquid capital and zero debt. They don't buy three properties at once. Not on $50K, and not as a first move. They buy one: a rural STR generating about $2,000 a month in cash flow, funded with a 10% down loan and the setup floated on a 0% business card.
 
-Then they stack. Year two, the first property's cash flow, a refinance of the equity they created, and the funding tools taught later in this book — seller financing, seller credits at closing, private money if they need it — buy property two without touching new savings. Year three, the same playbook buys property three. By then they're collecting about $6,000 a month, $72,000 a year, across all three. Nothing about this required quitting anything, and no single step required more cash than that original $50K.
+Then they stack. In year two, the first property's cash flow and a refinance of the equity they created buy property two. If the numbers come up short, there's seller financing, seller credits at closing, or private money, all covered later in this book. Year three, the same playbook buys property three. By then they're collecting about $6,000 a month, $72,000 a year, across all three. Nothing about this required quitting anything, and no single step required more cash than that original $50K.
 
 Five years later, the scoreboard looks like this:
 
@@ -224,7 +224,7 @@ The W2 income was never the problem; working it with no parallel wealth engine b
 
 That's the Opportunity Cost Equation: the real cost of the W2 treadmill is the $300K–$500K in wealth you didn't build because you were too busy earning a paycheck. And that range counts only the cash flow and a slice of the appreciation, not the tax shields.
 
-One more thing, because I can hear the objection: yes, $50K really is enough, and Part 3 of this book exists to prove it. Low-down vacation-home loans, seller financing, 0% business cards for the furniture, seller credits and repair credits that shrink what you bring to closing, private money when you're short — the whole stack, with the exact numbers. You start with one. The portfolio comes later, and it funds itself.
+One more thing, because I can hear the objection: is $50K really enough? It is, and Part 3 of this book exists to prove it. Low-down vacation-home loans, seller financing, business cards at 0%, seller and repair credits that shrink what you bring to closing, and private money for when you're short. Every one of those gets real numbers in those chapters. You start with one property. The portfolio comes later, and it funds itself.
 
 The most expensive thing you'll ever own is the portfolio you never started.
 
