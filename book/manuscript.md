@@ -207,14 +207,14 @@ Net wealth gain after five years of high-paid, high-stress work: roughly $50,000
 
 Sit with that for a second. Three-quarters of a million dollars flowed through your hands, and you kept less than a tenth of it. No personal failing there. The treadmill is built to produce exactly that result.
 
-Now run the alternative. Take the same person with $50,000 in liquid capital and zero debt. With the low-down loans and seller financing taught later in this book, they deploy it into three rural STRs generating about $2,000 per month each. That's $6,000 a month, $72,000 a year in combined cash flow.
+Now run the alternative. Take the same person with $50,000 in liquid capital and zero debt. They don't buy three properties at once. Not on $50K, and not as a first move. They buy one: a rural STR generating about $2,000 a month in cash flow, funded with a 10% down loan and the setup floated on a 0% business card.
 
-Year one, that's $72K of income on top of the salary. Year two, another $72K, plus the properties are appreciating underneath you. Year three, the same again, while depreciation quietly shelters income on your tax return. Nothing about this requires quitting anything.
+Then they stack. Year two, the first property's cash flow, a refinance of the equity they created, and the funding tools taught later in this book — seller financing, seller credits at closing, private money if they need it — buy property two without touching new savings. Year three, the same playbook buys property three. By then they're collecting about $6,000 a month, $72,000 a year, across all three. Nothing about this required quitting anything, and no single step required more cash than that original $50K.
 
 Five years later, the scoreboard looks like this:
 
-- **$360,000** in cumulative cash flow ($72K a year, five years running)
-- **Roughly $300,000** in property appreciation as those markets get discovered
+- **Roughly $280,000** in cumulative cash flow ($24K the first year, growing to $72K a year as the properties stack)
+- **Six figures** in property appreciation as those markets get discovered
 - **As much as $200,000** in tax depreciation shields protecting other income
 - **The option to keep the W2 the whole time.** This was never either/or.
 
@@ -223,6 +223,8 @@ Same five years. Same person. Same starting capital that most diligent professio
 The W2 income was never the problem; working it with no parallel wealth engine beside it was. A six-figure salary without rural STRs keeps you running in place. Pair it with rural STRs and the same salary makes you wealthy.
 
 That's the Opportunity Cost Equation: the real cost of the W2 treadmill is the $300K–$500K in wealth you didn't build because you were too busy earning a paycheck. And that range counts only the cash flow and a slice of the appreciation, not the tax shields.
+
+One more thing, because I can hear the objection: yes, $50K really is enough, and Part 3 of this book exists to prove it. Low-down vacation-home loans, seller financing, 0% business cards for the furniture, seller credits and repair credits that shrink what you bring to closing, private money when you're short — the whole stack, with the exact numbers. You start with one. The portfolio comes later, and it funds itself.
 
 The most expensive thing you'll ever own is the portfolio you never started.
 
@@ -244,7 +246,8 @@ The next chapter shows you where this strategy works best, and I'll warn you now
 
 - A six-figure salary is a leash: the more you earn, the more your life organizes itself around keeping it.
 - The real cost of that salary is the parallel wealth you never build, not the hours you work.
-- Five years at $150K nets most people $50K–$70K in wealth. Three rural STRs can produce $360K in cash flow plus appreciation and tax shields in the same window.
+- Five years at $150K nets most people $50K–$70K in wealth. Start with one rural STR and stack to three, and the same window can produce roughly $280K in cash flow plus appreciation and tax shields.
+- You don't need three properties on day one. You need one, bought right. Each one helps buy the next.
 - Income that requires your presence is a paycheck. Income that doesn't is freedom.
 - A raise just makes the leash more comfortable.
 - Keep the W2. Stop making it your only engine.
