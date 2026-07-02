@@ -259,7 +259,7 @@ The next chapter shows you where this strategy works best, and I'll warn you now
 
 In April 2021, I signed the papers on a house in Yucca Valley, California. I had never lived there, never visited, and knew nothing about the town except that it sat near Joshua Tree National Park and the numbers looked good in a market-data tool (I use AirDNA) that estimates what short-term rentals earn in any market.
 
-The purchase price was $355,000. By the time I covered the down payment, furnishings, and setup, I was about $100K in. I won't pretend I was calm when I signed.
+The purchase price was $355,000. I bought it with a partner, 50/50, and by the time we covered the down payment, furnishings, and setup, we were about $100K in. I won't pretend I was calm when I signed.
 
 Every conventional voice in my head said this was insane. You don't buy a house sight unseen. You don't furnish a place you've never walked through. You don't hand your biggest check to a zip code you can't picture.
 
@@ -296,7 +296,7 @@ And remember that markets move up the curve. Every Tier 2 darling was once a Tie
 
 ### Joshua Tree vs. West Virginia: The Numbers Side by Side
 
-My Yucca Valley deal proved the model, but it also taught me why Tier 2 and Tier 3 diverge so dramatically. Joshua Tree was too close to big money. Southern California investors were sitting on mountains of equity and started buying everything in sight. High purchase prices raise your risk and shrink your flexibility at the same time. You become more sensitive to market cycles, and the math needs $300+ a night, a rate fewer guests can afford.
+My Yucca Valley deal proved the model, but it also taught me why Tier 2 and Tier 3 diverge so dramatically. Joshua Tree was too close to big money. Southern California investors were sitting on mountains of equity and started buying everything in sight. And the competition wasn't people like me, running spreadsheets and watching every dollar. It was high-net-worth buyers who had already made their money, pumping it into desert play homes that never needed to earn a return. Every upgrade war I could enter, they could end. You can't outspend someone who isn't counting. High purchase prices raise your risk and shrink your flexibility at the same time. You become more sensitive to market cycles, and the math needs $300+ a night, a rate fewer guests can afford.
 
 Here are the real numbers, side by side:
 
@@ -309,7 +309,7 @@ Here are the real numbers, side by side:
 | Monthly mortgage | $1,500 | $800 |
 | Cash-on-cash return | 7% | 55%+ |
 
-Check the math yourself. Cash flow here is revenue minus operating expenses, before the mortgage; cash-on-cash subtracts the mortgage, then divides what's left by the cash invested. Joshua Tree: $25K minus $18K a year in payments leaves $7K on the roughly $100K I put in. That's 7%. The West Virginia cabin clears 55% because its payment is tiny and its entry cash is a fraction of that.
+Check the math yourself. Cash flow here is revenue minus operating expenses, before the mortgage; cash-on-cash subtracts the mortgage, then divides what's left by the cash invested. Joshua Tree: $25K minus $18K a year in payments leaves $7K on the roughly $100K we put in. That's 7%. The West Virginia cabin clears 55% because its payment is tiny and its entry cash is a fraction of that.
 
 Same guest experience: a rural cabin, nature out the door, great reviews. Radically different economics. The West Virginia deal generates 2.4 times the cash flow on less than half the purchase price, with lower operating costs and more upside.
 
