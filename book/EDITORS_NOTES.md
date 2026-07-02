@@ -61,9 +61,34 @@ Eleven long chapters became eighteen short ones. Total length is roughly the sam
 9. **Timeline fix.** Chapter 1 said "that October moment in 2021" while the Joshua Tree closing was April 2021 — "a few months after" was impossible. The year is now omitted from the October references; confirm the actual year of the drive.
 10. **Global copyedit:** hundreds of apostrophe/capitalization errors ("that's" starting sentences, "youve", "Were" for "we're"), stray section-divider commas, emoji artifacts, and the truncated Framework Index entry (Think-Do-Die cut off mid-sentence) are fixed.
 
+## Author questions from the clarity audit
+
+A 14-agent audit recomputed every calculation in the book (222 arithmetic checks). Everything now printed is internally consistent, but these items need YOUR answer — they trace back to tensions in the source numbers that an editor can't resolve without you:
+
+1. **Joshua Tree vs. West Virginia comparison (Ch 2/5).** Your 7% figure for Joshua Tree only computes if "cash invested" means the full $355K purchase price — but by that same method the WV cabin is 35%, not "55%+". Decide the denominator (cash actually deployed vs. purchase price) and I'll relabel one row.
+2. **Ryu's nightly math.** $140K over 22 months (~$6.4K/mo average) and $15K peak months exceed what 75% occupancy at $180–$220/night produces (~$4.5–5K/mo). The text now bridges with peak pricing and fees, but confirm his real ADR/occupancy or the sharpest readers will do this math.
+3. **Myla's refinance payoff.** Her new $187,500 loan minus her stated $127,500 purchase mortgage minus costs leaves ~$55K, not the ~$33K cash-out you cite. Was the payoff $150K because renovation financing was rolled in? One clarifying phrase fixes it.
+4. **Myla's $8K paper loss** doesn't fully reconcile with a $70K/year revenue pace and the deductions shown — likely fine if her first tax year ran below pace (ramp-up), but confirm with her CPA before print.
+5. **Myla's timeline.** A ~$90K kitchen/bath/HVAC renovation with the listing live by day 30 will strain credibility — confirm the sequencing (phased reno? reno before close?) so the story is airtight.
+6. **The Bali text.** Chapter 14 says "my property manager texted" while the chapter argues for self-managing. Was it a PM at the time, a cleaner, or a co-host? One word to change.
+7. **"1 sleeper per 100 sq ft."** Locked RURAL tenet, kept everywhere — but it implies a 1,500 sq ft home sleeping 15. Consider "aim near" language stays prominent (it does now) or add an upper bound.
+8. **Furnishing budget range** appears as $10–25K, $15–35K, and $25–35K in different contexts. Pick one canonical range.
+9. **Ch 17 vs Ch 18 models** use different Property-2 down payments ($40K vs $20K). Each is internally consistent and labeled illustrative; unify if you want one canonical plan.
+10. **0% card application tip** ("estimate $10,000–$50,000 revenue if you're new") coaches optimistic figures on a credit application — worth a quick legal/compliance read.
+11. **Ryu's Ch 13 setup figures** ($20K reno, $35K furnishings, 12-day install) came from your draft but weren't independently verifiable — confirm before print.
+12. **Chapter 13's "30 Days" title** vs. the 45-day stories: body now reads "listing live in 30, first guest by 45." Keep the 30-day hook knowingly, or retitle to 45.
+
 ## Cover direction (for your designer)
 
 The current cover reads "self-published course PDF." Bestseller covers in this category (Atomic Habits, Psychology of Money, Buy Back Your Time) share: a flat, high-contrast background; one simple iconographic mark (not a photo collage); title in huge type; subtitle doing the selling. Recommendation: matte off-white or deep forest-green field; a single minimal cabin icon with a road/route line leading to it (the "anywhere" idea); AIRBNB ANYWHERE in heavy grotesk caps; the RURAL letters called out in the subtitle; your name small at the bottom. One accent color, used once.
+
+## The three quality passes (what ran after the rewrite)
+
+1. **Clarity pass** (14 agents): every paragraph audited for sense, every calculation recomputed — 118 fixes, 222 arithmetic checks, plus the corrected flip story using your real $170K best-year salary.
+2. **De-AI / humanizing pass** (14 agents): em-dashes cut from 739 to 72 (survivors are almost all locked structure like "R — Right Market First"), stock AI vocabulary to zero, "here's the kicker" variants to zero, 158 rhythm-level rewrites so paragraph shapes stop repeating. Your slide aphorisms were preserved verbatim on purpose — they're your voice, and they're good.
+3. **Evergreen + resources pass** (7 agents): all 18 inline funnel links removed from chapters and routed to one canonical resources page at the back ("Your Free Book Bonus Pack" — one link, grouped by task, five-second comprehension). Dated claims un-dated; the named credit-card offers generalized to the durable pattern with a "current card list" item added to the Bonus Pack (keep that list updated on your end — the book now promises it). Software framed as "category (my pick)" on first use so the book outlives any one tool.
+
+Final manuscript: ~49,800 words, 18 chapters, 7 parts.
 
 ## Launch notes (free advice from your editor)
 
