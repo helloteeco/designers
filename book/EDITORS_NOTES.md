@@ -61,6 +61,20 @@ Eleven long chapters became eighteen short ones. Total length is roughly the sam
 9. **Timeline fix.** Chapter 1 said "that October moment in 2021" while the Joshua Tree closing was April 2021 — "a few months after" was impossible. The year is now omitted from the October references; confirm the actual year of the drive.
 10. **Global copyedit:** hundreds of apostrophe/capitalization errors ("that's" starting sentences, "youve", "Were" for "we're"), stray section-divider commas, emoji artifacts, and the truncated Framework Index entry (Think-Do-Die cut off mid-sentence) are fixed.
 
+## The interview edition (read this first)
+
+After a four-round author interview, the book was rewritten against a locked canon of facts. The biggest outcomes:
+
+- **The "Bali" story in your draft was fabricated** — you'd never heard of it. It's been erased and replaced with your real systems origin (the friend who managed your first properties; you and Myla drowning in guest messages). Because one invented story existed, every other unconfirmed precise figure in the draft was treated as suspect and either replaced with your interview numbers or softened to what you actually stand behind.
+- **Myla is now correctly your wife and business partner, and her Oak Hill home IS the $103K cabin** from your slides — one unified story: cash purchase with her aunt, the contractor disaster, the four-month finish, ~$70K reno + ~$30K furniture, ~$240K appraisal, the BRRRR refi that returned most of her money, $150K gross in two years, Tennessee next.
+- **The three WV cabins are finally straight:** your Gatehouse Getaway ($170K seller-financed, $20K down, $72K year one, $150K+ over two years), your $100K house ($78K year one), and Ryu's Lookout Lodge ($170K, $15K down, 0% seller note at $1,000/month, $83,937.81 year one — his exact figure, dated June 2024–June 2025).
+- **Diane and Jon's Gatewood Orchard was added** as the book's DSCR example ($230K, $5K seller credit, $37,370 down, $322K reappraisal, $81,210.38 year one, fully done-for-you).
+- **Steph and Kevin got their real story** (Greenville $275K never visited, ~$100K in under 7 months, ~$450K reappraisal; Oak Hill contractor delays beaten before peak season; $20K+/month summer pace across both homes).
+- **Chapter 13 is now "The Six-Week Launch"** and **Chapter 14 is "The 3-Hour Property"** — matching your real timelines and your real "no more than three hours a week" claim. The management chapter now teaches your actual advice: start with a property manager, learn, then decide.
+- The October drive is anchored to "my first year as a pharmacist" (no year printed, since you weren't certain). Cleaning costs are canonical everywhere: $100–$150/turn small homes, $150–$400 large.
+
+**Still confirm before print (short list now):** Myla's "4.95 stars across 70+ stays"; the Chapter 8 "cabin that would have lost me $800/month" story and the "42% CoC one nearby"; Ryu's 12-week market-analysis narrative (process kept, metrics stripped); Gatehouse "$72K or more" — you said leave it at $72K, so it's $72K; and that teeco.co/bookbonus actually contains everything the back page now promises, especially the "current list of the best 0% business cards."
+
 ## Author questions from the clarity audit
 
 A 14-agent audit recomputed every calculation in the book (222 arithmetic checks). Everything now printed is internally consistent, but these items need YOUR answer — they trace back to tensions in the source numbers that an editor can't resolve without you:
