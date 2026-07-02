@@ -294,26 +294,27 @@ This framework changes how you search. Forget famous markets; the target is a to
 
 And remember that markets move up the curve. Every Tier 2 darling was once a Tier 3 secret, Joshua Tree included. The tiers aren't a map of where good markets are. They're a clock telling you how much time you have left to act.
 
+One caution about those price bands: they drift. When I wrote this, most of the homes I was buying in my top ten markets ran $150K to $300K. By the time you read this, the stickers may sit somewhere else entirely. So don't memorize the bands. Memorize the relationship between price and revenue. My $170K cabin grossed $72K its first year, and that's the kind of ratio I hunt for. When a year of bookings covers a big slice of the purchase price, you've found the right tier, whatever the sticker says.
+
 ### Joshua Tree vs. West Virginia: The Numbers Side by Side
 
 My Yucca Valley deal proved the model, but it also taught me why Tier 2 and Tier 3 diverge so dramatically. Joshua Tree was too close to big money. Southern California investors were sitting on mountains of equity and started buying everything in sight. And the competition wasn't people like me, running spreadsheets and watching every dollar. It was high-net-worth buyers who had already made their money, pumping it into desert play homes that never needed to earn a return. Every upgrade war I could enter, they could end. You can't outspend someone who isn't counting. High purchase prices raise your risk and shrink your flexibility at the same time. You become more sensitive to market cycles, and the math needs $300+ a night, a rate fewer guests can afford.
 
-Here are the real numbers, side by side:
+Here's how it compared to one of my West Virginia cabins, side by side. These figures are rounded from memory, so hold me to the shape, not the pennies. The shape is the whole lesson.
 
 | | Joshua Tree (Tier 2) | West Virginia cabin (Tier 3) |
 |---|---|---|
-| Purchase price | $355K | $170K |
-| Annual revenue | $80K | $95K |
-| Operating expenses | $55K | $35K |
-| Annual cash flow | $25K | $60K |
-| Monthly mortgage | $1,500 | $800 |
-| Cash-on-cash return | 7% | 55%+ |
+| Purchase price | $355K | $170K, seller-financed |
+| First-year revenue | ~$80K | ~$75K |
+| Monthly payment (PITI) | ~$1,850 | ~$1,250 |
+| Operating expenses | Similar | Similar, a touch less |
+| Cash to get in | ~$100K, split with a partner | A small fraction of that |
 
-Check the math yourself. Cash flow here is revenue minus operating expenses, before the mortgage; cash-on-cash subtracts the mortgage, then divides what's left by the cash invested. Joshua Tree: $25K minus $18K a year in payments leaves $7K on the roughly $100K we put in. That's 7%. The West Virginia cabin clears 55% because its payment is tiny and its entry cash is a fraction of that.
+Read the table from the top. Two cabins, nearly identical revenue, operating costs in the same neighborhood. Guests loved both. If revenue were the scoreboard, these deals tied.
 
-Same guest experience: a rural cabin, nature out the door, great reviews. Radically different economics. The West Virginia deal generates 2.4 times the cash flow on less than half the purchase price, with lower operating costs and more upside.
+Now read the lines guests never see. Joshua Tree's payment runs about $600 a month heavier, roughly $7,200 a year that comes off the top whether anyone books or not. The house cost more than twice as much. And getting in took several times the cash, which means every dollar it earned was spread across a much bigger pile of dollars at risk.
 
-Look at the mortgage line for a moment. An $800 payment against $95K in revenue is a property that can survive almost anything a slow season throws at it. That number is the quiet hero of the whole table. Remember it when we reach the U of the RURAL Method.
+Revenue is what you hope for. The payment and the entry price are what you lock in on day one. A $1,250 payment against $75K in revenue can survive almost any slow season. That number is the quiet hero of the whole table. Remember it when we reach the U of the RURAL Method.
 
 The lesson Joshua Tree taught me is the one I want tattooed on your search process: create strong cash flow *before* the market gets hot. Get in at Tier 3. Build systems. Enjoy the appreciation. By the time your market becomes Tier 2, you're already six figures deep in cash flow and shopping in the next emerging town.
 
@@ -409,7 +410,7 @@ What you don't have yet is the sequence: the exact order of moves that turns a t
 
 - Overlooked small towns quietly outperform famous vacation markets: same guest experience, radically better economics.
 - Markets mature in four tiers. Tier 3, Emerging Rural ($100K–$250K, 35–65%+ returns), is the sweet spot.
-- A $170K West Virginia cabin can generate 2.4 times the cash flow of a $355K Joshua Tree house on less than half the purchase price.
+- My Joshua Tree house and my West Virginia cabin earned nearly the same revenue. The cabin won anyway: half the purchase price, a payment about $600 a month lighter, and a fraction of the cash to get in.
 - Skate to where the puck is going: buy fundamentals before discovery, not headlines after it.
 - Rural STRs are an asymmetric bet. The downside is capped (you still own the house); the upside isn't.
 - Famous markets pay in bragging rights. Boring markets pay in cash.
@@ -706,17 +707,9 @@ Unlike urban stays that live and die on conferences and business travel, rural d
 
 **2. Low acquisition cost.** This is your unfair advantage. Buying in LA might get you a hot address, along with a $6,000 mortgage and 4% annual returns if you're lucky. Buy a $150K cabin in a rural town and you're talking a $1,000–$1,200 monthly mortgage and 25–50% cash-on-cash returns with smart design. (Cash-on-cash, or CoC, is the yardstick we'll use throughout: your annual cash flow divided by the cash you actually put in.) Lower price equals lower risk and faster payback.
 
-I've lived both sides of this. My own Joshua Tree–area property, next to a comparable West Virginia cabin:
+I've lived both sides of this. You saw the table in Chapter 2: my Joshua Tree property and my West Virginia cabin earned nearly identical revenue, but the cabin cost less than half as much, carried a payment about $600 a month lighter, and took a fraction of the cash to enter. The Joshua Tree deal proved the model. The West Virginia numbers are why I never repeated it.
 
-| | Joshua Tree area (CA) | West Virginia cabin |
-|---|---|---|
-| Purchase price | $355K | $170K |
-| Annual revenue | $80K | $95K |
-| Operating expenses | $55K | $35K |
-| Cash flow | $25K | $60K |
-| Cash-on-cash return | ~7% | 55%+ |
-
-The Joshua Tree deal proved the model. The West Virginia numbers are why I never repeated it. Sweet spot: $100K–$250K for a 2+ bed, 1+ bath with good bones in the right location. Appalachia, the Ozarks, parts of the Midwest, upstate New York. These are your hunting grounds.
+What does "low acquisition cost" mean in dollars? When I wrote this, my top ten markets mostly traded between $150K and $300K for a 2+ bed, 1+ bath with good bones. Prices drift, so anchor to the price-to-revenue ratio instead of the sticker. Appalachia, the Ozarks, parts of the Midwest, upstate New York. These are your hunting grounds.
 
 **3. Little to no competition.** Demand means nothing if supply is maxed out. Look for towns with high visitor counts but low Airbnb saturation, the ones where you search "Entire Place" and get two dozen results. Goldmine. You want occupancy above 50%, an average daily rate (ADR) around $175–$250, fewer than 100 listings total, and only a handful of truly great ones.
 
