@@ -10,6 +10,8 @@ Copyright © 2026 Jeff Chheuy. All rights reserved.
 
 No part of this book may be reproduced without written permission from the author.
 
+**Disclaimer.** This book is for educational and informational purposes only. It is not legal, tax, accounting, investment, or lending advice, and nothing in it creates a professional relationship between you and the author. Real estate investing involves risk, including the possible loss of money you put in. The stories and figures in this book are the real results of specific people in specific markets at specific times; they are shared to teach, not to promise, and your results will differ. Loan programs, platform fees, tax rules, and market data change; verify current terms with the lender, platform, or agency directly, and consult a licensed attorney, CPA, and lender about your own situation before acting on anything in these pages. Always provide truthful, accurate information on every loan and credit application.
+
 Published by Teeco
 
 teeco.co
@@ -1162,11 +1164,11 @@ Why it works for remote Airbnb investing:
 
 - It's classified as a second home, not an investment property. People have been renting out their vacation homes for as long as vacation homes have existed.
 - Rental income isn't required to qualify, even if you plan to Airbnb it when you're away.
-- You only need occasional personal use (generally 14 days a year), even if your guests far outnumber your visits.
+- Personal use is required, not optional. Most second-home loans expect you to actually use the property (generally 14 days a year), and you should plan to. Your guests can far outnumber your visits, but telling a lender you'll use a home you never intend to visit is occupancy fraud. Use the house. It's your vacation home, and that's the whole point of the loan.
 
 This path gives you the best rates and the lowest down payment while remaining fully legal for short-term rental use.
 
-**Use this if:** you have 10% saved ($25–35K on today's target homes), your credit score is 680+, you're willing to spend a few weekends a year there, and you don't want to tie up 20–30% down. (You shouldn't want that.)
+**Use this if:** you have 10% saved ($25–35K on today's target homes), your credit score is 680+, you genuinely plan to spend a few weekends a year there (the loan requires it, and you'll want to see your own property anyway), and you don't want to tie up 20–30% down. (You shouldn't want that.)
 
 ### Path 2: Seller Financing
 
@@ -1237,12 +1239,7 @@ It fits STRs because you're buying income-producing assets, the home starts earn
 
 **Which cards?** Specific offers rotate too fast to put in print. Issuers change intro periods, cash-back rates, and signup bonuses every few months. The pattern is what lasts: the major issuers almost always have business cards running 0% intro periods of 12–18 months, usually with a signup bonus worth several hundred dollars once you clear a spend threshold, and furnishing a rental clears those thresholds fast. I keep a current list of the best 0% cards in the Bonus Pack at the back of this book.
 
-**How to apply without a formal business:**
-
-- Business name: just use your full name
-- Tax ID: your SSN is fine
-- Business type: select "Real Estate" or "Other Services"
-- Revenue: you can estimate $10,000–$50,000 if you're new
+**How to apply without a formal business:** You don't need an LLC to get a business card. A sole proprietor is a real business in the issuer's eyes, so your full name is your business name and your SSN works as the tax ID. Pick "Real Estate" as the business type. For revenue, give your honest projection of what the rental will earn in its first year, based on the comps you ran, and mark the business as new. Issuers expect new businesses to report projections. What you must never do is inflate numbers to get approved. Misstating information on a credit application is fraud, the approval isn't worth it, and your honest projection on a $70K-a-year rental is plenty impressive on its own.
 
 **What to buy with these cards:**
 
