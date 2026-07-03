@@ -709,7 +709,7 @@ Unlike urban stays that live and die on conferences and business travel, rural d
 
 I've lived both sides of this. You saw the table in Chapter 2: my Joshua Tree property and my West Virginia cabin earned nearly identical revenue, but the cabin cost less than half as much, carried a payment about $600 a month lighter, and took a fraction of the cash to enter. The Joshua Tree deal proved the model. The West Virginia numbers are why I never repeated it.
 
-What does "low acquisition cost" mean in dollars? When I wrote this, my top ten markets mostly traded between $250K and $350K for the home I recommend, a 4 bed, 3 bath with 2,000-plus square feet and good bones. My minimum is 3 bed, 2 bath, 1,500 square feet; I never go smaller. Why push for 4 bedrooms? Airbnb's bedroom filter tops out at "4+ bedrooms," so a 4-bedroom home shows up in every large-group search, and larger groups pay disproportionately more per night. Prices drift, so anchor to the price-to-revenue ratio instead of the sticker. Appalachia, the Ozarks, parts of the Midwest, upstate New York. These are your hunting grounds.
+What does "low acquisition cost" mean in dollars? When I wrote this, my top ten markets mostly traded between $250K and $350K for the home I recommend, a 4 bed, 3 bath with 2,000-plus square feet and good bones. My minimum is 3 bed, 2 bath, 1,500 square feet; I never go smaller. Why push for 4 bedrooms? Airbnb's bedroom filter works as "this many or more," so a 4-bedroom home appears in searches for one, two, three, or four bedrooms, while a 2-bedroom only appears in the smallest ones. The bigger home simply shows up in more searches, and larger groups pay disproportionately more per night. Prices drift, so anchor to the price-to-revenue ratio instead of the sticker. Appalachia, the Ozarks, parts of the Midwest, upstate New York. These are your hunting grounds.
 
 **3. Little to no competition.** Demand means nothing if supply is maxed out. Look for towns with high visitor counts but low Airbnb saturation, the ones where you search "Entire Place" and get two dozen results. Goldmine. My underwriting standard (to underwrite just means to run the numbers before you buy) is occupancy of 60–70% or better, and whatever nightly rate it takes to pencil at least $70K a year in revenue. On top of that, fewer than 100 listings total, and only a handful of truly great ones.
 
@@ -769,7 +769,7 @@ The decision rule: below 3.0, pass. Between 3.0 and 3.5, dig deeper. At 3.5 or a
 
 ### How to Find These Markets (Step by Step)
 
-**Step 1: Start with national parks.** Visit NPS.gov (the National Park Service's site), click "Find a Park," and sort by state. Look for parks within a 2–5 hour drive of major cities. That's the radius that has powered the growth in drive-to travel, and it keeps delivering. Examples that work: New River Gorge, WV (near Charlotte, DC, Pittsburgh). Hot Springs, AR (near Dallas, Memphis, Little Rock). Great Smoky Mountains, TN (near Atlanta, Nashville, Charlotte). Write down five that interest you.
+**Step 1: Start with national parks.** Visit NPS.gov (the National Park Service's site), click "Find a Park," and sort by state. Look for parks within a 2–5 hour drive of major cities. That's the radius that has powered the growth in drive-to travel, and it keeps delivering. Examples that work: New River Gorge, WV (within a few hours of DC, Pittsburgh, and Charlotte). Mammoth Cave, KY (about ninety minutes from Nashville and Louisville). Red River Gorge, KY (an hour from Lexington, two from Cincinnati). And don't stop at national parks. Red River Gorge is actually Forest Service land inside Daniel Boone National Forest, and the same logic applies to national forests, big lakes, and state parks. Write down five anchors that interest you.
 
 **Step 2: Research local towns.** On Google Maps, search for towns 10–60 minutes from the park. Check: population (under 30,000 is ideal), drive time to the anchor, access to restaurants, groceries, and gas, and the number of Airbnb listings (fewer than 100 is a good sign). Remember the rule from the part opener: anchor demand within 30 minutes is the goal; past an hour, you're no longer selling the anchor.
 
@@ -787,35 +787,37 @@ We built a Market Research Cheat Sheet that walks you through this exact process
 
 ### The NPS Arbitrage
 
-Here's your secret weapon. Go to NPS.gov and find a park's Visitor Spending Report. Look specifically at **annual lodging spending**.
+Here's your secret weapon. Every year the National Park Service publishes a Visitor Spending Effects report for each park, breaking down what visitors spent in the surrounding counties on lodging, restaurants, gas, and groceries. It's free, it's public, and almost no individual investor has ever heard of it. That's your advantage.
 
-This is public data. Almost no individual investors use it. That's your advantage.
+The math works like this. Take a park's annual lodging spend and divide it by $70K, which is what a well-run rural STR should gross in a year. The result is roughly how many quality listings that demand can feed. Then compare it to the number of active listings in the market, which you can pull from a market-data tool like AirDNA. Far fewer listings than the demand can feed means undersupply. At or above that number, you're playing musical chairs.
 
-The math works like this. If a park shows $22M in annual visitor lodging spend, and an average well-run rural STR generates about $70K a year in revenue, then $22M ÷ $70K = roughly 314 quality listings needed to capture that spend. Now compare that to actual supply. If the market has fewer than 314 active listings, it's likely undersupplied. If it's already at or above 314, you're playing musical chairs.
+I call this the NPS Arbitrage. It gives you a data-backed saturation check before you ever call an agent.
 
-I call this the NPS Arbitrage: using publicly available national park visitor spending data to identify markets where demand vastly outpaces supply. It gives you a data-backed saturation check before you ever call an agent. Most investors never even know this data exists.
+Here's what it looked like when I pulled the data in mid-2026. Treat these as snapshots with rounded numbers, because every one of them will drift. The method is the point, not the figures.
 
-**The NPS Arbitrage in action, using the numbers from when I last pulled the data:**
+**Mammoth Cave National Park, Kentucky.** One of my favorite markets in the country. About 747,000 visits in 2024, $73 million in total visitor spending, and the park service's own report puts the lodging slice at $28.6 million. Divide that by $70K and the demand can feed roughly 400 quality listings. When I checked the supply, the towns around the park (Cave City, Park City, Brownsville, Horse Cave) carried somewhere between 90 and 150 active rentals, depending on whose count you trust. A market feeding less than half its capacity. That's what opportunity looks like in the data.
 
-**New River Gorge National Park, West Virginia.** Annual visitor lodging spend: ~$18M. Estimated market capacity: 257 quality STRs. Actual active listings: ~85. Gap: 172 undersupplied listings worth roughly $12M+ a year. This is why Ryu and others found such strong deals in the New River Gorge area. The market was genuinely undersupplied, sitting at about 65% below theoretical capacity.
+**New River Gorge National Park, West Virginia.** A record 1.8 million visits in 2024, and $108 million in annual visitor spending across the three park sites in southern West Virginia, with lodging the biggest single category. Run the same math and the area can feed several hundred quality listings. Now here's the part worth studying. When Ryu, Myla, and I were buying, this market had a fraction of today's supply. By mid-2026, the Fayetteville and Oak Hill area carried roughly 300 to 400 active rentals, and Oak Hill's supply had roughly doubled in a single year. The gap we bought into has mostly closed. The lesson isn't that we got lucky. The lesson is that these windows open and then they close, and this data shows you which one is happening while there's still time to act.
 
-**Hot Springs National Park, Arkansas.** Annual visitor lodging spend: ~$21M. Estimated capacity: 300 quality STRs. Actual active listings: ~120. Gap: 180 undersupplied listings. Hot Springs wasn't crowded like Joshua Tree or Sedona, and the visitor spend showed it. Room for another 180 quality listings before saturation. That's opportunity.
+**Red River Gorge, Kentucky.** Another area I like a lot, and it teaches a third lesson: the method works even where the NPS report doesn't exist. The Gorge sits inside Daniel Boone National Forest, which is Forest Service land, so there's no park spending report. You use what's available instead. The Forest Service estimates about half a million visits a year, Kentucky publishes county-level tourism spending, and the listing data is public either way. The area carries roughly 700 active rentals, which sounds crowded until you look at performance. Nightly rates over $200, occupancy near 60%, and average listing revenue in the mid-$40Ks. A market can be discovered and still work when demand keeps growing underneath it. You just have to buy and operate sharper, and the A of the RURAL Method matters more there than anywhere.
 
-**Great Smoky Mountains National Park, Tennessee.** Annual visitor lodging spend: ~$34M. Estimated capacity: 486 quality STRs. Actual active listings: ~420. Gap: just 66 listings. The Smokies are approaching equilibrium. Not oversaturated yet, but the easy money has largely been captured. A textbook example of a market moving from Emerging Rural to Discovered Rural.
+One warning from my own edit of this book. The first draft of this section carried numbers I hadn't rechecked, and when I finally pulled the current data, the supply figures had moved by hundreds of listings. Markets move. Pull the data yourself, the week you're deciding, and trust nothing older than a season.
 
-The NPS Arbitrage lets you see the maturity of a market before you invest. Use it. And if you'd rather skip the spreadsheet, grab the market finder we use to score markets in minutes from the Bonus Pack (back of the book).
+If you'd rather skip the spreadsheet, grab the market finder we use to score markets in minutes from the Bonus Pack (back of the book).
 
 ### The Saturation Curve
 
-Markets don't flip from "undersupplied" to "oversaturated" overnight. They move along a predictable curve. If you know where a market sits on that curve, you make smarter decisions than 95% of buyers.
+Markets don't flip from "undersupplied" to "oversaturated" overnight. They tend to move along a curve, and if you can read where a market sits on it, you'll make smarter decisions than most buyers.
+
+Two honest warnings before the stages. First, the listing counts below describe a typical small rural market, so read them as proportions, not laws. A market the size of Red River Gorge can hold 700 listings and keep performing, while 250 could drown a one-stoplight town. What matters is supply relative to the demand math you just learned, not the raw count. Second, markets don't always move politely down the track. A regulation change or an economic shock can stall a market at any stage. This is the usual path, not a guarantee.
 
 **Stage 1: Undiscovered (Tier 4).** Few STR listings. Tourism demand exists but isn't concentrated; the market runs on word of mouth. Signals: unpredictable occupancy, reviews slow to accumulate. Investor behavior: very few outsiders buying, mostly locals dabbling. Risk: demand may never materialize, so this stage demands the most due diligence. Upside: 2–3x returns are possible if you get it right.
 
-**Stage 2: Emerging (Tier 3, the sweet spot).** A growing base of 40–100 listings. Tourism is accelerating; Airbnb and Google searches are starting to surface the market. Signals: occupancy improving year over year (trending from 45% toward 55%+), ADR stable or rising, more guests arriving via search. Investor behavior: smart money is moving in, maybe two or three new investor-owned properties a quarter. Risk: moderate; demand is proven and competition is growing but not overwhelming. Upside: strong 35–65% cash-on-cash returns, with real first-mover advantage.
+**Stage 2: Emerging (Tier 3, the sweet spot).** A growing base of listings, still well below what the demand can feed (in a small market, that might mean 40–100). Tourism is accelerating; Airbnb and Google searches are starting to surface the market. Signals: occupancy improving year over year (trending from 45% toward 55%+), ADR stable or rising, more guests arriving via search. Investor behavior: smart money is moving in, maybe two or three new investor-owned properties a quarter. Risk: moderate; demand is proven and competition is growing but not overwhelming. Upside: in my experience, strong 35–65% cash-on-cash returns, with real first-mover advantage.
 
-**Stage 3: Discovered (Tier 2).** 100–250+ listings. The market has "made it": travel blogs, podcasts, social media. Heavy investor inflow. Signals: occupancy still strong (55–65%+) but plateauing; ADR rising as differentiation starts to matter more; reviews harder to accumulate. Investor behavior: institutional money arriving, prices rising fast. Risk: higher; you're now competing on design, reviews, and brand, and mistakes cost more. Upside: lower, 15–25% cash-on-cash.
+**Stage 3: Discovered (Tier 2).** Supply has multiplied toward what the demand can feed. The market has "made it": travel blogs, podcasts, social media. Heavy investor inflow. Signals: occupancy still strong (55–65%+) but plateauing; ADR rising as differentiation starts to matter more; reviews harder to accumulate. Investor behavior: institutional money arriving, prices rising fast. Risk: higher; you're now competing on design, reviews, and brand, and mistakes cost more. Upside: lower, 15–25% cash-on-cash.
 
-**Stage 4: Saturated (Tier 1).** 250+ listings and visible oversupply. New properties struggle to book; price wars are common. Signals: occupancy stalling or falling below 50%, ADR dropping to hold bookings, a proliferation of "value" listings. Investor behavior: few new entrants; existing operators consolidating, selling, or converting to long-term rentals. Risk: high. It's a race to the bottom. Upside: limited, 5–10% returns, with operational excellence required just to stay profitable.
+**Stage 4: Saturated (Tier 1).** More listings than the demand math can feed, and the oversupply is visible. New properties struggle to book; price wars are common. Signals: occupancy stalling or falling below 50%, ADR dropping to hold bookings, a proliferation of "value" listings. Investor behavior: few new entrants; existing operators consolidating, selling, or converting to long-term rentals. Risk: high. It's a race to the bottom. Upside: limited, 5–10% returns, with operational excellence required just to stay profitable.
 
 ### Three Metrics That Tell You Where You Are
 
@@ -904,10 +906,10 @@ When you find that rural gem, you'll wonder why you ever limited yourself to you
 - Stop asking "Where would I vacation?" Start asking "Where is there demand without supply?"
 - Every winning rural market has three traits: nature-based demand, low acquisition cost, little competition. That's the Power Triangle.
 - Underwrite at 60–70% occupancy and $70K a year or better in gross revenue. If a deal only works at 80%+ occupancy, walk away.
-- Buy at least a 3 bed / 2 bath with 1,500 square feet. Aim for a 4 bed / 3 bath at $250K–$350K; the "4+ bedrooms" filter puts you in every large-group search.
+- Buy at least a 3 bed / 2 bath with 1,500 square feet. Aim for a 4 bed / 3 bath at $250K–$350K; bigger homes appear in more bedroom-filtered searches and book bigger groups.
 - Score every market on the Matrix: Tourism 30%, Acquisition 25%, Competition 20%, Regulatory 15%, Seasonality 10%. Below 3.5, keep looking.
-- The NPS Arbitrage: divide a park's annual lodging spend by $70K per listing. Fewer actual listings than that number means undersupply.
-- Markets move along the Saturation Curve (Undiscovered, Emerging, Discovered, Saturated). Buy in Stage 2.
+- The NPS Arbitrage: divide an anchor's annual lodging spend by $70K per listing. Fewer actual listings than that number means undersupply. Pull fresh data; supply can double in a year.
+- Markets usually move along the Saturation Curve (Undiscovered, Emerging, Discovered, Saturated). Judge the stage by supply relative to demand, not raw listing counts. Buy in Stage 2.
 - Watch three metrics: listings growth, ADR trend, occupancy trend. They tell you where you are on the curve before prices do.
 - Ryu turned 12 weeks, spreadsheet to launch, into $83,937.81 in his first year live. Gross, not take-home. Repeatable, not lucky.
 - You don't need to know the area. You need to know the math.
@@ -1502,7 +1504,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 
 **Furniture replacement fund.** You buy $30,000 in furniture. Beds wear out. Sofas get stained. Linens tear. TVs break. Budget 8–10% of your furniture spend annually for replacement: $30,000 × 10% = $3,000/year. Most beginners ignore this and get shocked when they need new beds in year 3.
 
-**Platform fees.** Airbnb charges hosts a 3% service fee on every booking; Vrbo takes about 5%. On $60,000 gross, that's $1,800–3,000 that never reaches you. Always work from net revenue: gross × 0.97 for Airbnb, or × 0.95 for Vrbo. That's the number that goes in your spreadsheet.
+**Platform fees.** These moved on hosts recently, so check the current schedule before you underwrite. Airbnb has been shifting hosts from the old 3% host fee to a host-only fee of roughly 15% (guests no longer pay a separate service fee under that structure, so listed prices absorb it). Vrbo runs about a 5% commission plus a 3% payment processing fee. Know which schedule you're on, haircut your gross accordingly, and remember that you set your nightly price with the fee in mind. Whatever the structure, the fee line goes in your spreadsheet before anything else does.
 
 **Seasonal utility spikes.** Your average utility bill might be $150/month. But winter propane can triple it, and summer AC can double or triple it. Budget for high-season costs, not averages:
 
@@ -1939,7 +1941,7 @@ Stack those moves in a 1,000-square-foot, two-bedroom cabin and watch the count 
 
 That little cabin is the floor, the smallest home the math still works on, not the home I'm telling you to buy. My minimum spec is 3 bedrooms, 2 baths, and 1,500 square feet. What I actually recommend is 4 bedrooms, 3 baths, and 2,000-plus square feet. I never suggest a 2 bed, 1 bath.
 
-Two reasons. Airbnb's bedroom filter tops out at "4+ bedrooms," so a 4-bedroom home shows up in every large-group search on the platform. And capacity doesn't pay in a straight line. Homes that sleep 16 or more earn disproportionately more. I recently saw a cabin that sleeps 30 charging $2,000 a night. That's where rural homes can really shine, and it's also an outlier, so don't go hunting for one. Most of the homes I target are $250K to $350K for a 4 bed, 3 bath.
+Two reasons. Airbnb's bedroom filter works as "this many or more," so a 4-bedroom home appears in searches for one, two, three, or four bedrooms, while a 2-bedroom vanishes from most of them. The bigger home simply gets seen more. And capacity doesn't pay in a straight line. Homes that sleep 16 or more earn disproportionately more. I recently saw a cabin that sleeps 30 charging $2,000 a night. That's where rural homes can really shine, and it's also an outlier, so don't go hunting for one. Most of the homes I target are $250K to $350K for a 4 bed, 3 bath.
 
 Capacity also decides who ever sees your listing in the first place. When a family of seven searches, Airbnb filters by guest count before anyone compares photos or prices. Sleep six and you're invisible to that family. Sleep eight and you're in the running, in a tier of searches your smaller competitors never appear in. And larger groups pay more per night.
 
@@ -2058,7 +2060,7 @@ Follow the letters. In order. Every time.
 
 - Income follows sleeping capacity. Design for the group, not the couple.
 - Aim near one sleeper per 100 square feet. Queen-over-queen bunks, trundles, and pull-out sofas can take a 1,000-square-foot cabin from four sleepers to ten. And that cabin is the floor, not the target.
-- Minimum spec: 3 bed, 2 bath, 1,500 square feet. Recommended: 4 bed, 3 bath, 2,000-plus. Airbnb's bedroom filter tops out at "4+ bedrooms," so a 4-bedroom shows up in every large-group search.
+- Minimum spec: 3 bed, 2 bath, 1,500 square feet. Recommended: 4 bed, 3 bath, 2,000-plus. Bigger homes appear in more bedroom-filtered searches and book bigger groups.
 - Homes that sleep 16+ earn disproportionately more. The cabin sleeping 30 at $2,000 a night is an outlier; most of my targets are $250K to $350K, 4 bed, 3 bath.
 - More heads in beds equals more groups you can serve, and more money per night.
 - Groups don't pay per room; they pay per house and split it per head. Twelve people splitting $400 pay about $33 each, versus $75 a head for a couple in a $150 hotel room.
@@ -2546,7 +2548,7 @@ Most hosts have no idea how it works. You're about to. And more importantly, you
 
 The exact weights shift over time, but the algorithm rewards these five factors, in rough order of importance:
 
-1. **New listing boost.** New listings get priority visibility for their first month on the platform. This is your golden window, when the algorithm hands you free traffic. Use it aggressively. Launch pricing 15–20% below market, give early guests amazing experiences, and rack up reviews fast.
+1. **New listing boost.** New listings get priority visibility when they launch. This one isn't a host rumor; Airbnb's own search documentation says new listings get an immediate boost in search to help them get booked before they have reviews. This is your golden window, when the algorithm hands you free traffic. Use it aggressively. Launch pricing 15–20% below market, give early guests amazing experiences, and rack up reviews fast.
 
 2. **Response time (under 1 hour = ranking boost).** Airbnb measures how fast you respond to inquiries. Under an hour earns a ranking boost; 12+ hours sinks you. During your first two weeks, respond within 15 minutes to everything. Set up auto-responses through an automation platform like Hospitable immediately so you're always "responding" fast, even while you sleep.
 
@@ -3497,7 +3499,7 @@ Only after the first four levels are mastered, expand beyond Airbnb:
 
 - **Vrbo:** Slower to build, different audience. Give it 2–3 months. Worth it long-term.
 - **Furnished Finder:** The monthly-stay market. Fills slow seasons with traveling professionals and relocations.
-- **Direct booking:** Once you have repeat guests, direct bookings skip platform fees, which run from about 3% on the host's side to 15% once guest fees are counted.
+- **Direct booking:** Once you have repeat guests, direct bookings skip the platform fee entirely, and with Airbnb moving hosts toward a host-only fee of roughly 15%, that's real money on every stay.
 - **Corporate partnerships:** Local businesses need housing for employees and contractors.
 
 Diversified operators are less exposed to any one platform's policy changes, and every direct booking cuts fee drag. A second channel carrying even a modest share of your revenue is real insurance.
