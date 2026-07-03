@@ -1221,7 +1221,7 @@ Structure it one of two ways:
 
 ### Path 5: 0% APR Credit Cards to Cover Setup Costs
 
-You've secured the home, but design, furnishing, and setup labor commonly run $20,000–$40,000 or more, depending on the size of the house and how much of the work you outsource. If you want to preserve cash, 0% APR credit cards give you a powerful runway.
+You've secured the home, but design, furnishing, and setup labor commonly run $20,000–$40,000 or more, depending on the size of the house and how much of the work you outsource. That budget spans the whole design market, from a few-thousand-dollar design-only plan you execute yourself to full-service design and installation at the top of the range, and the design chapter shows you how to choose between them. If you want to preserve cash, 0% APR credit cards give you a powerful runway.
 
 How it works:
 
@@ -2098,7 +2098,7 @@ You don't need to be a professional designer. You do need to understand three co
 - **Scale.** Furniture should fit the space, not overwhelm it. A tiny chair in a cavernous living room looks cheap. An oversized sofa in a small bedroom blocks the walkway.
 - **Cohesion.** One clear style per property. Mixing nautical beach vibes with mountain lodge gives guests design whiplash.
 
-If these three feel foreign, pay for a concept board from a designer ($500–$1,500). You get the road map, then DIY the execution.
+If these three feel foreign, pay for a basic concept board from a designer ($500–$1,500) to get the road map, then DIY the execution. A full design-only plan runs more; the cost tiers are laid out later in this chapter.
 
 ### Tools That Make DIY Easier
 
@@ -2342,6 +2342,14 @@ And design for the guest avatar your anchor already handed you in Chapter 10. Re
 
 Hiring is about leverage. You spend more upfront but gain speed and polish. A good designer compresses months of trial and error into weeks. And every week matters, because every week your property isn't listed is a week of empty nights you never get back.
 
+**Know the market before you shop it.** Design services come in three tiers, and the price tags mean different things.
+
+At the bottom, budget design-only services run $3K–$5K. You get a design plan and a shopping list, and everything else is on you. The catch is what's usually missing. These plans tend not to be specific to your market, nobody researched your guest avatar, nobody sources or installs anything, and nobody stages the home for the camera. You're buying a starting point, not a result.
+
+At the top, ROI-focused full-service firms charge $8K and up in design fees, and all-in with sourcing, installation, and labor a larger home can land at $40K or more. What that buys is the whole machine. Market research, avatar work, sourcing at trade discounts, install crews, and a photo-ready home the day they leave. The expensive tier usually makes up for itself, because it's built around the same revenue math you ran in the ROI Calculator, not around making a room pretty.
+
+In between sits the hybrid path below. None of these is the wrong answer. The wrong answer is paying $4K expecting the $40K result, or paying $40K when you'd genuinely enjoy doing it yourself. Know which one you're buying.
+
 **What designers actually do:**
 
 - Create mood boards and room layouts
@@ -2390,7 +2398,7 @@ Choose a designer if:
 
 **The hybrid approach (best of both worlds):**
 
-- Pay for concept boards and layouts ($1,500–$3,000)
+- Pay for a design-only plan with concept boards and layouts ($3K–$5K)
 - DIY the sourcing and styling
 - Hire a virtual assistant (VA) to coordinate deliveries and logistics
 
