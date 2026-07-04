@@ -312,15 +312,15 @@ Here's how it compared to one of my West Virginia cabins, side by side. These fi
 |---|---|---|
 | Purchase price | $355K | $170K, seller-financed |
 | First-year revenue | ~$80K | $72K |
-| Monthly payment (PITI: principal, interest, taxes, insurance) | ~$1,850 | ~$1,250 |
+| Monthly payment | ~$1,850 (PITI: principal, interest, taxes, insurance) | $1,125 (interest-only seller note) |
 | Operating expenses | Similar | Similar, a touch less |
 | Cash to get in | ~$100K, split with a partner | A small fraction of that |
 
 Read the table from the top. Two cabins, nearly identical revenue, operating costs in the same neighborhood. Guests loved both. If revenue were the scoreboard, these deals tied.
 
-Now read the lines guests never see. Joshua Tree's payment runs about $600 a month heavier, roughly $7,200 a year that comes off the top whether anyone books or not. The house cost more than twice as much. And getting in took several times the cash, which means every dollar it earned was spread across a much bigger pile of dollars at risk.
+Now read the lines guests never see. Joshua Tree's payment runs about $725 a month heavier, roughly $8,700 a year that comes off the top whether anyone books or not. The house cost more than twice as much. And getting in took several times the cash, which means every dollar it earned was spread across a much bigger pile of dollars at risk.
 
-Revenue is what you hope for. The payment and the entry price are what you lock in on day one. A $1,250 payment against $72K in revenue can survive almost any slow season. That number is the quiet hero of the whole table. Remember it when we reach the U of the RURAL Method.
+Revenue is what you hope for. The payment and the entry price are what you lock in on day one. An $1,125 payment against $72K in revenue can survive almost any slow season. That number is the quiet hero of the whole table. Remember it when we reach the U of the RURAL Method.
 
 The lesson Joshua Tree taught me is the one I want tattooed on your search process. Create strong cash flow *before* the market gets hot. Get in at Tier 3. Build systems. Enjoy the appreciation. By the time your market becomes Tier 2, you're already six figures deep in cash flow and shopping in the next emerging town.
 
@@ -408,7 +408,7 @@ What you don't have yet is the sequence: the exact order of moves that turns a t
 
 - Overlooked small towns quietly outperform famous vacation markets: same guest experience, radically better economics.
 - Markets mature in four tiers. Tier 3, Emerging Rural ($150K–$350K), is the sweet spot. The 35–65%+ returns are 2021–24 top-quartile results; today a well-run first deal more often lands at 15–25% cash-on-cash, still better than nearly anything else a beginner can buy.
-- My Joshua Tree house grossed about $80K in year one; my $170K West Virginia cabin did $72K. Nearly the same revenue, but the cabin won: half the purchase price, a payment about $600 a month lighter, and a fraction of the cash to get in.
+- My Joshua Tree house grossed about $80K in year one; my $170K West Virginia cabin did $72K. Nearly the same revenue, but the cabin won: half the purchase price, a payment about $700 a month lighter, and a fraction of the cash to get in.
 - Skate to where the puck is going: buy fundamentals before discovery, not headlines after it.
 - Rural STRs are an asymmetric bet. The downside is bounded (down payment, setup capital, some months of carry, a long-term-rental fallback); the upside isn't.
 - Famous markets pay in bragging rights. Boring markets pay in cash.
@@ -1488,6 +1488,8 @@ If a 25–30% revenue haircut kills your cash flow, walk away.
 
 **That's not a deal. That's a hope.**
 
+And when the miss happens in real life? One of my students overspent on the buy, and then everything that could go wrong with the house went wrong. That deal still cash flows about $1,000 a month, still delivered the tax write-offs, and the home has appreciated underneath the mess. Nobody frames that page. But a mistake that pays you a thousand dollars a month while the asset grows is exactly what the discipline in this chapter buys you: a worst case you can live with.
+
 ### The Hidden Costs Trap
 
 Beginners always miss costs. Here are the ones that add up fast, and where most people botch the math.
@@ -1610,6 +1612,33 @@ It's easy to underestimate, especially in rural markets. Here are the actual ran
 - Lawn and snow (seasonal): $200–$500/month
 
 **Pad your expenses. Don't pinch them.** It's better to overestimate costs and be pleasantly surprised than to under-budget and sweat every month. If the deal still works at the upper end of every range, it's a home run.
+
+### The Page I'd Show a Skeptic
+
+Every revenue number in this book is gross, and I've told you so each time. Fair enough. Here's the other side of the ledger, straight from my own books. Gatehouse Getaway went live on June 11, 2024. This is its statement for the rest of that year, seven months, as prepared for my CPA.
+
+| Gatehouse Getaway, June–December 2024 | |
+|---|---|
+| Rental income (net payout, after platform fees and lodging taxes) | $46,785 |
+| Cleaning and turnovers | $6,593 |
+| Supplies and consumables | $1,931 |
+| Pest control | $285 |
+| Software and automation | $168 |
+| Security camera | $50 |
+| Guest resolution payout | $180 |
+| Internet | $455 |
+| Lawn and grounds (estimated) | $780 |
+| Seller-note interest ($150K at 9%, interest-only, $1,125 a month) | $7,875 |
+| Property tax (estimated) | $700 |
+| STR insurance (annual policy, allocated) | $3,166 |
+| **Total expenses** | **$22,183** |
+| **Net operating income, seven months** | **$24,602** |
+
+Honesty notes, because a real statement has them. Electric hadn't hit the books yet when this was prepared (the home is on a well and septic, and has no gas service). A few lines are estimates pending the CPA: the late-year cleans, the tax ticket, the lawn count. And guests actually paid about $61K over those months; lodging taxes and platform fees come out before the payout ever reaches you, which is why the income line starts lower than the headline number would.
+
+Now read what the page says. Roughly 47 cents of every payout dollar went to running the house, and that's with an interest-only seller note keeping the payment small. The cash in was about $66K: $20K down plus roughly $46K of renovation and furnishings. So the seven-month net of $24,602 works out to about 37% cash-on-cash in a little over half a year, before electric. By its twelfth month the home had crossed $72K in revenue.
+
+Hold your own deals against this page. It's the standard the 30% Floor has been asking you to meet all chapter.
 
 ### The Math Will Save You
 
@@ -1818,7 +1847,7 @@ You met these five in Chapter 7. Here's how to actually play each one.
 Best for W2 earners with good credit who'll use the property personally and rent it the rest of the year. Chapter 7 covered the requirements. *Strategy note:* use this for your first one or two properties, pair it with 0% cards for furnishing, and keep your reserves intact. It's often the cheapest way in.
 
 **Path 2: DSCR Loan (15% down).**
-Best for entrepreneurs and the self-employed who want to scale without W2 verification. Approval rides on the property's ability to pay for itself; lenders want projected income of at least 1.0–1.25x the monthly payment. Requirements: 15% down, 660–700+ credit, an STR income projection from AirDNA, Rabbu, or a property manager, and a location that doesn't restrict STRs. Here's what it looks like in real life. My friends Diane and Jon, full-service clients of ours, bought a home called Gatewood Orchard in the same corner of West Virginia as our other properties. It wasn't a true vacation home, so the 10% second-home loan was off the table; they went DSCR and put $37,370 down on a $230,000 purchase, with a $5,000 seller credit negotiated in. One year later it reappraised at $322,000, and it grossed $81,210.38 in its first year live. If you're busy, notice that they hired Teeco for the whole thing (finding the home, design, setup, coaching, and management). The fully done-for-you path works too. *Strategy note:* this is the go-to for scaling past deal one, or for a home that doesn't qualify as a vacation home. Combine with 0% cards and you can be all-in for under $50K. Watch the costs, though. DSCR money runs a point or more above vacation-home rates, and 2–3 points at closing aren't unusual. Rates move; that premium is the part that doesn't.
+Best for entrepreneurs and the self-employed who want to scale without W2 verification. Approval rides on the property's ability to pay for itself; lenders want projected income of at least 1.0–1.25x the monthly payment. Requirements: 15% down, 660–700+ credit, an STR income projection from AirDNA, Rabbu, or a property manager, and a location that doesn't restrict STRs. Here's what it looks like in real life. My friends Diane and Jon, full-service clients of ours, bought a home called Gatewood Orchard in the same corner of West Virginia as our other properties. It wasn't a true vacation home, so the 10% second-home loan was off the table; they went with a typical 15%-down DSCR program that underwrites short-term-rental rent (the right answer to the question in Chapter 7) and put $37,370 down on a $230,000 purchase, with a $5,000 seller credit negotiated in. One year later it reappraised at $322,000, and it grossed $81,210.38 in its first year live. If you're busy, notice that they hired Teeco for the whole thing (finding the home, design, setup, coaching, and management). The fully done-for-you path works too. *Strategy note:* this is the go-to for scaling past deal one, or for a home that doesn't qualify as a vacation home. Combine with 0% cards and you can be all-in for under $50K. Watch the costs, though. DSCR money runs a point or more above vacation-home rates, and 2–3 points at closing aren't unusual. Rates move; that premium is the part that doesn't.
 
 **Path 3: 0% Interest Business Credit Cards.**
 Best for covering the $20K–$40K+ furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards in the same 24–48 hour window to limit the credit impact, starting with Chase (historically the strictest issuer about recent applications). Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: start with Chase, Amex, Capital One, and US Bank; request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). One LLC can carry 3–5 cards from different issuers at $10K–$30K+ each.
@@ -2651,7 +2680,7 @@ Gatehouse Getaway is my own West Virginia home, and it's the template for everyt
 - **Purchase price:** $170K, seller-financed with $20K down
 - **Renovation budget:** about $40K
 - **Furniture and design:** $30–35K, professionally designed and installed
-- **Payment:** roughly $1,250 a month in year one, thanks to the seller financing
+- **Payment:** $1,125 a month, an interest-only seller note (the full P&L is in Chapter 8)
 - **Result:** $72K in revenue its first year, and more than $150K gross over its first two years
 
 Gross, not take-home. Still a monster of a deal.
