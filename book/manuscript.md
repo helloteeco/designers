@@ -447,7 +447,7 @@ Cheap entry means a cheap payment, and the payment is what protects you in slow 
 
 Amateurs chase revenue. Pros guard the payment.
 
-Remember Lookout Lodge, my business partner Ryu's home from the last chapter? He negotiated that $170K purchase with seller financing: $15K down and $1,000 a month, principal-only, at 0% interest. That tiny payment meant slow months couldn't hurt him, and the home grossed $83,937.81 in its first year. A payment that small leaves plenty of it behind. The financing chapters of this book teach this step: loan paths, the only math that matters, and how to get the money.
+Remember Lookout Lodge, my business partner Ryu's home from the last chapter? He negotiated that $170K purchase with seller financing: $15K down and $1,000 a month, principal-only, at 0% interest. That tiny payment meant slow months couldn't hurt him, and the home grossed $83,937.81 in its first year. A payment that small leaves plenty of that revenue in your pocket. The financing chapters of this book teach this step: loan paths, the only math that matters, and how to get the money.
 
 ### R — Room for Everyone
 
@@ -469,7 +469,7 @@ Messaging, pricing, cleaners: about $80 a month in software runs the whole machi
 
 I learned this step the hard way. In the beginning a friend managed my properties, and honestly, it was a relief. When Myla and I took over managing them ourselves, she caught every guest message, we were slow to answer, and it stayed stressful until we built real systems. Today I run multiple cabins in about three hours a week per property.
 
-My students Steph and Kevin made $7K a month across two homes in their first stretch with this same playbook; by their second summer they were pacing past $20K. The operations part of this book teaches this step: automation, remote teams, and what happens after launch.
+My students Steph and Kevin made $7K a month across two homes in their first stretch with this same playbook; by this summer they were pacing past $20K. The operations part of this book teaches this step: automation, remote teams, and what happens after launch.
 
 ### The Method, in Order
 
@@ -495,7 +495,7 @@ In this order. Every time.
 - R — Room for Everyone: income follows sleeping capacity. The extra-guest fee alone can be a third of your revenue.
 - A — Aesthetics That Win the Scroll: guests decide in 3 seconds, and your first five photos do the selling.
 - L — Leverage Systems: about $80 a month in software makes the asset run without you.
-- Proof it works: a $103K cabin grossing $10,195 in a month; Lookout Lodge grossing $83,937.81 in its first year on $15K down; $46K in two summer months; students at $7K a month across two homes in their first stretch, pacing past $20K by their second summer.
+- Proof it works: a $103K cabin grossing $10,195 in a month; Lookout Lodge grossing $83,937.81 in its first year on $15K down; $46K in two summer months; students at $7K a month across two homes in their first stretch, pacing past $20K by this summer.
 - Follow the letters. In this order. Every time.
 
 
@@ -661,7 +661,7 @@ Your first Airbnb isn't near you. And that's exactly why it's going to work.
 
 ## Chapter 5: Picking a Market That Prints Money
 
-In early 2023, my business partner Ryu sat down with a laptop and a spreadsheet and did something almost no investor bothers to do.
+My business partner Ryu sat down with a laptop and a spreadsheet and did something almost no investor bothers to do.
 
 He didn't browse Zillow for cute cabins. He didn't ask friends where they liked to vacation. He pulled the visitor spending reports for eight different national parks — public data, free to anyone — and started dividing big numbers by small ones. Which parks had tens of millions of dollars in lodging demand? Which nearby towns had almost no listings to absorb it?
 
@@ -693,9 +693,9 @@ These destinations attract millions of visitors without needing major cities, bi
 
 Unlike urban stays that live and die on conferences and business travel, rural demand is consistent. People always want to get away, and they want a place that feels like an escape. One home I manage had the kind of June and July peak you'll see broken down in Chapter 10. That's what anchored demand looks like when the season hits.
 
-**2. Low acquisition cost.** This is your unfair advantage. Buying in LA might get you a hot address, along with a $6,000 mortgage and 4% annual returns if you're lucky. Buy a $250K cabin in a rural town and you're talking a monthly mortgage of, call it $1,700–$1,900 at recent rates, and 25–50% cash-on-cash returns with smart design. (Cash-on-cash, or CoC, is the yardstick we'll use throughout: your annual cash flow divided by the cash you actually put in.) Lower price equals lower risk and faster payback.
+**2. Low acquisition cost.** This is your unfair advantage. Buying in LA might get you a hot address, along with a $6,000 mortgage and 4% annual returns if you're lucky. Buy a $250K cabin in a rural town and you're talking a monthly mortgage of, call it $1,700–$1,900 at recent rates, and 25–50% cash-on-cash returns with smart design, at least in the 2021–24 top-quartile window; a well-executed deal today more often pencils to 15–25%, which still beats almost anything else a beginner can buy. (Cash-on-cash, or CoC, is the yardstick we'll use throughout: your annual cash flow divided by the cash you actually put in.) Lower price equals lower risk and faster payback.
 
-I've lived both sides of this. You saw the table in Chapter 2: my Joshua Tree property and my West Virginia cabin earned nearly identical revenue, but the cabin cost less than half as much, carried a payment about $600 a month lighter, and took a fraction of the cash to enter. The Joshua Tree deal proved the model. The West Virginia numbers are why I never repeated it.
+I've lived both sides of this. You saw the table in Chapter 2: my Joshua Tree property and my West Virginia cabin earned nearly identical revenue, but the cabin cost less than half as much, carried a payment about $700 a month lighter, and took a fraction of the cash to enter. The Joshua Tree deal proved the model. The West Virginia numbers are why I never repeated it.
 
 What does "low acquisition cost" mean in dollars? When I wrote this, my top ten markets mostly traded between $250K and $350K for the home I recommend, a 4 bed, 3 bath with 2,000-plus square feet and good bones. My minimum is 3 bed, 2 bath, 1,500 square feet; I never go smaller. Bigger homes appear in more bedroom-filtered searches and book bigger groups, and Chapter 10 explains why that matters so much. Prices drift, so anchor to the price-to-revenue ratio instead of the sticker. Appalachia, the Ozarks, parts of the Midwest, upstate New York. These are your hunting grounds.
 
@@ -803,7 +803,7 @@ Two honest warnings before the stages. First, the listing counts below describe 
 
 **Stage 1: Undiscovered (Tier 4).** Few STR listings. Tourism demand exists but isn't concentrated; the market runs on word of mouth. Signals: unpredictable occupancy, reviews slow to accumulate. Investor behavior: very few outsiders buying, mostly locals dabbling. Risk: demand may never materialize, so this stage demands the most due diligence. Upside: 2–3x returns are possible if you get it right.
 
-**Stage 2: Emerging (Tier 3, the sweet spot).** A growing base of listings, still well below what the demand can feed (in a small market, that might mean 40–100). Tourism is accelerating; Airbnb and Google searches are starting to surface the market. Signals: occupancy improving year over year (trending from 45% toward 55%+), ADR stable or rising, more guests arriving via search. Investor behavior: smart money is moving in, maybe two or three new investor-owned properties a quarter. Risk: moderate; demand is proven and competition is growing but not overwhelming. Upside: in my experience, strong 35–65% cash-on-cash returns, with real first-mover advantage.
+**Stage 2: Emerging (Tier 3, the sweet spot).** A growing base of listings, still well below what the demand can feed (in a small market, that might mean 40–100). Tourism is accelerating; Airbnb and Google searches are starting to surface the market. Signals: occupancy improving year over year (trending from 45% toward 55%+), ADR stable or rising, more guests arriving via search. Investor behavior: smart money is moving in, maybe two or three new investor-owned properties a quarter. Risk: moderate; demand is proven and competition is growing but not overwhelming. Upside: in my experience, strong 35–65% cash-on-cash returns in the 2021–24 top-quartile window (closer to 15–25% on a well-executed deal today), with real first-mover advantage.
 
 **Stage 3: Discovered (Tier 2).** Supply has multiplied toward what the demand can feed. The market has "made it": travel blogs, podcasts, social media. Heavy investor inflow. Signals: occupancy still strong (55–65%+) but plateauing; ADR rising as differentiation starts to matter more; reviews harder to accumulate. Investor behavior: institutional money arriving, prices rising fast. Risk: higher; you're now competing on design, reviews, and brand, and mistakes cost more. Upside: lower, 15–25% cash-on-cash.
 
@@ -819,7 +819,7 @@ Two honest warnings before the stages. First, the listing counts below describe 
 
 ### Ryu's Full Market-Analysis Process
 
-You met Ryu at the top of this chapter. This is his complete process from 2023–2024, week by week, and it's exactly what I want you to copy.
+You met Ryu at the top of this chapter. This is his complete process, twelve weeks from spreadsheet to the June 2024 launch, and it's exactly what I want you to copy.
 
 **Weeks 1–2:** Identified national parks in underinvested regions. Ran the NPS Arbitrage on 8 different parks. Shortlisted the 3 with the biggest supply gaps.
 
@@ -1252,19 +1252,7 @@ It fits STRs because you're buying income-producing assets, the home starts earn
 
 **Caveat:** Don't go overboard. This is a temporary bridge, not free money. My cap is simple. Never float more on 0% cards than six months of conservative-case cash flow can retire. Set up auto-payments and use Airbnb income to pay the balance down monthly.
 
-**The payback plan.** Say you blew past that cap, went big, and floated $80K across three or four cards for the renovation, the furniture, and the setup labor. Here's the order I'd pay it back in, and why the worst case still doesn't sink you.
-
-First, the property's own cash flow. This is the primary engine. A home grossing $70K a year should be sending real money at those balances every single month, and it starts within weeks of launch.
-
-Second, your tax refund. If you materially participate in the property, cost segregation and bonus depreciation can shelter a serious slice of your W2 income in year one, and for a lot of high-earning owners that shows up as a refund check worth thousands. Ask your CPA to run it before you file. When that check lands, it goes at the cards, not at a vacation.
-
-Third, the equity you created. Once the renovated home appraises up, a cash-out refinance or a second-position HELOC can clear whatever the cash flow hasn't. This is the same move Myla and I both used to recoup our capital, pointed at the cards instead.
-
-Fourth, the rollover. If a promo window is closing and a balance remains, transfer it to a fresh 0% card. Issuers charge a one-time transfer fee, usually 3–5%, and in exchange you buy another 12 to 18 interest-free months. On a $20K balance, that fee is $600 to $1,000. Carrying the same balance at 23% costs about $383 every month, so the transfer fee pays for itself within two or three months and the rest of the new window is interest-free relief. This is the reason the ugly ending almost never actually arrives.
-
-Two honest warnings about that rollover. It assumes an issuer will approve a new card for someone already carrying high utilization, and they often won't; the escape hatch can be locked exactly when you need it. And maxed cards can drag your credit score down right when you apply for the refinance the whole plan leans on. Cards and your next mortgage application are enemies. Time them apart.
-
-And the worst case. Suppose everything runs slow, the promo windows expire, and you're still carrying $20K at 23% interest. That's about $383 a month in interest. Painful, and nowhere near fatal, because a property netting $20K or more a year covers it while you keep paying the balance down. Don't plan on paying 23%. But know that even the ugly version of this usually survives, because the asset underneath it earns.
+**The payback plan.** The property's own cash flow is the engine; a home grossing $70K a year should be sending real money at those balances every month, starting within weeks of launch. If a promo window closes before the balance dies, you can roll it to a fresh 0% card for a one-time 3–5% transfer fee and buy another 12 to 18 interest-free months, though issuers don't always approve someone already carrying big balances. Even the worst case usually survives. Get stuck holding $20K at 23% and the interest runs about $383 a month, painful and nowhere near fatal against a property netting $20K or more a year while you pay it down. One warning stands above the rest. Maxed cards drag your credit score down right when you apply for a refinance, so cards and your next mortgage application are enemies; time them apart.
 
 ### The Loan Comparison Decision Tree
 
@@ -1299,7 +1287,7 @@ The key is to match the loan to your situation, not your ego. A first-timer with
 
 ### The Stack Strategy on a Real Deal
 
-Here's the Stack Strategy on a $250K six-bedroom, the kind of deal a first-time buyer with $45,000 saved and decent credit can actually close.
+Here's the Stack Strategy on a $250K 4-bed, 3-bath, the kind of deal a first-time buyer with $45,000 saved and decent credit can actually close.
 
 **The structure:**
 
@@ -1336,7 +1324,7 @@ Debt scares people. What should scare them is being stuck with one property that
 
 This is exactly how I scaled. One well-picked rural Airbnb with 10% down and smart setup financing became three, then five, then ten. The cash-on-cash returns were so high that it felt riskier *not* to use leverage. You already saw the receipts in Chapter 2, and not one of those homes required 25% down.
 
-### The Only Tool That Actually Matters
+### Five Paths Are Enough
 
 There are over 20 ways to fund a real estate deal. HELOCs, SBLOCs, 401(k) loans, bridge loans, lease options — these are all good tools, and some will serve you well later. But twenty options is how first-time buyers talk themselves into buying nothing. Park the rest for now. These five are the most common, accessible, and scalable ways to buy your first rural Airbnb, and one of them is enough:
 
@@ -1458,19 +1446,19 @@ The critical rule is to **make your buy decision on the Conservative number.** I
 
 Say AirDNA shows comps in your market at:
 
-- Conservative: $35,000/year
-- Moderate: $55,000/year
-- Aggressive: $75,000/year
+- Conservative: $50,000/year
+- Moderate: $70,000/year
+- Aggressive: $90,000/year
 
-Your target is a six-bedroom, nice but not luxury. You'll probably hit Moderate with decent management. But you underwrite at Conservative:
+Your target is a 4-bed, 3-bath, nice but not luxury. You'll probably hit Moderate with decent management. But you underwrite at Conservative:
 
-- Revenue: $35,000
-- Expenses: $18,500
+- Revenue: $50,000
+- Expenses: $33,500
 - Net profit: $16,500
 - Cash invested: $65,000
 - Cash-on-cash return: 25%
 
-It lands just under the 30% floor, but that 25% is your worst case, not your bet. Hit the Moderate number and the same deal returns north of 50%. You're not betting on top-quartile performance. You're betting on avoiding bottom-quartile disaster. Hit Moderate or Aggressive and you have a huge margin of safety; hit Conservative and you still cash flow and own an asset. That's a deal worth doing.
+It lands just under the 30% floor, but that 25% is your worst case, not your bet. The 30% Floor is judged at Moderate; surviving at Conservative, at around 25%, is what makes the deal safe to do. Hit the Moderate number and the same deal returns north of 50%. You're not betting on top-quartile performance. You're betting on avoiding bottom-quartile disaster. Hit Moderate or Aggressive and you have a huge margin of safety; hit Conservative and you still cash flow and own an asset. That's a deal worth doing.
 
 ### The Stress Test Framework
 
@@ -1566,7 +1554,7 @@ The home appraised at about $240,000 after the reno, more than double what she p
 
 On cash flow alone, a heavy-renovation deal like this returns capital more slowly at first than a turnkey stack; she put real money into that rehab. The reason it's one of the best deals I've watched happen shows up in the two layers most beginners never model: taxes and equity.
 
-**Myla's tax story.** Myla has a full-time W2 job, and because she materially participates in running the rental (it's her only rental business and she's actively involved), she qualified for STR material-participation treatment, the tax status for owners who actually run the property rather than hire everything out. Between operating expenses and accelerated depreciation from a cost segregation study, which front-loads years of write-offs on roughly $100K of renovation and furnishings into the early years, her deductions cut deep into the taxes on her income. She made money in real life, and on paper the IRS saw far less of it. (Chapter 10 goes deeper.)
+**Myla's tax story.** Myla has a full-time W2 job, and because she materially participates in running the rental (it's her only rental business and she's actively involved), she qualified for STR material-participation treatment, the tax status for owners who actually run the property rather than hire everything out. Between operating expenses and accelerated depreciation from a cost segregation study, which front-loads years of write-offs on roughly $100K of renovation and furnishings into the early years, her deductions cut deep into the taxes on her income. She made money in real life, and on paper the IRS saw far less of it. (Chapter 15 goes deeper.)
 
 **Myla's equity story.** This is the classic BRRRR play: buy, renovate, rent, refinance, repeat. She bought with cash, renovated, got the $240K appraisal, then refinanced at 75–80% of that value and pulled most of her money back out. I won't pretend I remember the exact loan figure. What matters is that within two years she had recovered almost all of her money, and she still owned the house, the cash flow, and the tax benefits. The recovered capital went on to fund her second property, in Tennessee. That's velocity of capital, live and in person.
 
@@ -1627,16 +1615,17 @@ Every revenue number in this book is gross, and I've told you so each time. Fair
 | Security camera | $50 |
 | Guest resolution payout | $180 |
 | Internet | $455 |
+| Electric (estimated, ~$300/month) | $2,100 |
 | Lawn and grounds (estimated) | $780 |
 | Seller-note interest ($150K at 9%, interest-only, $1,125 a month) | $7,875 |
 | Property tax (estimated) | $700 |
 | STR insurance (annual policy, allocated) | $3,166 |
-| **Total expenses** | **$22,183** |
-| **Net operating income, seven months** | **$24,602** |
+| **Total expenses** | **$24,283** |
+| **Net operating income, seven months** | **$22,502** |
 
-Honesty notes, because a real statement has them. Electric hadn't hit the books yet when this was prepared (the home is on a well and septic, and has no gas service). A few lines are estimates pending the CPA: the late-year cleans, the tax ticket, the lawn count. And guests actually paid about $61K over those months; lodging taxes and platform fees come out before the payout ever reaches you, which is why the income line starts lower than the headline number would.
+Honesty notes, because a real statement has them. Electric is included at the owner's ~$300-a-month average, pending the utility statements (the home is on a well and septic, and has no gas service). A few lines are estimates pending the CPA: the late-year cleans, the tax ticket, the lawn count. And guests actually paid about $61K over those months; lodging taxes and platform fees come out before the payout ever reaches you, which is why the income line starts lower than the headline number would.
 
-Now read what the page says. Roughly 47 cents of every payout dollar went to running the house, and that's with an interest-only seller note keeping the payment small. The cash in was about $66K: $20K down plus roughly $46K of renovation and furnishings. So the seven-month net of $24,602 works out to about 37% cash-on-cash in a little over half a year, before electric. By its twelfth month the home had crossed $72K in revenue.
+Now read what the page says. Roughly 52 cents of every payout dollar went to running the house, and that's with an interest-only seller note keeping the payment small. The cash in was about $66K: $20K down plus roughly $46K of renovation and furnishings. So the seven-month net of $22,502 works out to about 34% cash-on-cash in a little over half a year. By its twelfth month the home had crossed $72K in revenue.
 
 Hold your own deals against this page. It's the standard the 30% Floor has been asking you to meet all chapter.
 
@@ -1654,7 +1643,7 @@ The math saved me. It will save you too. You'll find the Real Estate Numbers Che
 
 - When you're starting out, only one number matters: cash-on-cash return.
 - If it's not 30%+, walk away. A 15% return keeps you busy but poor.
-- Underwrite on the 25th percentile. Buy the downside; enjoy the upside.
+- Underwrite on the 25th percentile. Judge the 30% Floor at the median; a deal that survives Conservative is a deal you can do. Buy the downside; enjoy the upside.
 - Stress-test every deal with a 25–30% revenue haircut; occupancy and rate fall together in a downturn. If the haircut kills it, that's not a deal. That's a hope. And make sure it survives at long-term market rent.
 - Count hidden costs: turnovers, furniture replacement, platform fees, seasonal utilities, real STR insurance, taxes at your purchase price, and a capex fund with $10K liquid per property.
 - Know the five deal-killers and walk fast: fragile occupancy, one season, hostile HOAs, dying septic, saturated markets.
@@ -1846,17 +1835,17 @@ You met these five in Chapter 7. Here's how to actually play each one.
 **Path 1: Vacation-Home Loan (10% down).**
 Best for W2 earners with good credit who'll use the property personally and rent it the rest of the year. Chapter 7 covered the requirements. *Strategy note:* use this for your first one or two properties, pair it with 0% cards for furnishing, and keep your reserves intact. It's often the cheapest way in.
 
-**Path 2: DSCR Loan (15% down).**
-Best for entrepreneurs and the self-employed who want to scale without W2 verification. Approval rides on the property's ability to pay for itself; lenders want projected income of at least 1.0–1.25x the monthly payment. Requirements: 15% down, 660–700+ credit, an STR income projection from AirDNA, Rabbu, or a property manager, and a location that doesn't restrict STRs. Here's what it looks like in real life. My friends Diane and Jon, full-service clients of ours, bought a home called Gatewood Orchard in the same corner of West Virginia as our other properties. It wasn't a true vacation home, so the 10% second-home loan was off the table; they went with a typical 15%-down DSCR program that underwrites short-term-rental rent (the right answer to the question in Chapter 7) and put $37,370 down on a $230,000 purchase, with a $5,000 seller credit negotiated in. One year later it reappraised at $322,000, and it grossed $81,210.38 in its first year live. If you're busy, notice that they hired Teeco for the whole thing (finding the home, design, setup, coaching, and management). The fully done-for-you path works too. *Strategy note:* this is the go-to for scaling past deal one, or for a home that doesn't qualify as a vacation home. Combine with 0% cards and you can be all-in for under $50K. Watch the costs, though. DSCR money runs a point or more above vacation-home rates, and 2–3 points at closing aren't unusual. Rates move; that premium is the part that doesn't.
-
-**Path 3: 0% Interest Business Credit Cards.**
-Best for covering the $20K–$40K+ furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards in the same 24–48 hour window to limit the credit impact, starting with Chase (historically the strictest issuer about recent applications). Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: start with Chase, Amex, Capital One, and US Bank; request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). One LLC can carry 3–5 cards from different issuers at $10K–$30K+ each.
-
-**Path 4: Seller Financing.**
+**Path 2: Seller Financing.**
 The most overlooked funding tool, and one of the most powerful in rural markets, where sellers are often tired landlords, heirs, or burned-out owners motivated by ease and relief more than top dollar. You saw it in this chapter's opening. Ryu's $15K-down, 0%-interest, $1,000-a-month deal existed because he offered a retiring owner exactly what he wanted. *Where to find it:* search "seller financing," "owner will carry," "rent to own," and "contract for deed"; filter Zillow for 90+ days on market; check Craigslist and Facebook Marketplace; go deeper with tools like BatchLeads or PropStream. *How to ask:* frame it around what they want (speed, price, or income), then put the Three Offer Strategy from earlier in this chapter in front of them and let them choose.
 
-**Path 5: Private Money.**
+**Path 3: DSCR Loan (15% down).**
+Best for entrepreneurs and the self-employed who want to scale without W2 verification. Approval rides on the property's ability to pay for itself; lenders want projected income of at least 1.0–1.25x the monthly payment. Requirements: 15% down, 660–700+ credit, an STR income projection from AirDNA, Rabbu, or a property manager, and a location that doesn't restrict STRs. Here's what it looks like in real life. My friends Diane and Jon, full-service clients of ours, bought a home called Gatewood Orchard in the same corner of West Virginia as our other properties. It wasn't a true vacation home, so the 10% second-home loan was off the table; they went with a typical 15%-down DSCR program that underwrites short-term-rental rent (the right answer to the question in Chapter 7) and put $37,370 down on a $230,000 purchase, with a $5,000 seller credit negotiated in. One year later it reappraised at $322,000, and it grossed $81,210.38 in its first year live. If you're busy, notice that they hired Teeco for the whole thing (finding the home, design, setup, coaching, and management). The fully done-for-you path works too. *Strategy note:* this is the go-to for scaling past deal one, or for a home that doesn't qualify as a vacation home. Combine with 0% cards and you can be all-in for under $50K. Watch the costs, though. DSCR money runs a point or more above vacation-home rates, and 2–3 points at closing aren't unusual. Rates move; that premium is the part that doesn't.
+
+**Path 4: Private Money.**
 Best for down payments and furnishing when your network has idle cash. Nobody's begging here. You're offering someone an 8–12% return backed by real property, far better than their savings account or bonds. The ask, without the cringe: "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly — much better than letting it sit in savings." Back it with the pitch deck above. This works best with family and friends who trust you, coworkers with idle savings, local professionals, and retirees with rollover funds. And you're not recruiting a hundred rich people. One or two with idle cash and a fear of inflation will do. Always get it in writing (a promissory note plus terms), and for larger loans, record a lien or deed of trust.
+
+**Path 5: 0% Interest Business Credit Cards.**
+Best for covering the $20K–$40K+ furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards in the same 24–48 hour window to limit the credit impact, starting with Chase (historically the strictest issuer about recent applications). Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: start with Chase, Amex, Capital One, and US Bank; request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). One LLC can carry 3–5 cards from different issuers at $10K–$30K+ each.
 
 ### Creative Combinations That Stretch Every Dollar
 
@@ -1885,7 +1874,7 @@ Run that projection forward. By month 18, the card balances are cleared and rese
 
 That's $500K+ in real estate controlled, debt paid down, and cash generated, all starting from a $40K savings account and a plan. No windfall made that work. A stack did, with every layer doing a specific job.
 
-### The Only Thing That Actually Matters: Getting In the Game
+### Getting In the Game
 
 You don't need perfect. You need possible.
 
@@ -1917,7 +1906,7 @@ You're closer than you think.
 
 The third letter of the RURAL Method is R — Room for Everyone.
 
-The first R told you where to buy, in a market with an anchor within 30 minutes. The U told you how much to spend, cheap enough that the payment protects you in slow months. This letter tells you what kind of home to buy and how to set it up once you own it. Buy and build for the group.
+The first R told you where to buy, in a market with an anchor within 30 minutes. The U told you how much to spend, cheap enough that the payment protects you in slow months. This letter tells you what kind of home to buy, and how to sleep more guests in it well. Buy and build for the group.
 
 Income follows sleeping capacity. Aim near one sleeper per 100 square feet. Big groups split the cost per person, which is why they book big homes instead of a row of hotel rooms. And turn on the extra-guest fee. That one setting alone can be a third of your revenue.
 
@@ -2062,8 +2051,6 @@ One thing remains, though, and it's the difference between capacity on paper and
 
 Winning the scroll is the A of the RURAL Method, Aesthetics, and it's where we go next.
 
-Follow the letters. In order. Every time.
-
 ### Chapter Summary
 
 - Income follows sleeping capacity. Design for the group, not the couple.
@@ -2098,15 +2085,11 @@ Follow the letters. In order. Every time.
 
 ## Chapter 11: Design Is Your Booking Engine
 
-My wife and business partner, Myla, bought a fixer in Oak Hill, West Virginia, for $103K. Cash, in partnership with her aunt. It was dated, the kind of house that photographs like a rental nobody wants: tired kitchen, old bathrooms, an exterior that said "for sale by owner," not "book your getaway."
+You already know the story of Myla's Oak Hill fixer from Chapter 8, contractor mess, shed furniture, and all. What that chapter didn't cover is the part of the story the deal numbers don't explain.
 
-The plan was simple. Hire contractors, renovate, furnish, launch. The contractors had other plans. After roughly 90 days of work done wrong, we pulled the plug. Myla, some friends, and I finished the renovation ourselves, then hauled the furniture back in from the shed where it had been sitting the whole time. The renovation ended up costing her about $70K, more than it should have, and the furniture ran roughly $30K on top of that.
+Through the whole ordeal, she refused to compromise on the finish. The schedule blew up, the budget followed, and she still would not cut a corner on anything a guest would see or touch.
 
-Through all of it, she refused to compromise on the finish. The schedule blew up, the budget followed, and she still would not cut a corner on anything a guest would see or touch.
-
-The house appraised at around $240K when the work was done. Then the bookings started. She grossed $150K in the first two years, and gross means everything guests paid, before a single expense came out. The number that explains that one is a 4.95-star rating across more than 70 stays.
-
-Guests walked into a home that looked better than the photos, and the photos already looked better than every comparable listing in town. They never saw the contractor mess. They saw the finish, and the finish is what they booked.
+Guests walked into a home that looked better than the photos, and the photos already looked better than every comparable listing in town. They never saw the contractor mess. They saw the finish, and the finish is what they booked. The proof is a 4.95-star rating across more than 70 stays.
 
 ### Why Design Actually Matters
 
@@ -2122,7 +2105,7 @@ The real question is how you'll do it. Yourself, or with a pro? This chapter giv
 
 We've built room-by-room setup checklists to make this easier: a Kitchen Items Checklist, a Bathroom Items Checklist, a Design Plan Checklist covering guest profile, function, durability, and aesthetics, and the Photographer Checklist you'll want before your shoot. Every item is clickable with purchase links. Download them all from the Bonus Pack at the back of this book.
 
-### Framework: The Candy Bar Method
+### The Candy Bar Method
 
 **Why it works:** High-margin amenities generate disproportionate revenue. In my markets, roughly $10K invested strategically in amenities (hot tub, sauna, fire pit, outdoor shower, game room) has commonly generated $1K–$5K per month in additional revenue.
 
@@ -2132,7 +2115,7 @@ We've built room-by-room setup checklists to make this easier: a Kitchen Items C
 
 **Lesson:** A beautiful room is nice. A beautiful room with a hot tub is bookable.
 
-### Framework: The Photo-First Rule
+### The Photo-First Rule
 
 **Why it works:** You're designing for how the space photographs, not how it lives. A pretty living room that photographs dark and cramped won't book. A simple room that photographs clean, bright, and spacious will.
 
@@ -2486,6 +2469,8 @@ She either stops her thumb, or she doesn't. If she stops, you get maybe 30 more 
 
 You can have the best-designed Airbnb in town, but if the listing doesn't pop, nobody books it. Your listing is your storefront and your first impression. This chapter is about winning that 3-second moment, and the 30 seconds after it.
 
+I watched that moment play out on a listing I worked on in Greenville, South Carolina. It went live with about 90 photos and struggled from launch, roughly two bookings a month even with the new-listing boost working in its favor. Guests who opened it drowned in bathrooms, hallways, and close-ups of soap before they ever reached the money shots. So we fixed the presentation. I ran the whole set through photolab.teeco.co, cut the photos that didn't need to exist, put one consistent look on everything that stayed, and led with the right shots for that market. The calendar went from two bookings a month toward 90% full. I've seen this enough times to say it plainly. Depending on how bad the original listing is, the same home can go from $3,000 a month to $12,000 a month on presentation alone.
+
 Your photos get the click. Your title and first five lines get the booking.
 
 ### Lead With Your Top 5 Hero Photos
@@ -2527,7 +2512,7 @@ Save the bed counts and kitchen features for later in the description. Sell the 
 
 Your first 3–5 guests are gold. Their reviews anchor your reputation and drive your early ranking.
 
-Our recommendation is to set launch pricing 15–20% below your average comp ADR. Offer extras like early check-in or free firewood. Set a 3-night minimum to reduce turnovers (the clean-and-reset between one guest leaving and the next arriving) and keep control of your calendar.
+Our recommendation is to set launch pricing 15–20% below your average comp ADR. Offer extras like early check-in or free firewood. Set a 3-night minimum to reduce turnovers and keep control of your calendar.
 
 It feels like leaving money on the table, until you remember that a new listing with zero reviews at full price is invisible. A new listing priced under the comps books immediately, and each booking buys the proof you actually need in month one.
 
@@ -2553,7 +2538,7 @@ The exact weights shift over time, but the algorithm rewards these five factors,
 
 2. **Response time (under 1 hour = ranking boost).** Airbnb measures how fast you respond to inquiries. Under an hour earns a ranking boost; 12+ hours sinks you. During your first two weeks, respond within 15 minutes to everything. Set up auto-responses through an automation platform like Hospitable immediately so you're always "responding" fast, even while you sleep.
 
-3. **Instant Book premium.** Properties with Instant Book enabled rank higher than those requiring host approval. Turn it on from day one, with a security deposit to protect yourself.
+3. **Instant Book premium.** Properties with Instant Book enabled rank higher than those requiring host approval. Turn it on from day one. Airbnb no longer lets hosts set their own security deposits, so your protection is AirCover's damage coverage, your own STR insurance policy, and the guest requirements you set for who can Instant Book.
 
 4. **Pricing competitiveness.** If your nightly rate is 20% higher than similar properties with similar reviews, you rank lower. Price strategically. Go below market in month one to gain reviews, then at market, then above market once your reviews justify it.
 
@@ -2575,7 +2560,7 @@ Don't start at your target price. New hosts see the comps at $200 a night and th
 
 There's a better way. Use a pricing ladder that maximizes lifetime revenue by trading a little margin early for a lot of ranking later.
 
-- **Weeks 1–2 (launch): 20% below market.** Your goal is reviews and social proof, not profit. If comps are $200/night, you're at $160. This attracts first guests and builds momentum. The revenue you give up comes back through word of mouth and the algorithm boost.
+- **Weeks 1–2 (launch): the full 20% below market.** That's the aggressive end of the 15–20% launch guidance, and the ladder assumes you take it. Your goal is reviews and social proof, not profit. If comps are $200/night, you're at $160. This attracts first guests and builds momentum. The revenue you give up comes back through word of mouth and the algorithm boost.
 - **Weeks 3–4: 10% below market.** You have 2–3 reviews now. Raise to $180. You're building credibility without fully discounting. Early guests got the deal; new guests see reviews and pay closer to market.
 - **Month 2 (Days 29–56): market rate.** With 5+ reviews and real booking momentum, raise to $200. Guests can see you're reviewed and competitive.
 - **Months 3–6: 5–10% above market.** If your rating is 4.8+ and occupancy is strong, you've earned premium pricing. Raise to $210–$220. Your reviews justify the premium. You're now optimizing for profit, not bookings.
@@ -2587,11 +2572,12 @@ You're not discounting. You're buying reviews at the cheapest price they'll ever
 ### Chapter Summary
 
 - Guests decide in 3 seconds, on one photo, one title, and one price. Win that moment first.
+- Curation is revenue. Cutting the Greenville listing's 90-photo gallery down and leading with the right shots took it from two bookings a month toward 90% full. Presentation alone can be the difference between $3,000 a month and $12,000.
 - If you paid thousands for it, it goes in your first five photos and your title.
 - Sell the dream in the first five lines. Save the bed count for paragraph three.
 - Pre-list before launch, so early indexing and wishlists warm up the algorithm.
 - The algorithm rewards newness, response speed, Instant Book, competitive pricing, and review velocity.
-- Climb the Pricing Ladder. 20% under market at launch, market rate by month 2, 5–10% over by months 3–6.
+- Climb the Pricing Ladder. The full 20% under market at launch, market rate by month 2, 5–10% over by months 3–6.
 - Early reviews are easily worth a few thousand dollars in future bookings, in my experience. Buy them cheap while you can.
 
 ---
@@ -2600,7 +2586,7 @@ You're not discounting. You're buying reviews at the cheapest price they'll ever
 
 At one point we were setting up three Airbnbs at once, out of state, aiming for about one week per home. And that's roughly what those three took: keys, install, staging, photos, in about a week each.
 
-Then there was the fourth: Myla's Oak Hill fixer from Chapter 11, where a botched renovation stretched a few-week setup into four months.
+Then there was the fourth: Myla's Oak Hill fixer from Chapter 8, where a botched renovation stretched a few-week setup into four months.
 
 Both halves of that story are true at once. A reno-light home can go from keys to staged in about a week. A botched fixer can eat a third of your year. Most launches land somewhere between those two extremes, and this chapter gives you the realistic, repeatable middle: the Six-Week Launch.
 
@@ -2608,7 +2594,7 @@ Most people slow down after closing. They fuss over details, wait for the "perfe
 
 This chapter is the exact roadmap our team follows to go from keys in hand to guests checking in, in about six weeks.
 
-### Framework: The 6-Week Launch
+### The 6-Week Launch
 
 **Why it works:** Speed eliminates your biggest cost, the revenue lost to empty nights. Six weeks is fast enough to feel urgent and long enough to survive the surprises.
 
@@ -2624,7 +2610,7 @@ Speed matters, and the six-week clock starts before closing. The goal is keys in
 
 - **Line up contractor bids.** Don't wait until closing to figure out paint, flooring, or handyman work. Get bids in hand so work begins Day 1 after closing.
 - **Pre-schedule utilities, internet, and insurance.** Set start dates for electric, water, WiFi, and STR insurance to activate right after closing.
-- **Create a project calendar.** Block out the first 6–8 weeks post-close. Plan the order: light reno, furniture install, photos, listing, launch.
+- **Create a project calendar.** Block out the first six weeks post-close, plus a buffer. Plan the order: light reno, furniture install, photos, listing, launch.
 - **Prep your furniture financing (for many hosts, a 0% intro-APR credit card).** Load the carts, but don't order anything until you own the home; deals fall through. The moment you close, hit "order" on the major pieces and have them delivered to the property or a storage unit.
 
 ### Smart Renovation and Setup: Where to Splurge, Where to Save
@@ -2641,7 +2627,7 @@ Perfection doesn't book guests. Perception does.
 
 **Where to splurge:**
 
-- **Mattresses and bedding:** 5-star hotel vibes lead to 5-star reviews. Aim for $300–$500 per bed.
+- **Mattresses and bedding:** 5-star hotel vibes lead to 5-star reviews. Aim for $300–$500 per bed on the mattress, plus $200–$300 for linens and pillows.
 - **Lighting:** Bright, modern lighting makes everything feel newer.
 - **Paint:** The easiest way to refresh and rebrand a home affordably.
 - **Art and décor:** Local pieces, fun themes, or vintage finds give the listing personality.
@@ -2661,7 +2647,7 @@ Not all upgrades move the needle equally. Before you spend a dollar on any of th
 1. **Hot tub (the biggest ROI).** In my markets it commonly adds $50–$100 per night in ADR and dramatically lifts occupancy. Guests search specifically for it, and the photos alone drive clicks. Installation: $3K–$8K. Payback: often a few months of the additional revenue, where the market data backs that lift.
 2. **Fire pit.** A $200 fire pit plus a set of outdoor chairs reads like $1,000+ of value to guests, at least it has in my markets. This is your Instagram moment. Guests book specifically for sunset s'mores, and they photograph it constantly.
 3. **Game room or entertainment space.** A family-market magnet. A dedicated space with board games, video games, or a pool table has lifted occupancy 10–20% in the leisure markets I work in. Cost: $2K–$5K. One extra booking per month often covers it.
-4. **Quality bedding and pillows.** $200–$300 per bed. This is a review driver, and it's non-negotiable. Bad sleep means a bad review. Great sleep means 5 stars and return bookings.
+4. **Quality linens and pillows.** $200–$300 per bed, on top of the mattress itself. This is a review driver, and it's non-negotiable. Bad sleep means a bad review. Great sleep means 5 stars and return bookings.
 5. **Outdoor shower.** In warm or adventure-focused markets, a unique outdoor shower becomes a signature feature. Cost: $1K–$3K. It sets you apart and commands premium pricing.
 
 Notice the pattern. Amenities that create memorable moments drive disproportionate revenue. Skip the granite. Fund the moments guests will photograph and share.
@@ -2971,6 +2957,10 @@ That's the big idea of this chapter. Protocols and people make you optional.
 
 ### Handling Emergencies Remotely
 
+The heat-out story above is hypothetical. This one isn't. A couple of years ago, one of our homes caught fire. The guests were celebrating a holiday their family observes without using electricity, and a young guest took the rule very literally and draped a towel over a lamp. The notifications came in fast, from the neighbor, from Airbnb, from the guests themselves. Everyone was safe, which is the only part of the story that ever mattered to me. I was about 2,000 miles away the whole time. Our standby contractors were dispatched immediately, insurance covered the repair, and the home was repaired within the week. It came back with new flooring, better than before.
+
+That week settled something for me. Systems don't prevent human error. No protocol stops a kid from taking a rule literally. What systems do is turn a fire into a bad week instead of a lost year.
+
 Emergencies happen: burst pipes, power outages, locked-out guests, mice. What matters is how fast and how calmly your system responds.
 
 **Build your go-to list before you need it.** A simple emergency contact sheet with:
@@ -3009,7 +2999,7 @@ Put all five pieces together — the go-to list, the matrix, the fast-reply play
 
 Pricing is your profit lever, it works from anywhere, and it is never set-it-and-forget-it.
 
-The six pricing rules from Chapter 10 live in your pricing tool: base price, minimum stays, orphan nights, last-minute discounts, holiday and event spikes, and seasonal shifts. Your job from anywhere is the weekly dashboard check that keeps them tuned. Open the PriceLabs Market Dashboard once a week or every other week and scan what comparable listings are actually getting per night, where the season is heading, how occupancy looks, and how far out guests are booking. If the market has moved and a rule hasn't, adjust it. The check takes minutes, and it's the difference between rates that track demand and rates that quietly drift.
+The six pricing rules from Chapter 10 live in your pricing tool: the three minimum-stay rules (weekends, weekdays, last minute), orphan-night discounts, last-minute discounts, and holiday and event spikes. Your job from anywhere is the weekly dashboard check that keeps them tuned. Open the PriceLabs Market Dashboard once a week or every other week and scan what comparable listings are actually getting per night, where the season is heading, how occupancy looks, and how far out guests are booking. If the market has moved and a rule hasn't, adjust it. The check takes minutes, and it's the difference between rates that track demand and rates that quietly drift.
 
 **Keep every calendar synced.** If you're listed on Airbnb, Vrbo, and Furnished Finder, the calendars must sync automatically. A double-booking is a 1-star review waiting to happen. Hospitable syncs Airbnb, Vrbo, and Booking.com in real time. Furnished Finder (30-plus-day stays) requires manually blocking dates when bookings land, so keep a shared doc with your team.
 
@@ -3145,6 +3135,7 @@ Do the work once. Run it forever.
 - Protocols and people make you optional. Write the plan before the plan is needed.
 - The Escalation Matrix ($0–$50, $50–$200, $200+, urgent) lets your team act without you. Guest conflict is the one thing you always own.
 - A $500–$1,000 peace-of-mind fund handles small surprises; the Chapter 8 capex fund (1–2% of home value a year, $10K liquid minimum) is the real backstop.
+- Systems don't prevent human error. A towel over a lamp started a real fire in one of our homes, and the systems turned it into a bad week instead of a lost year, with me 2,000 miles away.
 - Pricing runs on the six rules from Chapter 10. From anywhere, your job is the weekly dashboard check plus a synced calendar on every platform, with Furnished Finder blocked by hand.
 - The platforms aren't yours. List on a second one early, capture guest contacts where allowed, and treat reserves as platform insurance.
 - A $600 booking is really a guest worth roughly $2,000–$3,800, estimated. The 60:1 gesture math is an illustration, not arithmetic to bank.
@@ -3363,6 +3354,8 @@ Here's the model I teach. It assumes you buy with a loan, since that's how most 
 - Equity created through appreciation: ~$5,000 (a conservative 2% rural rate)
 - Tax write-offs from depreciation: ~$5,500 a year (straight-line on a $150K building value; that's the deduction, not cash)
 - **Year 1 total wealth increase: $34,500** (cash flow + equity + tax shelter)
+
+Chapter 18 runs this same year with slightly different assumptions and shows the tax line at cash value, so its Year 1 lands a few hundred dollars away from this one. The shape is what matters.
 
 **Year 2: Stack Property 2, funded by Property 1**
 
@@ -3617,7 +3610,7 @@ The hidden wealth builder most people ignore. STRs create serious deductions:
 - Operating expenses: fully deductible
 - Mortgage interest (year 1): ~$8,000–$10,000 per property, decreasing over time
 
-Add those lines up and a single STR can shelter $18,000–$22,000 a year in its early years; the accelerated furniture depreciation burns off over time. Across four properties at different ages, call it $50,000–$70,000 annually. At a 32% bracket, that's $16,000–$22,400 in tax savings per year once all four are running. The five-year scenario below deliberately uses less, $12,000 for each property's first year, well under the itemized range, so the plan never leans on the tax code cooperating. With properties arriving one at a time, those conservative deductions total $145.5K.
+Add those lines up and a single STR can shelter $18,000–$22,000 a year in its early years; the accelerated furniture depreciation burns off over time. Across four properties at different ages, call it $50,000–$70,000 annually. At a 32% bracket, that's $16,000–$22,400 in tax savings per year once all four are running. The five-year scenario below deliberately uses less, $12,000 for each property's first year, well under the itemized range, so the plan never leans on the tax code cooperating. With properties arriving one at a time, those conservative deductions total $145.5K at face value. And a deduction is not a dollar. The model counts each year's deductions at their cash value at a 32% bracket, meaning 32 cents per dollar of face value, or $46,560 across the five years. Your bracket sets your number.
 
 This isn't theoretical. Myla's write-offs were big enough to matter at tax time, real money that stayed in her pocket instead of leaving it, and her recovered capital went toward her next property.
 
@@ -3636,10 +3629,10 @@ This is debt service plus operating expenses: mortgage, insurance, utilities, cl
 
 - Annual net cash flow: $24,000
 - Appreciation: $6,250
-- Tax shelter value: $12,000 (the deductions you create; their cash value depends on your bracket)
+- Tax deductions: $12,000 face, worth $3,840 in cash at a 32% bracket
 - Carrying costs paid: $45,000 (already inside the net cash flow figure)
-- Net wealth increase: **$42,250**
-- Cumulative: **$42,250**
+- Net wealth increase: **$34,090**
+- Cumulative: **$34,090**
 
 **Year 2: two properties**
 
@@ -3647,10 +3640,10 @@ At the end of Year 1 you refi Property 1 and pull ~$45K after closing costs (if 
 
 - Annual net cash flow: $45,600
 - Appreciation: $11,250
-- Tax shelter: $22,000
+- Tax deductions: $22,000 face, $7,040 in cash
 - Carrying costs paid: $83,000
-- Net wealth increase: **$78,850**
-- Cumulative: **$121,100**
+- Net wealth increase: **$63,890**
+- Cumulative: **$97,980**
 
 **Year 3: three properties**
 
@@ -3658,10 +3651,10 @@ Property 2 stabilizes. Saved cash flow funds Property 3: last year's $45,600 cov
 
 - Annual net cash flow: $66,000
 - Appreciation: $16,250
-- Tax shelter: $31,500
+- Tax deductions: $31,500 face, $10,080 in cash
 - Carrying costs paid: $121,000
-- Net wealth increase: **$113,750**
-- Cumulative: **$234,850**
+- Net wealth increase: **$92,330**
+- Cumulative: **$190,310**
 
 **Year 4: four properties**
 
@@ -3669,10 +3662,10 @@ Property 3 stabilizes. Saved cash flow funds Property 4 the same way; Year 3's $
 
 - Annual net cash flow: $85,200
 - Appreciation: $21,250
-- Tax shelter: $40,000
+- Tax deductions: $40,000 face, $12,800 in cash
 - Carrying costs paid: $157,000
-- Net wealth increase: **$146,450**
-- Cumulative: **$381,300**
+- Net wealth increase: **$119,250**
+- Cumulative: **$309,560**
 
 **Year 5: four properties, optimization year**
 
@@ -3680,9 +3673,9 @@ No new purchases. You run the Optimization Hierarchy across the portfolio and li
 
 - Annual net cash flow: $91,200
 - Appreciation: $21,250
-- Tax shelter: $40,000
-- Net wealth increase: **$152,450**
-- Cumulative: **$533,750**
+- Tax deductions: $40,000 face, $12,800 in cash
+- Net wealth increase: **$125,250**
+- Cumulative: **$434,810**
 
 **The 5-year summary:**
 
@@ -3691,15 +3684,15 @@ No new purchases. You run the Optimization Hierarchy across the portfolio and li
 | Capital deployed ($150K + 3 × $50K) | $300K |
 | Debt outstanding at year 5 | ~$710K |
 | Passive income generated | $312K |
-| Tax shelter value | $145.5K |
+| Tax deductions at cash value (32% bracket) | $46,560 |
 | Appreciation | $76,250 |
-| **Total wealth created** | **$533,750** |
+| **Total cash-equivalent wealth created** | **$434,810** |
 
-You deployed $300K of capital, part of it recycled through the Property 1 refinance and the rest generated by the portfolio's own cash flow rather than pulled from savings, and created $533,750 in net worth. That's a 178% return on deployed capital, while generating $312K of income you could actually spend along the way. The debt stays honest: $200K on Property 1 after the refi, $160K on Property 2, $175K each on 3 and 4, about $710K, no hidden equity pulls.
+You deployed $300K of capital, part of it recycled through the Property 1 refinance and the rest generated by the portfolio's own cash flow rather than pulled from savings, and created roughly $435K of cash-equivalent wealth. That counts your tax deductions at their cash value at a 32% bracket; their face value is $145.5K, and your bracket sets your number. That's a 145% return on deployed capital, and $312K of it was income you could actually spend along the way. The debt stays honest: $200K on Property 1 after the refi, $160K on Property 2, $175K each on 3 and 4, about $710K, no hidden equity pulls.
 
 By year 5: $7,600 a month in passive income and a portfolio worth around $925K ($850K of purchases plus the $76K of appreciation), roughly $215K of it your equity once the ~$710K of debt is netted out, on a few hours a week of real work.
 
-Compare the alternative. The S&P 500 at its 10% long-run average turns $300K into about $483K in five years, with no leverage, no control, and no income to spend today.
+Compare the alternative. The S&P 500 at its 10% long-run average turns $300K into about $483K in five years, and every dollar of it stays locked up until you sell. This plan pencils to about $435K cash-equivalent, and $312K of that arrived as income you could spend while it built. The honest framing is a trade, liquidity of income against pure growth, and you should pick with your eyes open.
 
 One honest caveat. These run rates assume each property stabilizes on schedule. If a launch lands mid-year, it contributes a partial-year fraction of its run rate that first year. The plan still works; the timeline just stretches a little.
 
@@ -3714,7 +3707,7 @@ Raw returns lie, and I won't hand you a fake formula that pretends to fix that. 
 | Urban STR | High | High | Medium | High | High |
 | **Rural STR** | **High** | **High** | **Low** | **High** | **Low** |
 
-A few notes. The index fund sells in a minute but pays you nothing today and gives you nothing to improve. The long-term rental is steady; eviction law, tenant damage, and 3–6 month vacancies are the tax on that steadiness. The urban STR can out-earn everything on the table until the city council changes its mind; New York, San Francisco, and LA have all banned or restricted STRs. The rural STR earns its High on return honestly (30–65%+ cash-on-cash in year one, 20–30% after) while demanding real setup labor and sitting in the least liquid corner of the table. A rural house sells slowly; the exit menu is blunt about that.
+A few notes. The index fund sells in a minute but pays you nothing today and gives you nothing to improve. The long-term rental is steady; eviction law, tenant damage, and 3–6 month vacancies are the tax on that steadiness. The urban STR can out-earn everything on the table until the city council changes its mind; New York, San Francisco, and LA have all banned or restricted STRs. The rural STR earns its High on return honestly (15–25% cash-on-cash at today's rates for a well-executed first deal; the 2021–24 window's top quartile saw 35–65%) while demanding real setup labor and sitting in the least liquid corner of the table. A rural house sells slowly; the exit menu is blunt about that.
 
 Rural STRs win on return and control; they lose on liquidity and labor. That's the trade, and this book exists because the trade is worth it for the right person.
 
@@ -3772,7 +3765,7 @@ Your only job this year is to get in the game. Buy your first rural STR with a 1
 
 - Capital deployed: ~$150K across down payment, renovation, and setup (a lighter turnkey entry can start far smaller; see below)
 - Gross revenue by month 6: ~$35K; by year end: $70K+
-- Net cash flow: $24,000; net worth increase: $42,250
+- Net cash flow: $24,000; cash-equivalent wealth created: $34,090
 - Your time: 40–60 hours a month during launch, tapering to about three hours a week once you stabilize around month three
 
 Expected outcome: $1,500–$2,500 a month net on about three hours a week. By year's end, you're a real estate owner. Cash is flowing.
@@ -3783,7 +3776,7 @@ Refi Property 1, add your saved cash flow (call it $65K–$70K of ammunition), a
 
 - Property 2: $200K purchase, $40K down, $160K financed, setup on 0% cards
 - Combined net cash flow: $45,600 stabilized (closer to $35K if your launch lands mid-year)
-- Net worth increase: $78,850; cumulative: $121,100
+- Wealth created: $63,890; cumulative: $97,980
 - Your time: 10–15 hours a month, mostly launching Property 2
 
 Expected outcome: $3,000–$5,000 a month net across two properties. Two income streams, controlled from your phone.
@@ -3794,7 +3787,7 @@ Tighten the machine and grow without adding hours. Master PriceLabs and seasonal
 
 - Property 3: $200K purchase, funded by saved portfolio cash flow, setup on 0% cards
 - Combined net cash flow: $66,000 stabilized
-- Net worth increase: $113,750; cumulative: $234,850
+- Wealth created: $92,330; cumulative: $190,310
 - Portfolio value: ~$650K across three properties
 
 Expected outcome: you're running three properties with less time than Year 1 took, and the money is multiplying now instead of accumulating.
@@ -3805,7 +3798,7 @@ Your foundation is built. Time to go bold. Expand into a new rural market, or te
 
 - Property 4: $200K purchase, funded by portfolio cash flow
 - Combined net cash flow: $85,200 stabilized
-- Net worth increase: $146,450; cumulative: $381,300
+- Wealth created: $119,250; cumulative: $309,560
 - Portfolio value: $850K+
 
 Expected outcome: you're no longer asking "Can I do this?" The question is "How big can this get?"
@@ -3815,7 +3808,7 @@ Expected outcome: you're no longer asking "Can I do this?" The question is "How 
 Four properties, mostly automated. VA team and contractor network in place. This year you optimize instead of acquire.
 
 - Combined net cash flow: $91,200
-- Net worth increase: $152,450; cumulative: $533,750
+- Wealth created: $125,250; cumulative: $434,810
 - Portfolio value: ~$925K including appreciation
 - Your time: 5–10 hours a month, check-ins and annual planning
 
@@ -3868,7 +3861,7 @@ This strategy isn't bulletproof. But run well, it's one of the few real estate p
 - Five focused years and a real asset beat twenty distracted ones.
 - Real operators, real results: Myla's $103K cash cabin that grossed $150K in two years, Gatehouse Getaway's $72K first year on $20K down, Ryu's $83,937.81 first year on a 0% seller loan, Steph and Kevin pacing past $20K a month this summer, and Diane and Jon's hands-off $81,210.38 first year.
 - The Wealth Equation: net cash flow + appreciation + tax savings, with debt service already paid inside the net. Run it before you buy anything.
-- The 5-year model: $300K deployed becomes $533,750 of new net worth, plus $312K of spendable income along the way.
+- The 5-year model: $300K deployed becomes roughly $435K of cash-equivalent wealth, tax deductions counted at their 32%-bracket cash value, and $312K of it was spendable income along the way.
 - Rural STRs win on return and control; they lose on liquidity and labor. That's the trade, and it's worth it for the right person.
 - Operators move at 70% clarity. Dreamers wait for 100%.
 - Know your Freedom Number. Three to four good cabins is a full-time income without full-time hours.
@@ -3895,7 +3888,7 @@ If something in this book lit a fire in you (a specific chapter, or just the ide
 You don't need a coach to succeed. I started with Google, a market-data tool called AirDNA, and messy spreadsheets. That path still works. But if you want support, I've built the help I wish I'd had:
 
 - **Follow @jeffchheuy and Teeco on Instagram.** Real numbers, behind-the-scenes updates, and practical tips every week. We answer DMs.
-- **Take the free Airbnb Anywhere mini course.** The link is on the resources page at the back of this book.
+- **Take the free Airbnb Anywhere mini course.** The link is in the Bonus Pack at the back of this book.
 - **Apply for the 1-on-1 program**, but only if you're serious. We'll help you choose a market, run the numbers, get funded, and launch a deal. It's not cheap. But neither is spending five more years stuck.
 
 Whatever route you take, the point is your freedom. Your five-year plan starts this year, if you act.
@@ -3904,7 +3897,7 @@ When I started, I was a burnt-out pharmacist. I'd spent eight years and $200K on
 
 The real shift came when I stopped chasing a quick win and started building something that would last. A property, a system, a plan I could repeat.
 
-Today I wake up on my schedule, not someone else's. I check in on my properties 5–10 hours a week, mostly from my phone. The money shows up whether I work or not. I've built a team, not a job.
+Today I wake up on my schedule, not someone else's. I check in on my properties a few hours a week, about three per property, mostly from my phone. The money shows up whether I work or not. I've built a team, not a job.
 
 But the real win is the confidence. Knowing I can buy a property, run it right, and make it work. Knowing I'm not at the mercy of the market, because I can build things that work in any market. That changes your entire worldview.
 
@@ -3938,7 +3931,9 @@ Here's what's inside, organized by what you're doing.
 
 **Picking a market**
 
+- **One-page RURAL Scorecard**: score any property against all five letters before you offer (Chapter 3)
 - **Market Research Cheat Sheet**: the three-phase market analysis walkthrough (Chapter 5)
+- **Puck Principle Checklist and Market-Scoring Template**: find the market before it's hot, then score it (Chapters 2 and 5)
 - **Market and deal analysis tools** at edge.teeco.co: the live data behind the Market Scoring Matrix (Chapters 5 and 8)
 
 **Running the numbers**
@@ -3957,11 +3952,13 @@ Here's what's inside, organized by what you're doing.
 - **Bathroom Items Checklist**: every bathroom essential with purchase links (Chapter 13)
 - **Property Setup Videos**: behind-the-scenes walkthroughs of actual setups (Chapter 13)
 - **Photographer Checklist**: pre-photo prep and photographer guidance (Chapter 12)
-- **Professional listing photos** at photolab.teeco.co: the first 5 photos do the selling; this team shoots them (Chapters 11 and 12)
+- **Photo editing** at photolab.teeco.co: mass-edits your photos to Airbnb quality, with options to add people for lifestyle shots or swap in a better sky (Chapters 11 and 12)
 
 **Operating remotely**
 
 - **Cleaning Checklist**: a room-by-room turnover checklist with photo verification (Chapters 14 and 16)
+- **The SOP Pack**: guest message templates, cleaning SOPs, photo checklists, and emergency protocols, ready to hand to your team (Chapters 6 and 14)
+- **Pricing SOP and calendar templates**: the weekly pricing discipline, written down (Chapter 10)
 
 **Going deeper**
 
@@ -3992,15 +3989,17 @@ Every framework in this book was built to be used, not just read. Bookmark this 
 
 **The Salary Trap**: A six-figure income feels like security but costs you freedom. The more you earn, the more your life is structured around preserving it. (Ch 1)
 
-**The Opportunity Cost Equation**: Every year you earn a salary without building assets in parallel, you lose $100K+ in wealth you'll never recover. (Ch 1)
+**The Opportunity Cost Equation**: Every year you earn a salary without building assets in parallel costs you wealth you'll never recover, on the order of $300K–$500K over five years. (Ch 1)
 
 **The Puck Principle**: Find the market before it's hot. Build before the crowd arrives. Profit while everyone else is still searching. (Ch 2)
 
-**The Asymmetric Bet**: In rural STR, your downside is capped (you own a real asset) but your upside is uncapped (revenue can 2–3x projections). (Ch 2)
+**The Asymmetric Bet**: Your downside is bounded (the down payment, the setup, some months of carry, with the long-term-rent fallback underneath it all) while your upside is uncapped. (Ch 2)
 
-**The Four Tiers**: Every market falls into one: Saturated Tourist Cities, Discovered Rural, Emerging Rural ($150K–$350K entry, 35–65%+ returns), or Undiscovered. Hunt in the third tier. (Ch 2)
+**The Four Tiers**: Every market falls into one: Saturated Tourist Cities, Discovered Rural, Emerging Rural ($150K–$350K entry; the 35–65%+ returns were a 2021–24 window), or Undiscovered. Hunt in the third tier. (Ch 2)
 
 **The Proximity Bias**: The assumption that nearness equals control. In reality, buying local creates false confidence and bad habits. (Ch 4)
+
+**The Remote Premium**: Remote buyers negotiate on data while local buyers fall in love with the house. Detachment is the discount. (Ch 4)
 
 **The Distance Advantage**: Remote investing forces you to build systems. Systems force scale. Scale removes you from day-to-day operations. (Ch 4)
 
@@ -4024,7 +4023,7 @@ Every framework in this book was built to be used, not just read. Bookmark this 
 
 **The 30% Floor**: If a deal doesn't hit a 30%+ cash-on-cash return, walk away. Below that, you're working too hard for too little margin. (Ch 8)
 
-**The Stress Test**: Run every deal at 20% below expected occupancy. If it still cash flows, it's a real deal. If not, it's a hope. (Ch 8)
+**The Stress Test**: Run every deal with revenue cut 25–30% below your projection. If it still cash flows, it's a real deal. If not, it's a hope. (Ch 8)
 
 **Confidence Intervals**: Project every deal as a range (conservative, expected, optimistic), never a single number. Buy on the conservative case. (Ch 8)
 
@@ -4058,7 +4057,7 @@ Every framework in this book was built to be used, not just read. Bookmark this 
 
 **The 3-Hour Property**: Each property takes no more than 3 hours per week of your time. If a task keeps you above that, it's a delegation candidate. (Ch 14)
 
-**The Replacement Ladder**: A prioritized sequence for replacing yourself: first automate messaging, then outsource cleaning, then delegate pricing, then hire a VA. (Ch 15)
+**The Replacement Ladder**: A prioritized sequence for replacing yourself: hire a VA for cleaning coordination first, then hand them guest communication, then pricing, then everything. (Ch 15)
 
 **Buy Back Your Time**: Dan Martell's principle. If you can pay someone $1 to free up an hour you could earn $4+ on, do it immediately. (Ch 15)
 
