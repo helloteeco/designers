@@ -2,7 +2,7 @@
 
 **The 5-Step RURAL Method for Buying Vacation Rentals That Pay You — From Towns You've Never Visited**
 
-Jeff Chheuy
+Dr. Jeff Chheuy
 
 ---
 
@@ -3987,7 +3987,7 @@ One address gets you all of it: **teeco.co/bookbonus**.
 
 ## About the Author
 
-Jeff Chheuy is a pharmacist turned real estate investor and the founder of Teeco. After spending eight years and $200K earning his PharmD, he discovered that a six-figure salary was just a different kind of trap. He built a portfolio of rural short-term rentals near national parks that generates over $1M a year in gross rental income, all managed remotely. Today he teaches high-income professionals how to do the same through Teeco's coaching programs.
+Dr. Jeff Chheuy is a pharmacist turned real estate investor and the founder of Teeco. After spending eight years and $200K earning his PharmD, he discovered that a six-figure salary was just a different kind of trap. He built a portfolio of rural short-term rentals near national parks that generates over $1M a year in gross rental income, all managed remotely. Today he teaches high-income professionals how to do the same through Teeco's coaching programs.
 
 Follow Jeff on Instagram: @jeffchheuy
 
