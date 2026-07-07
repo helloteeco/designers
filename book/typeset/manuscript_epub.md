@@ -1,10 +1,14 @@
-# Airbnb Anywhere
-
-**The 5-Step RURAL Method for Buying Vacation Rentals That Pay You — From Towns You've Never Visited**
-
-Jeff Chheuy
-
 ---
+title: "Vacation Rentals That Pay You"
+subtitle: "The 5-Step RURAL Method for Building Cash Flow From Small Towns You've Never Visited"
+author: "Dr. Jeff Chheuy"
+lang: en-US
+publisher: "Teeco"
+date: "2026"
+rights: "Copyright © 2026 Jeff Chheuy. All rights reserved."
+---
+
+# Copyright {.unnumbered}
 
 Copyright © 2026 Jeff Chheuy. All rights reserved.
 
@@ -14,66 +18,11 @@ Airbnb is a trademark of Airbnb, Inc. All other product and company names are tr
 
 **Disclaimer.** This book is for educational and informational purposes only. It is not legal, tax, accounting, investment, or lending advice, and nothing in it creates a professional relationship between you and the author. Real estate investing involves risk, including the possible loss of money you put in. The stories and figures in this book are the real results of specific people in specific markets at specific times; they are shared to teach, not to promise, and your results will differ. Loan programs, platform fees, tax rules, and market data change; verify current terms with the lender, platform, or agency directly, and consult a licensed attorney, CPA, and lender about your own situation before acting on anything in these pages. Always provide truthful, accurate information on every loan and credit application. This book also is not insurance advice. Projections and models in this book are hypothetical illustrations built on assumptions that may not hold; they are not forecasts or guarantees of your results, and no income or profit of any kind is promised.
 
-Published by Teeco
+Published by Teeco · teeco.co · First Edition
 
-teeco.co
-
-First Edition
-
----
+# Dedication {.unnumbered}
 
 *For everyone who's ever stared at their schedule and thought, "There has to be more than this."*
-
----
-
-## Contents
-
-**Introduction: The October That Changed Everything**
-
-**Part 1 — The Fundamentals: Why Order Beats Effort**
-
-1. The Salary Trap
-2. The Quiet Goldmine
-3. The RURAL Method
-
-**Part 2 — R: Right Market First**
-
-4. The Airbnb You Should Buy Is Nowhere Near You
-5. Picking a Market That Prints Money
-6. Buy It Without Ever Standing In It
-
-**Part 3 — U: Under Budget**
-
-7. Why I Buy With 5–15% Down
-8. The Only Math That Matters
-9. How to Get the Money
-
-**Part 4 — R: Room for Everyone**
-
-10. Heads in Beds
-
-**Part 5 — A: Aesthetics That Win the Scroll**
-
-11. Design Is Your Booking Engine
-12. The Listing That Wins the Scroll
-13. The Six-Week Launch
-
-**Part 6 — L: Leverage Systems**
-
-14. The 3-Hour Property
-15. Run It From Anywhere
-
-**Part 7 — After the Launch**
-
-16. The First Domino
-17. The Portfolio Compound Effect
-18. The 5-Year Wealth Plan
-
-**Conclusion: One Deal Can Change Everything**
-
-Your Free Book Bonus Pack · About the Author · The Framework Index
-
----
 
 ## Introduction: The October That Changed Everything
 

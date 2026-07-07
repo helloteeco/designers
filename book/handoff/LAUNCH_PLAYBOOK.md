@@ -41,7 +41,8 @@ REAL NUMBERS FROM THE BOOK (use these, never invent new ones, never round them):
   same first-year revenue (about $80K vs $72K). The WV payment was $1,125 a
   month against about $1,850. The comparison table is in Chapter 2.
 - My wife Myla's $103K cabin in Oak Hill, West Virginia grossed $150K in its
-  first two years. Best single month: $10,195. It holds a 4.95-star rating.
+  first two years. Best single month: $10,195. It held a 4.95-star rating
+  across its first 70-plus stays.
 - My business partner Ryu's Lookout Lodge: a $170K home, seller financed with
   $15K down, 0% interest, $1,000 a month principal only. First-year gross:
   $83,937.81.
@@ -54,7 +55,8 @@ REAL NUMBERS FROM THE BOOK (use these, never invent new ones, never round them):
 - The 5-year wealth model in Chapter 18: $300K deployed becomes about $434,810
   of cash-equivalent wealth, and $7,600 a month of passive income by year 5.
 - Students: Steph and Kevin made about $100K in under 7 months on a home they
-  have never visited and are pacing past $20K a month across two homes. Diane
+  have never visited, net a steady $7K a month across the pair, and are pacing
+  past $20K a month in gross bookings this summer. Diane
   and Jon's Gatewood Orchard grossed $81,210.38 in year one, fully done for you.
 - Catchphrases: "Booked is not banked." "Famous markets pay you in bragging
   rights. Boring markets pay you in cash."
@@ -732,7 +734,7 @@ a checklist I can execute in the Ads console in 15 minutes.
 9. Booked is not banked. The difference is the whole game.
 10. Famous markets pay you in bragging rights. Boring markets pay you in cash.
 11. Steph and Kevin have never visited their first cabin. It made about $100K in under 7 months.
-12. Steph and Kevin are pacing past $20K a month this summer, across two homes.
+12. Steph and Kevin net a steady $7K a month across two homes and are pacing past $20K a month in gross bookings this summer.
 13. Diane and Jon outsourced every piece of it and still grossed $81,210.38 in year one.
 14. $300K deployed. Five years. About $434,810 of wealth. Here is the row-by-row math.
 15. $7,600 a month by year 5 on three to four cabins. That is the whole plan.
