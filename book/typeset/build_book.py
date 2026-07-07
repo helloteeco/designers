@@ -126,7 +126,7 @@ def document(toc_html):
   <p>Copyright © 2026 Jeff Chheuy. All rights reserved.</p>
   <p>No part of this book may be reproduced without written permission from the author.</p>
   <p><strong>Disclaimer.</strong> {disclaimer}</p>
-  <p>This book is not affiliated with, endorsed by, or sponsored by Airbnb, Inc. “Airbnb” is a trademark of Airbnb, Inc.</p>
+  <p>Airbnb is a trademark of Airbnb, Inc. All other product and company names are trademarks of their respective owners. Use of these names is for identification and reference only and does not imply sponsorship, endorsement, or affiliation. This book is not authorized by, affiliated with, or endorsed by Airbnb, Inc. or any other company named in it.</p>
   <p>Published by Teeco · teeco.co</p>
   <p>First Edition</p>
 </section>

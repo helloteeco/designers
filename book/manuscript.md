@@ -2,7 +2,7 @@
 
 **The 5-Step RURAL Method for Buying Vacation Rentals That Pay You — From Towns You've Never Visited**
 
-Dr. Jeff Chheuy
+Jeff Chheuy
 
 ---
 
@@ -10,7 +10,9 @@ Copyright © 2026 Jeff Chheuy. All rights reserved.
 
 No part of this book may be reproduced without written permission from the author.
 
-**Disclaimer.** This book is for educational and informational purposes only. It is not legal, tax, accounting, investment, or lending advice, and nothing in it creates a professional relationship between you and the author. Real estate investing involves risk, including the possible loss of money you put in. The stories and figures in this book are the real results of specific people in specific markets at specific times; they are shared to teach, not to promise, and your results will differ. Loan programs, platform fees, tax rules, and market data change; verify current terms with the lender, platform, or agency directly, and consult a licensed attorney, CPA, and lender about your own situation before acting on anything in these pages. Always provide truthful, accurate information on every loan and credit application.
+Airbnb is a trademark of Airbnb, Inc. All other product and company names are trademarks of their respective owners. Use of these names is for identification and reference only and does not imply sponsorship, endorsement, or affiliation. This book is not authorized by, affiliated with, or endorsed by Airbnb, Inc. or any other company named in it.
+
+**Disclaimer.** This book is for educational and informational purposes only. It is not legal, tax, accounting, investment, or lending advice, and nothing in it creates a professional relationship between you and the author. Real estate investing involves risk, including the possible loss of money you put in. The stories and figures in this book are the real results of specific people in specific markets at specific times; they are shared to teach, not to promise, and your results will differ. Loan programs, platform fees, tax rules, and market data change; verify current terms with the lender, platform, or agency directly, and consult a licensed attorney, CPA, and lender about your own situation before acting on anything in these pages. Always provide truthful, accurate information on every loan and credit application. This book also is not insurance advice. Projections and models in this book are hypothetical illustrations built on assumptions that may not hold; they are not forecasts or guarantees of your results, and no income or profit of any kind is promised.
 
 Published by Teeco
 
@@ -20,7 +22,7 @@ First Edition
 
 ---
 
-*For everyone who's ever stared at their schedule and thought, 'There has to be more than this.'*
+*For everyone who's ever stared at their schedule and thought, "There has to be more than this."*
 
 ---
 
@@ -357,7 +359,7 @@ Let's talk about risk, because every investment has downside and upside. What ma
 
 In stocks or crypto, you can lose every dollar you put in, and there's no floor under the fall. The upside might be 3–10x over a decade if you're lucky, but you risk the whole stake to chase it.
 
-In rural STRs, your downside is capped, though capped does not mean zero. On the $250K–$350K deals this book recommends, what's genuinely at risk is your down payment, your setup capital, and some months of negative carry (months where the payment exceeds what the home earns and you cover the difference). Bounded, real money. If the market sours, you convert to a long-term rental and the loss stops there. That fallback is insurance, and you buy it before closing. Check that market long-term rent would cover at least about 80% of your payment.
+In rural STRs, your downside is capped, though capped does not mean zero. On the $250K–$350K deals this book recommends, what's genuinely at risk is your down payment, your setup capital, and some months of negative carry (months where the payment exceeds what the home earns and you cover the difference). Bounded, real money. If the market sours, you convert to a long-term rental and the loss stops there. That fallback is insurance, and you buy it before closing. Check that market long-term rent would cover at least about 80% of your payment. One asterisk belongs here. Most mortgages and all credit cards are recourse debt. If you sell for less than you owe, the shortfall is still yours, so in a severe downturn losses can exceed the cash you put in.
 
 Your upside is not. Buy at $170K and build smart systems, and the property can bring in $70K–$85K a year in gross revenue (both of the $170K West Virginia homes in this chapter did exactly that), plus appreciation, which I model at a boring 2–3% a year; anything a discovered market adds on top is a bonus. Depreciation adds a third layer: paper losses that can shield tens of thousands of your other income in the early years. And you keep the option to pivot to a long-term rental.
 
@@ -1157,7 +1159,7 @@ Why it works for remote Airbnb investing:
 - Rental income isn't required to qualify, even if you plan to Airbnb it when you're away.
 - Personal use is required, not optional. Most second-home loans expect you to actually use the property (generally 14 days a year), and you should plan to. Your guests can far outnumber your visits, but telling a lender you'll use a home you never intend to visit is occupancy fraud. Use the house. It's your vacation home, and that's the whole point of the loan.
 
-Two more pieces of homework before you sign. Tell your loan officer you intend to rent the home when you're not there, and read the second-home rider, the mortgage page that spells out what you can do with the property. Some riders restrict rentals in year one or prohibit management agreements. If yours conflicts with your plan (including this book's advice to start with a property manager), price the DSCR loan in Path 3 instead.
+Two more pieces of homework before you sign. Tell your loan officer you intend to rent the home when you're not there, and read the second-home rider, the mortgage page that spells out what you can do with the property. Some riders restrict rentals in year one or prohibit management agreements. If yours conflicts with your plan (including this book's advice to start with a property manager), price the DSCR loan in Path 3 instead. Lender and agency guidelines on second-home use change; confirm current requirements with your lender in writing.
 
 This path gives you the best rates and the lowest down payment while remaining fully legal for short-term rental use.
 
@@ -1169,7 +1171,7 @@ One of the most powerful tools I've used. In rural markets, a surprising number 
 
 Why would a seller agree? They skip agent fees (5–6%), collect steady, predictable monthly income, and move a property that might otherwise sit. It's ideal for fixer-uppers, tired landlords, and inherited homes.
 
-One honest caveat before you fall in love with this path. Seller financing is an advanced tool. Deals like Ryu's are out there, but they're harder to find, and they take patience and a seller in exactly the right situation. If you're just starting, the 10% down vacation-home loan in Path 1 is the simpler move. That's what I did when I started.
+One honest caveat before you fall in love with this path. Seller financing is an advanced tool. Deals like Ryu's are out there, but they're harder to find, and they take patience and a seller in exactly the right situation. If you're just starting, the 10% down vacation-home loan in Path 1 is the simpler move. That's what I did when I started. Seller-financing rules vary by state; have a local real estate attorney draft or review the note and deed of trust.
 
 **Pro tip — where to look for seller financing:**
 
@@ -1214,9 +1216,9 @@ Structure it one of two ways:
 - You run the deal and the Airbnb operations
 - Split profits 30/70, or offer a fixed return
 
-**Find private lenders at:** local real estate meetups, friends and family with idle cash in savings or retirement accounts, real estate Facebook groups, and hard money brokers (many offer "soft" private options).
+**Find private lenders through:** friends and family with idle cash in savings or retirement accounts, one-to-one conversations with people you already know (not public posts), and hard money brokers (many offer "soft" private options).
 
-**Pro tip:** Show them your research and revenue projections: AirDNA, a comps dashboard like Rabbu, actual comps (comparable properties, meaning what similar homes nearby really earn). A confident, numbers-based pitch makes you more trustworthy than any stockbroker. Chapter 9 gives you the full pitch deck, page by page.
+**Pro tip:** Show them your research and revenue projections: AirDNA, a comps dashboard like Rabbu, actual comps (comparable properties, meaning what similar homes nearby really earn). A confident, numbers-based pitch makes you more trustworthy than any stockbroker. Chapter 9 gives you the full pitch deck, page by page. Before you raise a dollar this way, read the legal note in Chapter 9's pitch-deck section; private notes can be securities.
 
 ### Path 5: 0% APR Credit Cards to Cover Setup Costs
 
@@ -1393,7 +1395,7 @@ Your real profit, meaning what's left after every bill gets paid. Start with gro
 
 - Mortgage (PITI)
 - Cleaning fees (even if guests reimburse, use conservative math)
-- Utilities (WiFi, electric, water, propane, septic)
+- Utilities (Wi-Fi, electric, water, propane, septic)
 - Lawn and snow maintenance
 - STR insurance and property taxes, if not escrowed (folded into the monthly mortgage payment)
 - Restocking and amenities
@@ -1452,7 +1454,7 @@ Your target is a 4-bed, 3-bath, nice but not luxury. You'll probably hit Moderat
 - Cash invested: $65,000
 - Cash-on-cash return: 25%
 
-It lands just under the 30% floor, but that 25% is your worst case, not your bet. The 30% Floor is judged at Moderate; surviving at Conservative, at around 25%, is what makes the deal safe to do. Hit the Moderate number and the same deal returns about 50%. (Not 56%, because expenses creep with bookings, more cleans and more restocking, so don't reuse $33,500 at $70K of revenue; call it 50% even.) You're not betting on top-quartile performance. You're betting on avoiding bottom-quartile disaster. Hit Moderate or Aggressive and you have a huge margin of safety; hit Conservative and you still cash flow and own an asset. That's a deal worth doing.
+It lands just under the 30% Floor, but that 25% is your worst case, not your bet. The 30% Floor is judged at Moderate; surviving at Conservative, at around 25%, is what makes the deal safe to do. Hit the Moderate number and the same deal returns about 50%. (Not 56%, because expenses creep with bookings, more cleans and more restocking, so don't reuse $33,500 at $70K of revenue; call it 50% even.) You're not betting on top-quartile performance. You're betting on avoiding bottom-quartile disaster. Hit Moderate or Aggressive and you have a huge margin of safety; hit Conservative and you still cash flow and own an asset. That's a deal worth doing.
 
 ### The Stress Test Framework
 
@@ -1470,7 +1472,7 @@ If a 25–30% revenue haircut kills your cash flow, walk away.
 
 **That's not a deal. That's a hope.**
 
-And when the miss happens in real life? One of my students overspent on the buy, and then everything that could go wrong with the house went wrong. That deal still cash flows about $1,000 a month, still delivered the tax write-offs, and the home has appreciated underneath the mess. Nobody frames that page. But a mistake that pays you a thousand dollars a month while the asset grows is exactly what the discipline in this chapter buys you: a worst case you can live with.
+And when the miss happens in real life? One of my students overspent on the buy, and then everything that could go wrong with the house went wrong. That deal still cash flows about $1,000 a month, still delivered the tax write-offs, and the home has appreciated underneath the mess. Nobody frames that page. But a mistake that pays you a thousand dollars a month while the asset grows is exactly what the discipline in this chapter buys you: a worst case you can live with. Not every miss ends this well; deals that fail the discipline in this chapter can and do lose money.
 
 ### The Hidden Costs Trap
 
@@ -1550,7 +1552,7 @@ On cash flow alone, a heavy-renovation deal like this returns capital more slowl
 
 **Myla's tax story.** Myla has a full-time W2 job, and because she materially participates in running the rental (it's her only rental business and she's actively involved), she qualified for STR material-participation treatment, the tax status for owners who actually run the property rather than hire everything out. Between operating expenses and accelerated depreciation from a cost segregation study, which front-loads years of write-offs on roughly $100K of renovation and furnishings into the early years, her deductions cut deep into the taxes on her income. She made money in real life, and on paper the IRS saw far less of it. (Chapter 15 goes deeper.)
 
-**Myla's equity story.** This is the classic BRRRR play: buy, renovate, rent, refinance, repeat. She bought with cash, renovated, got the $240K appraisal, then refinanced at 75–80% of that value and pulled most of her money back out. I won't pretend I remember the exact loan figure. What matters is that within two years she had recovered almost all of her money, and she still owned the house, the cash flow, and the tax benefits. The recovered capital went on to fund her second property, in Tennessee. That's velocity of capital, live and in person.
+**Myla's equity story.** This is the classic BRRRR play: buy, rehab, rent, refinance, repeat. She bought with cash, renovated, got the $240K appraisal, then refinanced at 75–80% of that value and pulled most of her money back out. I won't pretend I remember the exact loan figure. What matters is that within two years she had recovered almost all of her money, and she still owned the house, the cash flow, and the tax benefits. The recovered capital went on to fund her second property, in Tennessee. That's velocity of capital, live and in person.
 
 **The stress test on Myla's deal.** Cut her revenue 25–30% and her $75,000-a-year pace falls to roughly $52,500–$56,250. Her expense load is light: a cleaner paid per turnover, utilities, insurance, software, and the refinance payment. Even near $52K the home still cash flows with room to spare. This is a real deal. It passes the test even when the market has a bad year.
 
@@ -1613,9 +1615,9 @@ Every revenue number in this book is gross, and I've told you so each time. Fair
 | Property tax (estimated) | $700 |
 | STR insurance (annual policy, allocated) | $3,166 |
 | **Total expenses** | **$24,283** |
-| **Net operating income, seven months** | **$22,502** |
+| **Net, seven months (after interest, before depreciation and income tax)** | **$22,502** |
 
-Honesty notes, because a real statement has them. Electric is included at the owner's ~$300-a-month average, pending the utility statements (the home is on a well and septic, and has no gas service). A few lines are estimates pending the CPA: the late-year cleans, the tax ticket, the lawn count. And guests actually paid about $61K over those months; lodging taxes and platform fees come out before the payout ever reaches you, which is why the income line is lower than the headline number.
+Honesty notes, because a real statement has them. Electric is included at the owner's ~$300-a-month average, pending the utility statements (the home is on a well and septic, and has no gas service). A few lines are estimates pending the CPA: the late-year cleans, the tax ticket, the lawn count. And guests actually paid about $61K over those months; lodging taxes and platform fees come out before the payout ever reaches you, which is why the income line is lower than the headline number. There is no line for my own hours or for depreciation; this is the cash the house produced, not my tax return.
 
 Now read what the page says. Roughly 52 cents of every payout dollar went to running the house, and that's with an interest-only seller note keeping the payment small. The cash in was about $66K: $20K down plus roughly $46K of renovation and furnishings. So the seven-month net of $22,502 works out to about 34% cash-on-cash in a little over half a year. By its twelfth month the home had crossed $72K in revenue.
 
@@ -1717,6 +1719,8 @@ You've seen this math twice now, in Chapter 7's leverage scenarios and in the ca
 That's capital efficiency, and none of it is recklessness.
 
 ### The Private Money Pitch Deck
+
+One legal line before you pitch anyone. Promissory notes and profit-sharing arrangements can be securities under federal and state law, especially when you raise from more than one person, from passive investors, or through public posts and meetups. Offering securities without registration or an exemption is illegal even when everyone is paid back in full. Before you show this deck to anyone, have a securities attorney review your structure and how you plan to find lenders.
 
 Most beginners are terrified of asking for money. They think it's unprofessional, or that only seasoned investors get to do it. Wrong on both counts. People with idle cash are hunting for better returns than the next-to-nothing their bank pays. Show them a deal returning 8–12% annually, secured by real property, and you're solving *their* problem.
 
@@ -1841,7 +1845,7 @@ Best for entrepreneurs and the self-employed who want to scale without W2 verifi
 Best for down payments and furnishing when your network has idle cash. Nobody's begging here. You're offering someone an 8–12% return backed by real property, far better than their savings account or bonds. The ask, without the cringe: "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly — much better than letting it sit in savings." Back it with the pitch deck above. This works best with family and friends who trust you, coworkers with idle savings, local professionals, and retirees with rollover funds. And you're not recruiting a hundred rich people. One or two with idle cash and a fear of inflation will do. Always get it in writing (a promissory note plus terms), and for larger loans, record a lien or deed of trust.
 
 **Path 5: 0% Interest Business Credit Cards.**
-Best for covering the $20K–$40K+ furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards inside the same day or two, starting with Chase (historically the strictest issuer about recent applications). Each application is its own hard pull either way; the tight window just means issuer two hasn't seen issuer one's inquiry yet. Nothing dishonest about the timing, but know that's what you're doing. Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: spread across Chase, Amex, Capital One, and US Bank, and request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). LLC or sole proprietor, either way, one business can carry 3–5 cards from different issuers at $10K–$30K+ each.
+Best for covering the $20K–$40K+ furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards inside the same day or two, starting with Chase (historically the strictest issuer about recent applications). Each application is its own hard pull either way; the tight window just means issuer two hasn't seen issuer one's inquiry yet. Nothing dishonest about the timing, but know that's what you're doing. If any application asks about other recent or pending credit requests, answer truthfully, even if it costs you the approval. And read each cardmember agreement before you rely on it: intro-APR terms, business-use requirements, and balance-transfer rules vary by issuer and change without notice. This is not lending or credit advice. Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: spread across Chase, Amex, Capital One, and US Bank, and request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). LLC or sole proprietor, either way, one business can carry 3–5 cards from different issuers at $10K–$30K+ each.
 
 ### Creative Combinations That Stretch Every Dollar
 
@@ -2136,7 +2140,7 @@ You don't need to be a professional designer. You do need to understand three co
 - **Scale.** Furniture should fit the space, not overwhelm it. A tiny chair in a cavernous living room looks cheap. An oversized sofa in a small bedroom blocks the walkway.
 - **Cohesion.** One clear style per property. Mixing nautical beach vibes with mountain lodge gives guests design whiplash.
 
-If these three feel foreign, pay for a basic concept board from a designer ($500–$1,500) to get the road map, then DIY the execution. A full design-only plan runs more; the cost tiers are laid out later in this chapter.
+If these three feel foreign, pay for a basic concept board from a designer ($500–$1,500) to get the roadmap, then DIY the execution. A full design-only plan runs more; the cost tiers are laid out later in this chapter.
 
 ### Tools That Make DIY Easier
 
@@ -2901,9 +2905,9 @@ Your cleaner is the business, not a line item.
 If you're managing a property from hundreds of miles away, smart devices are your co-host. The essential stack:
 
 - **A smart lock (I use the Schlage Encode).** Unique codes for each guest, auto-generated through Airbnb and expired after checkout, all managed from your phone. Set a backup code for your cleaner and change it quarterly.
-- **An exterior camera (I use Ring's floodlight model).** Motion-activated video and lights. See who's coming and going at night, catch parties early, confirm contractors actually showed up.
+- **An exterior camera (I use Ring's floodlight model).** Motion-activated video and lights. See who's coming and going at night, catch parties early, confirm contractors actually showed up. Disclose every exterior camera in your listing; platform rules require it and several states' privacy laws do too. Never place cameras or audio recording inside the home.
 - **A noise monitor (I use Minut).** Detects loud noise and smoking without recording audio, and sends real-time alerts so you can respond before problems escalate.
-- **A WiFi marketing hub (I use StayFi).** Replaces the router login with a branded splash page that captures guest emails, so you can invite past guests back without paying the platform's fee.
+- **A WiFi marketing hub (I use StayFi).** Replaces the router login with a branded splash page that captures guest emails, so you can invite past guests back without paying the platform's fee. Get the guest's consent on the splash page and honor unsubscribes; email marketing laws apply to hosts.
 - **Smart thermostat** (Emerson Sensi, Nest, or similar). Control temperatures from your phone, cut energy waste, and prevent frozen pipes in winter.
 - **Roku TVs.** A consistent streaming setup with guest mode, so accounts wipe after checkout. Professional, and it kills a whole category of "how do I work the TV" messages.
 
@@ -2962,9 +2966,9 @@ That's the big idea of this chapter. Protocols and people make you optional.
 
 ### Handling Emergencies Remotely
 
-The heat-out story above is hypothetical. This one isn't. A couple of years ago, one of our homes caught fire. The guests were celebrating a holiday their family observes without using electricity, and a young guest took the rule very literally and draped a towel over a lamp. The notifications came in fast, from the neighbor, from Airbnb, from the guests themselves. Everyone was safe, which is the only part of the story that ever mattered to me. I was about 2,000 miles away the whole time. Our standby contractors were already on file, which is why it moved so fast; they were dispatched immediately, insurance covered the work, and the home was repaired within the week, new flooring included.
+The heat-out story above is hypothetical. This one isn't. A couple of years ago, one of our homes caught fire. During a holiday stay, a young guest draped a towel over a glowing lamp. The notifications came in fast, from the neighbor, from Airbnb, from the guests themselves. Everyone was safe, which is the only part of the story that ever mattered to me. I was about 2,000 miles away the whole time. Our standby contractors were already on file, which is why it moved so fast; they were dispatched immediately, insurance covered the work, and the home was repaired within the week, new flooring included.
 
-That week settled something for me. Systems don't prevent human error. No protocol stops a kid from taking a rule literally. What systems do is turn a fire into a bad week instead of a lost year.
+That week settled something for me. Systems don't prevent human error. No protocol stops a kid from being a kid. What systems do is turn a fire into a bad week instead of a lost year.
 
 Emergencies happen: burst pipes, power outages, locked-out guests, mice. What matters is how fast and how calmly your system responds.
 
@@ -3079,12 +3083,14 @@ Track these categories monthly:
 
 Keep the tooling simple: QuickBooks, Wave, or even a Google Sheet works. Set monthly reconciliation reminders and digitize receipts with ScanSnap or your phone. When you're scaling, hire a VA bookkeeper at $5–$8 an hour on Upwork.
 
-Clean books matter all year, and most at tax time. Always consult a licensed tax pro, but walk in informed, because most STR investors miss deductions. If you materially participated in the property (roughly, you put in real hours running it yourself), you may qualify for bonus depreciation. That test sits awkwardly in a book about delegation. The more you hand off, the harder it is to pass, so ask your CPA which side of the line your setup lands on, and about:
+Clean books matter all year, and most at tax time. Always consult a licensed tax pro, but walk in informed, because most STR investors miss deductions. Anyone who owns the property gets the depreciation deductions. The question is whether the paper loss they create can offset your W-2 income this year, and that turns on two tests: guests staying an average of about a week or less, and you materially participating (roughly, you put in real hours running it yourself, more than anyone else does). Fail the participation test and the loss doesn't vanish, it just waits, suspended until the property has income or you sell. That test sits awkwardly in a book about delegation. The more you hand off, the harder it is to pass, so ask your CPA which side of the line your setup lands on, and about:
 
 - STR material participation rules
 - Cost segregation (the study from Myla's tax story that front-loads depreciation deductions) and bonus depreciation
 - Eligibility for the 20% qualified business income (QBI) deduction
 - The best entity structure for you (LLC versus personal name)
+- Whether your service level keeps you on Schedule E or pushes you onto Schedule C with self-employment tax.
+- If you'll vacation in the house yourself, how many nights; personal use past a threshold changes what you can deduct.
 
 One thing the CPA can't answer. A hot tub, a fire pit, bunk rooms, and twelve guests is a personal-injury exposure profile. Carry a $1–2M umbrella policy on top of your STR policy, and treat the LLC question as liability isolation at least as much as taxes. Ask an attorney, not just the CPA.
 
@@ -3175,7 +3181,7 @@ It's a Wednesday morning. You're still in bed, coffee on the nightstand, thumbin
 
 $300. An Airbnb payout, deposited overnight. While you slept.
 
-You haven't touched the property in weeks and the machine still runs. A guest messaged at 4 AM. Your virtual assistant (VA) replied three hours ago. The cleaner is already scheduled for Friday's turnover. Nobody needed you.
+You haven't touched the property in weeks and the machine still runs. A guest messaged at 4 a.m. Your virtual assistant (VA) replied three hours ago. The cleaner is already scheduled for Friday's turnover. Nobody needed you.
 
 That's stability. And stability is where freedom lives.
 
@@ -3212,7 +3218,7 @@ Your first three months won't look like month six or month twelve. You'll be bus
 
 **Weeks 1–4: Launch Phase (Controlled Chaos)**
 
-Your listing goes live. First bookings come in. You're responding to every message. Your cleaner is learning your system. Small things are still broken: the shower drains slow, the WiFi drops at 6 PM.
+Your listing goes live. First bookings come in. You're responding to every message. Your cleaner is learning your system. Small things are still broken: the shower drains slow, the WiFi drops at 6 p.m.
 
 - Expect: 40–60% occupancy (low, because you're new). First reviews dropping in.
 - Your job: Fix critical stuff first. WiFi, locks, heating. Get reviews in. Respond fast. Don't raise rates yet.
@@ -3235,7 +3241,7 @@ One caution. Airbnb boosts new listings, so your first 90 days flatter you, and 
 
 ### A Day in the Life: Six Months In
 
-It's 6:47 AM. You're half-asleep. Phone buzzes. New booking for next weekend: $380, two nights, family of four. Airbnb's algorithm did the work. Your VA will send the welcome message. Your cleaner is already scheduled for turnover.
+It's 6:47 a.m. You're half-asleep. Phone buzzes. New booking for next weekend: $380, two nights, family of four. Airbnb's algorithm did the work. Your VA will send the welcome message. Your cleaner is already scheduled for turnover.
 
 By 7:15, you've checked your team chat (Slack, in my case). One message from your cleaner: low on coffee pods, and a guest mentioned the outdoor shower. You reply: "Order more pods, have someone check the shower for leaks." That's the operational task for the day.
 
@@ -3363,7 +3369,7 @@ Here's the model I teach. It assumes you buy with a loan, since that's how most 
 - Monthly net cash flow: $2,000 (conservative, after all expenses)
 - Annual net cash flow: $24,000
 - Equity created through appreciation: ~$5,000 (a conservative 2% rural rate)
-- Tax write-offs from depreciation: ~$5,500 a year (straight-line on a $150K building value; that's the deduction, not cash)
+- Tax write-offs from depreciation: ~$5,500 a year (straight-line on a $150K building value at the residential rate; a short-stay rental may sit on the slower 39-year schedule, so treat this as the high end. That's the deduction, not cash)
 - **Year 1 total wealth increase: $34,500** (cash flow + equity + tax shelter)
 
 Chapter 18 uses the fuller $12K first-year deduction, counts it at cash value, and pencils appreciation at 2.5% instead of the 2% here. That's why its Year 1 lands a few hundred dollars away from this one. The shape is what matters.
@@ -3580,7 +3586,7 @@ No hypotheticals here. These are people who ran the letters, in order. You've me
 
 **Diane and Jon's Gatewood Orchard:** $81,210.38 gross in year one as fully done-for-you clients. The model works even when you outsource every piece of it.
 
-Same caveat as before on all of these. Gross, not take-home. Booked is not banked. Still wins.
+Same caveat as before on all of these. Gross, not take-home. Booked is not banked. Still wins. These are among the strongest results in our community, shown because they teach; they are not typical. A typical first-year rural STR earns far less than these homes did, and some operators lose money. No result in this book is a promise of yours.
 
 The pattern matters more than any one deal. Different markets, different structures, same result: fast cash flow, rapid equity, real wealth in years instead of decades.
 
@@ -3616,12 +3622,12 @@ Rural appreciation is modest, 2–3% a year. Use 2.5% for projections; it's cons
 
 The hidden wealth builder most people ignore. STRs create serious deductions:
 
-- Building depreciation (27.5-year schedule): ~$7,000 per property per year
+- Building depreciation: roughly $4,000 to $7,000 per property per year. One nuance your CPA will settle: a rental where guests average a week or less usually depreciates on the slower 39-year commercial schedule, not the 27.5-year residential one. I use a range so the model survives either answer.
 - Furniture depreciation (5-year accelerated): ~$3,000–$5,000 per property per year, front-loaded
 - Operating expenses: fully deductible
 - Mortgage interest (year 1): ~$8,000–$10,000 per property, decreasing over time
 
-Add those lines up and a single STR can shelter $18,000–$22,000 a year in its early years. Across four properties at different ages, call it $50,000–$70,000 annually. At a 32% bracket, that's $16,000–$22,400 in tax savings per year once all four are running. The five-year scenario below deliberately uses less, $12,000 for each property's first year, well under the itemized range, so the plan never leans on the tax code cooperating. Later years step down as that furniture depreciation burns off: roughly $10K in a property's second year, $9.5K in its third, $8.5K in its fourth, with Year 5's total held at Year 4's $40K. With properties arriving one at a time, those conservative deductions total $145.5K at face value. And a deduction is not a dollar. The model counts each year's deductions at their cash value at a 32% bracket, meaning 32 cents per dollar of face value, or $46,560 across the five years. Your bracket sets your number.
+Add those lines up and a single STR can shelter $18,000–$22,000 a year in its early years. Across four properties at different ages, call it $50,000–$70,000 annually. At a 32% bracket, that's $16,000–$22,400 in tax savings per year once all four are running. The five-year scenario below deliberately uses less, $12,000 for each property's first year, well under the itemized range, so the plan never leans on the tax code cooperating. Later years step down as that furniture depreciation burns off: roughly $10K in a property's second year, $9.5K in its third, $8.5K in its fourth, with Year 5's total held at Year 4's $40K. With properties arriving one at a time, those conservative deductions total $145.5K at face value. And under the 2025 tax law, 100% bonus depreciation is back and permanent, so a cost-segregated first year can run several times my $12K figure. I'd rather you be surprised in that direction. A deduction is not a dollar, though. The model counts each year's deductions at their cash value at a 32% bracket, meaning 32 cents per dollar of face value, or $46,560 across the five years. Your bracket sets your number. There is one string attached. Those 32 cents arrive this year only if you pass the material participation test from Chapter 15, and the more of this business you delegate, the harder that test gets. Fail it and the deductions don't disappear; they wait for a year with rental profit or for the sale.
 
 This isn't theoretical. Myla's write-offs were big enough to matter at tax time, real money that stayed in her pocket instead of leaving it, and her recovered capital went toward her next property.
 
@@ -3635,6 +3641,8 @@ This is debt service plus operating expenses: mortgage, insurance, utilities, cl
 - Property 4: ~$36,000/year
 
 One flag first. Property 1 nets about 16% on its deployed capital here, well under Chapter 8's 30% Floor, and that's deliberate. The floor screens a deal at its moderate projection. This model runs at conservative realized numbers, the returns you accept, not the ones you screen for.
+
+What follows is a hypothetical model, not a projection of your results. It assumes every purchase, refinance, and stabilization lands on schedule; in real life many will not, results vary widely, and some investors lose money. Nothing here is a promise of income.
 
 **Now let's run the 5-year scenario.**
 
@@ -3761,13 +3769,13 @@ For some people it's $4,000 a month: rent, food, insurance. For others it's $10,
 
 Most owners never ask: "What do I do when I want out?" Multiple exits reduce risk and make you likelier to succeed.
 
-**Exit 1: Sell as a turnkey STR business (premium valuation, and the exception).** A well-run STR can be worth more than the same house as a long-term rental, because it's a proven cash-flowing asset. The right buyer (a new operator, a passive investor, a partnership) prices it off the income, at 8–12x annual net cash flow, so a property netting $24,000 a year lists at $192K–$288K. That buyer is the exception, not the norm. Most rural homes sell as houses, priced off residential comps (what similar homes nearby actually sold for), to a thin pool of local buyers who don't care what it grossed on Airbnb. A bunk-room-heavy layout narrows the pool further; local families aren't shopping for eight built-in beds. Anchor your expectations to the appraised value and a 6–12 month timeline, and treat the turnkey premium as upside, not the plan. Run it on a cabin like Myla's, appraised around $240K: netting roughly $24K a year, the income multiple prices it right around that appraisal anyway. The refi loan gets paid off at closing, but she'd already pulled most of her capital back out, and she banked every month of cash flow along the way.
+**Exit 1: Sell as a turnkey STR business (premium valuation, and the exception).** A well-run STR can be worth more than the same house as a long-term rental, because it's a proven cash-flowing asset. The right buyer (a new operator, a passive investor, a partnership) prices it off the income, at 8–12x annual net cash flow, so a property netting $24,000 a year lists at $192K–$288K. That buyer is the exception, not the norm. Most rural homes sell as houses, priced off residential comps (what similar homes nearby actually sold for), to a thin pool of local buyers who don't care what it grossed on Airbnb. A bunk-room-heavy layout narrows the pool further; local families aren't shopping for eight built-in beds. Anchor your expectations to the appraised value and a 6–12 month timeline, and treat the turnkey premium as upside, not the plan. Run it on a cabin like Myla's, appraised around $240K: netting roughly $24K a year, the income multiple prices it right around that appraisal anyway. The refi loan gets paid off at closing, but she'd already pulled most of her capital back out, and she banked every month of cash flow along the way. One more line for the closing table. The depreciation you deducted along the way gets partly recaptured when you sell, at rates your CPA will estimate before you list. The write-offs were a loan from the IRS with great terms, not a gift.
 
 **Exit 2: Convert to a long-term rental (lower return, near-zero management).** Rent at $1,500–$2,000 a month (typical for rural homes) and hire a property manager. Net $600–$1,000 a month with quarterly check-ins. The trade: less income, 12-month leases, eviction risk. Timeline: immediate. Some operators convert one or two properties to LTR and keep the rest as STRs, diversifying against platform risk.
 
 **Exit 3: Sell to a cash buyer (the fast exit, bought with a discount).** Cash buyers exist in rural markets, but the pool is thin, so the discount is what creates the speed. Expect 90–95% of market value, sometimes less, and remember the 14–30 day close only starts once you've found the buyer, which in a thin market can take months. This is your escape hatch if a market sours or you need capital urgently, not a plan.
 
-**Exit 4: 1031 exchange into a bigger deal (tax-deferred growth).** The advanced move. A 1031 exchange, named for its section of the tax code, lets you sell one property and roll the proceeds into a larger one without paying capital gains tax on the sale (45 days to identify the new property, 180 days to close, per IRS rules). This is how operators scale from four properties to ten without tax drag crushing their compounding.
+**Exit 4: 1031 exchange into a bigger deal (tax-deferred growth).** The advanced move. A 1031 exchange, named for its section of the tax code, lets you sell one property and roll the proceeds into a larger one without paying capital gains tax at the time of the sale (45 days to identify the new property, 180 days to close, per IRS rules). The tax is deferred, not erased; it travels with you into the new property, and goes away only if you hold until the basis step-up at death or keep rolling. This is how operators scale from four properties to ten without tax drag crushing their compounding.
 
 Four options mean you're never trapped. If the market turns, take the cash buyer. Want out but staying invested? 1031. Convert to LTR when you want passive income without turnover, and sell turnkey when you want the premium.
 
@@ -3850,7 +3858,7 @@ You don't need a trust fund. You need four ingredients:
 
 **1. $50K–$60K in cash, or a creative funding stack.** The 4 bed, 3 bath homes I recommend mostly run $250K–$350K today, so a 10% down vacation-home loan means roughly $25K–$35K down plus closing costs. Design, furnishing, and setup labor commonly add $20K–$40K or more depending on house size and how much you outsource, but most of that can ride on 0% business credit cards and get paid down from the first year's bookings. So $50K–$60K of cash is still the honest entry point; just know the full project costs more than the cash you bring to closing. And not all of that stack is for the house. Plan to close with roughly six months of payments in reserve plus the start of a capex fund (the account that replaces the furnace, not the throw pillows). Chapters 7 and 8 made that a rule; thin closings are how first-timers die. The vacation-home loan is the beginner default, and I mean that as a compliment. It's what I did when I started. Seller financing, 0% business credit cards, private lenders, home-equity lines of credit (HELOCs), and family loans are tools you graduate into as your deals and your confidence stack up. Scrappy operators eventually get out-of-pocket down to $15K–$30K, but the reserve floor never shrinks with the down payment. (The five-year model above assumes a full renovation play; a lighter entry starts smaller and climbs.)
 
-**2. A 680+ credit score, and 740+ is better.** Above 680, you're in the game. Above 740, you get better rates and higher limits. If you're under 680, add a co-borrower, work with a credit repair specialist, or start with creative financing while you rebuild.
+**2. A 680+ credit score, and 740+ is better.** Above 680, you're in the game. Above 740, you get better rates and higher limits. If you're under 680, add a co-borrower, work with a nonprofit credit counselor, or start with creative financing while you rebuild.
 
 **3. Three to six months of focused effort.** A few hours a week during market research, 10–15 hours a week during launch, about three hours a week once stabilized. Front-load the work, then shift into owner mode.
 
@@ -3906,8 +3914,8 @@ Here's the step, and it's this week's work. Pick one national park or outdoor an
 You don't need a coach to succeed. I started with Google, a market-data tool called AirDNA, and messy spreadsheets. That path still works. But if you want support, I've built the help I wish I'd had:
 
 - **Follow @jeffchheuy and Teeco on Instagram.** Real numbers, behind-the-scenes updates, and practical tips every week. We answer DMs.
-- **Take the free Airbnb Anywhere mini course.** The link is in the Bonus Pack at the back of this book.
-- **Apply for the 1-on-1 program.** We'll help you choose a market, run the numbers, get funded, and launch a deal. It's expensive, and most readers won't need it; the Bonus Pack and the free course cover the whole path. Apply only if you want a hand on your shoulder the whole way.
+- **Take my free mini course.** The link is in the Bonus Pack at the back of this book.
+- **Apply for the 1-on-1 program.** We'll help you choose a market, run the numbers, get funded, and launch a deal. It's expensive, and most readers won't need it; the Bonus Pack and the free course cover the whole path. Apply only if you want a hand on your shoulder the whole way. No coaching program, ours included, can guarantee you a deal, financing, or income. Results depend on your market, capital, and execution.
 
 Whatever route you take, the point is your freedom. Your five-year plan starts this year, if you act.
 
@@ -3943,7 +3951,7 @@ In this order. Every time.
 
 ## Your Free Book Bonus Pack
 
-Everything in this book (every checklist, template, calculator, and course) lives at one link: **teeco.co/bookbonus**. All of it is free.
+Everything in this book (every checklist, template, calculator, and course) lives at one link: **teeco.co/bookbonus**. Every download on this list is free.
 
 Here's what's inside, organized by what you're doing.
 
@@ -3980,7 +3988,7 @@ Here's what's inside, organized by what you're doing.
 
 **Going deeper**
 
-- **Free Airbnb Anywhere mini course** at teeco.circle.so/c/aa-mini-course: the next step from the Conclusion
+- **Free mini course** at teeco.circle.so/c/aa-mini-course: the next step from the Conclusion
 - **Instagram @jeffchheuy**: real numbers and practical tips every week; we answer DMs
 
 One address gets you all of it: **teeco.co/bookbonus**.
@@ -4069,7 +4077,7 @@ Every framework in this book was built to be used, not just read. Bookmark this 
 
 **The 6-Week Launch**: A compressed timeline from keys in hand to first booking. Speed eliminates the biggest cost of all: empty nights. (Ch 13)
 
-**The 80-20 Amenities**: A short list of amenities drives most bookings. Buy those first; skip the rest until the data asks for them. (Ch 13)
+**The 80/20 Amenities**: A short list of amenities drives most bookings. Buy those first; skip the rest until the data asks for them. (Ch 13)
 
 **The Systems Stack**: Four layers that replace your time: tech stack, local help, automations, and protocols. The goal is the 3-Hour Property. (Ch 14)
 
@@ -4102,19 +4110,3 @@ Every framework in this book was built to be used, not just read. Bookmark this 
 **Think-Do-Die**: Think: research and plan for 2–4 weeks, not six months. Do: buy and launch. Die: if it fails, learn and run it back; if it works, scale it. Either way, you've moved from theoretical to real. (Ch 18)
 
 **The Exit Strategy Menu**: Four ways out, so you're never trapped: sell turnkey at a premium, convert to a long-term rental, sell to a cash buyer, or 1031 into a bigger deal. (Ch 18)
-
----
-
-## One Last Thing
-
-You made it to the last page. Most people never do, and I don't take it lightly that you did.
-
-I wrote this book without a publisher, without a marketing department, and without anyone deciding it deserved shelf space. Books like this one live or die on a single thing: honest reviews from real readers.
-
-If this book earned it, would you take two minutes and leave an honest review on Amazon? Search the title, scroll to the reviews, and say what you actually thought. Good, bad, or mixed, your honest words help the next tired professional on their own October drive find this book.
-
-And when you buy your first cabin, write to me. Those messages are the reason I teach.
-
-Thank you for reading.
-
-Jeff
