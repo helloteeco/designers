@@ -55,3 +55,4 @@ a { color: #2b2823; text-decoration: none; }
 code { font-family: "Raleway"; font-weight: 500; font-size: 8.8pt; background: #e5e3da; border-radius: 2.5pt; padding: 0.5pt 4pt; }
 pre { background: #e5e3da; border-radius: 4pt; padding: 8pt 10pt; font-size: 8.8pt; line-height: 1.45; }
 pre code { background: none; padding: 0; }
+pre { white-space: pre-wrap; word-break: break-word; }
