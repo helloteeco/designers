@@ -28,14 +28,14 @@ a { color: inherit; text-decoration: none; }
 .page-plain { break-before: right; }
 .ht-title { margin-top: 2.6in; text-align: center; font-size: 21pt; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.35; }
 .titlepage { text-align: center; }
-.tp-title { margin-top: 1.9in; font-size: 34pt; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold; }
+.tp-title { margin-top: 1.55in; font-size: 34pt; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold; }
 .tp-rule { width: 1.1in; border-top: 1.2pt solid #111; margin: 0.28in auto; }
 .tp-sub { font-size: 11.5pt; font-style: italic; line-height: 1.5; margin: 0 0.3in; }
-.tp-author { margin-top: 1.1in; font-size: 15pt; letter-spacing: 0.12em; text-transform: uppercase; }
-.tp-pub { margin-top: 1.5in; font-size: 9.5pt; letter-spacing: 0.3em; }
+.tp-author { margin-top: 0.9in; font-size: 15pt; letter-spacing: 0.12em; text-transform: uppercase; }
+.tp-pub { margin-top: 1.05in; font-size: 9.5pt; letter-spacing: 0.3em; }
 .copyright { break-before: left; font-size: 8.6pt; line-height: 1.5; }
 .copyright p { text-indent: 0; margin-bottom: 7pt; margin-top: 0; text-align: left; }
-.copyright { padding-top: 3.1in; }
+.copyright { padding-top: 1.35in; }
 .dedication { text-align: center; }
 .dedication p { text-indent: 0; text-align: center; margin-top: 3in; font-size: 11.5pt; }
 
@@ -78,6 +78,11 @@ h3.summary-h { margin-top: 22pt; padding-top: 10pt; border-top: 0.7pt solid #999
 ul, ol { margin: 6pt 0 8pt 1.5em; padding: 0; }
 li { margin-bottom: 3pt; text-align: justify; hyphens: auto; }
 li p { text-indent: 0; }
+
+/* checklist items: box inline, text to the right */
+li.check { list-style: none; margin-left: -1.1em; }
+li.check label { display: inline; }
+.cbox { display: inline-block; width: 8pt; height: 8pt; border: 0.9pt solid #222; border-radius: 1.5pt; margin-right: 6pt; vertical-align: -0.5pt; }
 
 /* blockquotes */
 blockquote { margin: 9pt 1.6em; font-style: italic; }

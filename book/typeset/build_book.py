@@ -55,6 +55,7 @@ def pandoc(mdtext):
     h = re.sub(r"\s*<hr ?/?>\s*$", "", h)
     h = re.sub(r'<h3 id="[^"]*chapter-summary[^"]*">Chapter Summary</h3>',
                '<h3 class="summary-h">Chapter Summary</h3>', h)
+    h = h.replace('<li><label><input type="checkbox" />', '<li class="check"><span class="cbox"></span><label>')
     return h
 
 html_parts, toc = [], []
