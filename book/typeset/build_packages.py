@@ -1,4 +1,48 @@
-import os, subprocess, shutil
+import os, subprocess, shutil, re, zipfile, tempfile
+
+def polish_epub(path):
+    """Publisher pass: visible scene breaks, flat TOC (Introduction not nested
+    under Dedication), and a bodymatter 'Start Reading' landmark for Kindle."""
+    tmp = tempfile.mkdtemp()
+    with zipfile.ZipFile(path) as z:
+        z.extractall(tmp)
+    intro = None
+    for root, _, files in os.walk(tmp):
+        for fn in files:
+            fp = os.path.join(root, fn)
+            if fn == "nav.xhtml":
+                s = open(fp).read()
+                m = re.search(r'href="(text/ch\d+\.xhtml)">Introduction', s)
+                intro = m.group(1) if m else None
+                # lift Introduction out of the Dedication branch
+                s = re.sub(r'(<li id="[^"]*"><a href="text/ch\d+\.xhtml">Dedication</a>)<ol class="toc">(<li id="[^"]*"><a href="text/ch\d+\.xhtml">Introduction[^<]*</a></li>)</ol></li>',
+                           r'\1</li>\2', s)
+                if intro:
+                    s = s.replace('</ol>\n</nav>\n</body>',
+                                  f'<li><a href="{intro}" epub:type="bodymatter">Start Reading</a></li></ol>\n</nav>\n</body>')
+                open(fp, "w").write(s)
+            elif fn == "toc.ncx":
+                s = open(fp).read()
+                s = re.sub(r'(<navPoint id="[^"]*">\s*<navLabel>\s*<text>Dedication</text>\s*</navLabel>\s*<content src="text/ch\d+\.xhtml" />)\s*(<navPoint id="[^"]*">\s*<navLabel>\s*<text>Introduction[^<]*</text>\s*</navLabel>\s*<content src="text/ch\d+\.xhtml" />\s*</navPoint>)\s*(</navPoint>)',
+                           r'\1\3\2', s)
+                open(fp, "w").write(s)
+            elif fn.endswith(".xhtml") and fn.startswith("ch"):
+                s = open(fp).read()
+                if "<hr />" in s or "<hr/>" in s:
+                    s = s.replace("<hr />", '<p class="scenebreak">&#8226;&#160;&#160;&#8226;&#160;&#160;&#8226;</p>').replace(
+                                  "<hr/>", '<p class="scenebreak">&#8226;&#160;&#160;&#8226;&#160;&#160;&#8226;</p>')
+                    open(fp, "w").write(s)
+    with zipfile.ZipFile(path, "w") as z:
+        z.write(os.path.join(tmp, "mimetype"), "mimetype", compress_type=zipfile.ZIP_STORED)
+        for root, _, files in os.walk(tmp):
+            for fn in files:
+                fp = os.path.join(root, fn)
+                arc = os.path.relpath(fp, tmp)
+                if arc == "mimetype": continue
+                z.write(fp, arc, compress_type=zipfile.ZIP_DEFLATED)
+    shutil.rmtree(tmp)
+    print("  polished:", os.path.basename(path))
+
 BOOK = os.path.dirname(os.path.abspath(__file__))
 PKGROOT = os.path.join(BOOK, "..", "packages")
 PKGS = [
@@ -26,7 +70,8 @@ for p in PKGS:
     os.makedirs(d, exist_ok=True)
     env = dict(os.environ,
                OUT_PDF=os.path.join(d, f"{p['title']} - Print Interior 6x9.pdf"),
-               TITLE_HTML=p["title_html"], RH_TEXT=p["rh"], SUBTITLE_OVERRIDE=p["subtitle"])
+               TITLE_HTML=p["title_html"], RH_TEXT=p["rh"], SUBTITLE_OVERRIDE=p["subtitle"],
+               PDF_TITLE=p["title"])
     r = subprocess.run(["python3", os.path.join(BOOK, "build_book.py")], env=env, capture_output=True, text=True)
     print(p["slug"], "PDF:", r.stdout.strip().splitlines()[-2:] if r.returncode==0 else r.stderr[-400:])
     # epub
@@ -37,6 +82,7 @@ for p in PKGS:
                          "-M", f"title={p['title']}", "-M", f"subtitle={sub}",
                          "-o", os.path.join(d, f"{p['title']} - Kindle.epub")], capture_output=True, text=True)
     print(p["slug"], "EPUB:", "ok" if r2.returncode==0 else r2.stderr[-200:])
+    polish_epub(os.path.join(d, f"{p['title']} - Kindle.epub"))
     # cover jpg
     from PIL import Image
     Image.open(os.path.join(BOOK, p["cover"])).convert("RGB").save(os.path.join(d, f"{p['title']} - Ebook Cover.jpg"), quality=95)

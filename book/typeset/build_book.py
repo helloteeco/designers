@@ -111,8 +111,13 @@ def toc_block(pg):
         out.append(f'<div class="{cls}"><a href="#{tgt}"{attr}>{lbl}</a></div>')
     return "".join(out)
 
+PDF_TITLE = os.environ.get("PDF_TITLE", "Airbnb Anywhere")
+
 def document(toc_html):
-    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>Airbnb Anywhere</title>
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>{PDF_TITLE}</title>
+<meta name="author" content="Dr. Jeff Chheuy">
+<meta name="description" content="{subtitle}">
+<meta name="keywords" content="short term rental investing, vacation rental business, real estate investing, passive income">
 <link rel="stylesheet" href="book.css">
 <style>@page :left {{ @top-center {{ content: "{RH_TEXT}"; font-family: "Bitstream Charter"; font-size: 8pt; letter-spacing: 0.18em; color: #333; }} }}</style></head><body>
 <section class="halftitle page-plain"><div class="ht-title">{TITLE_HTML}</div></section>

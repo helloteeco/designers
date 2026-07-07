@@ -9,3 +9,4 @@ td { padding: 0.3em 0.4em; }
 tbody tr:last-child td { border-bottom: 2px solid #222; }
 blockquote { margin: 0.8em 1.4em; font-style: italic; }
 hr { border: none; text-align: center; margin: 1.2em 0; }
+.scenebreak { text-align: center; margin: 1.3em 0; text-indent: 0; }

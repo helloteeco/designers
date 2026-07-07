@@ -24,7 +24,7 @@ Print this. Work top to bottom. Everything referenced lives in the Book Launch H
 - ☐ Build the **substantiation file**: platform statements and closing docs behind every printed number, kept in one folder.
 - ☐ Put the **Bonus Pack live at teeco.co/bookbonus**: upload the `bonus/pdf/` folder behind an email-capture form. Add the items only you can supply (BONUS_PACK_README lists them: your deal-analysis video, current 0% card list, course links, design-team contact).
 - ☐ Rename the mini course so it doesn't carry "Airbnb."
-- ☐ Proof copy arrives → check cover alignment, spine, margins, a few tables → approve. Publish hardcover after (same files, KDP hardcover template).
+- ☐ Proof copy arrives → check cover alignment, spine, margins, a few tables → approve. Publish hardcover after: same interior PDF; for the cover, download the 6×9 / 263-page hardcover template from kdp.amazon.com/cover-calculator and place the existing wrap art onto it.
 
 ## Weeks 1–6 — The launch machine (details in LAUNCH_PLAYBOOK.md)
 

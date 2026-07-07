@@ -75,8 +75,8 @@ Files to upload per format: interior PDF (print) / EPUB (Kindle) from your chose
 ## 7. Order of operations tomorrow
 
 1. Upload the **ebook** first (fastest review): details → description/keywords/categories → upload EPUB + cover JPG → price $7.99 + KDP Select → publish. Live in ~24–72 hrs.
-2. Upload the **paperback**: same details → upload interior PDF → cover (Cover Creator or wrap PDF) → **order a proof copy** before approving (~$5 + shipping, takes a few days) → approve → set "Schedule a Release" if you want a coordinated launch day.
-3. Hardcover after the paperback proof passes.
+2. Upload the **paperback**: same details → upload interior PDF → upload the ready-made `- Print Cover Wrap.pdf` → run KDP's previewer → **order a proof copy** before approving (~$5 + shipping, takes a few days) → approve → set "Schedule a Release" if you want a coordinated launch day.
+3. **Hardcover** after the paperback proof passes. Same interior PDF (6×9, 263 pages, white paper). The hardcover cover is the one file that is not pre-made: hardcover wrap geometry (board wrap, hinge, spine) comes from KDP's own template generator per page count. Go to kdp.amazon.com/cover-calculator → Hardcover, 6×9, white paper, 263 pages → download the template → place the existing art onto it (front PNG, spine text, and back-cover layout are all in the paperback wrap PDF and in `typeset/`). A 30-minute placement job for your design team or a fresh Claude session; KDP's previewer validates the result.
 4. Claim **Author Central** (author.amazon.com): photo, bio, link all formats, add editorial reviews.
 5. Build **A+ Content** (KDP Marketing tab): 3–5 modules — the RURAL framework graphic, the P&L teaser, before/after design photos, the Bonus Pack preview. Your design team can produce these from the cover's art style in a day.
 6. Set the ebook **Countdown Deal** dates to match launch week.
