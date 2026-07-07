@@ -1,26 +1,57 @@
+/* ===== Teeco Bonus Pack — brand-guide styling =====
+   Palette: Black #000000 · Gray #2b2823 · Mocha #787060 · Cream #e5e3da · White
+   Type: Source Serif 4 SemiBold (headings) · Raleway (everything else)
+   Elements: rounded corners, thin gray lines */
+
 @page {
   size: letter;
-  margin: 0.8in 0.75in 0.9in 0.75in;
-  @top-left { content: string(doctitle); font-family: "Inter"; font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; color: #0d2a1f; }
-  @top-right { content: "R U R A L"; font-family: "Archivo Black"; font-size: 8pt; letter-spacing: 0.3em; color: #e8890c; }
-  @bottom-center { content: "From the RURAL Method  ·  teeco.co/bookbonus  ·  Last updated July 2026  ·  Page " counter(page); font-family: "Inter"; font-size: 7.5pt; color: #555; }
+  margin: 0.85in 0.75in 0.9in 0.75in;
+  @top-left { content: string(doctitle); font-family: "Raleway"; font-weight: 400; font-size: 7.5pt; letter-spacing: 0.16em; text-transform: uppercase; color: #787060; }
+  @top-right { content: url("teeco_mark_small.png"); }
+  @bottom-center { content: "From the RURAL Method  ·  teeco.co/bookbonus  ·  Last updated July 2026  ·  Page " counter(page); font-family: "Raleway"; font-weight: 300; font-size: 7.5pt; letter-spacing: 0.04em; color: #787060; }
 }
-@page :first { @top-left { content: none; } @top-right { content: none; } }
-body { font-family: "Bitstream Charter", serif; font-size: 10pt; line-height: 1.5; color: #1a1a1a; }
-h1 { string-set: doctitle content(); font-family: "Archivo Black"; font-size: 21pt; line-height: 1.15; color: #0d2a1f; margin: 0 0 4pt; }
-h1::after { content: ""; display: block; width: 1in; border-top: 3pt solid #e8890c; margin-top: 8pt; }
-h2 { font-family: "Inter"; font-weight: 600; font-size: 13pt; color: #0d2a1f; margin: 16pt 0 5pt; break-after: avoid; }
-h3 { font-family: "Inter"; font-weight: 600; font-size: 11pt; color: #1a1a1a; margin: 12pt 0 4pt; break-after: avoid; }
+@page :first {
+  margin-top: 0.75in;
+  @top-left { content: none; }
+  @top-right { content: none; }
+}
+
+body { font-family: "Raleway"; font-weight: 400; font-size: 9.6pt; line-height: 1.55; color: #2b2823; }
+
+/* first-page brand header: title left, logo right, rule beneath (mirrors the brand sheet) */
+.bhead { display: table; width: 100%; border-bottom: 1.4pt solid #000; padding-bottom: 10pt; margin-bottom: 4pt; }
+.bhead-l { display: table-cell; vertical-align: bottom; }
+.bhead-r { display: table-cell; vertical-align: bottom; text-align: right; width: 1.5in; }
+.bhead-r img { height: 0.34in; }
+.eyebrow { font-family: "Raleway"; font-weight: 300; font-size: 8.5pt; letter-spacing: 0.22em; text-transform: uppercase; color: #787060; margin: 0 0 7pt; }
+h1 { string-set: doctitle content(); font-family: "Source Serif 4"; font-weight: 600; font-size: 20pt; line-height: 1.18; color: #000; margin: 0; }
+.intro { margin-top: 10pt; }
+
+h2 { font-family: "Source Serif 4"; font-weight: 600; font-size: 13pt; line-height: 1.25; color: #000; margin: 16pt 0 5pt; break-after: avoid; }
+h2::after { content: ""; display: block; border-top: 0.5pt solid #b9b5a9; margin-top: 4pt; }
+h3 { font-family: "Raleway"; font-weight: 500; font-size: 8.8pt; letter-spacing: 0.14em; text-transform: uppercase; color: #787060; margin: 12pt 0 4pt; break-after: avoid; }
+
 p { margin: 0 0 6pt; }
 ul, ol { margin: 4pt 0 8pt 1.4em; padding: 0; }
 li { margin-bottom: 3pt; }
 li.check { list-style: none; margin-left: -1.2em; }
 li.check label { display: inline; }
-.cbox, input[type="checkbox"] { display: inline-block; width: 9pt; height: 9pt; border: 1pt solid #0d2a1f; border-radius: 2pt; margin-right: 6pt; vertical-align: -1pt; }
-table { width: 100%; border-collapse: collapse; margin: 8pt 0 12pt; font-size: 9pt; }
-th { font-family: "Inter"; font-weight: 600; text-align: left; border-top: 1.2pt solid #0d2a1f; border-bottom: 0.7pt solid #0d2a1f; padding: 4pt 5pt; background: #f3efe4; }
-td { padding: 3.5pt 5pt; border-bottom: 0.4pt solid #ccc; vertical-align: top; }
-blockquote { margin: 8pt 1.2em; font-style: italic; color: #333; }
-hr { border: none; border-top: 0.7pt solid #c9a25c; margin: 12pt 0; }
-strong { color: #0d2a1f; }
-code { font-family: "Inter"; font-size: 9pt; background: #f3efe4; padding: 0 3pt; }
+.cbox, input[type="checkbox"] { display: inline-block; width: 9pt; height: 9pt; border: 1pt solid #787060; border-radius: 2.5pt; margin-right: 6pt; vertical-align: -1pt; background: #fff; }
+
+table { width: 100%; border-collapse: collapse; margin: 8pt 0 12pt; font-size: 8.8pt; line-height: 1.4; }
+th { font-family: "Raleway"; font-weight: 500; font-size: 8.2pt; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; color: #2b2823; background: #e5e3da; border: none; padding: 5pt 6pt; }
+td { padding: 4pt 6pt; border-bottom: 0.5pt solid #d4d1c6; vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0.9pt solid #787060; }
+tr { break-inside: avoid; }
+thead { display: table-header-group; }
+
+blockquote { margin: 9pt 1.2em; font-family: "Raleway"; font-weight: 300; font-style: italic; color: #787060; border-left: 1.6pt solid #d4d1c6; padding-left: 10pt; }
+blockquote p { margin-bottom: 3pt; }
+
+hr { border: none; border-top: 0.5pt solid #b9b5a9; margin: 13pt 0; }
+strong { font-weight: 500; color: #000; }
+em { font-weight: 300; font-style: italic; }
+a { color: #2b2823; text-decoration: none; }
+code { font-family: "Raleway"; font-weight: 500; font-size: 8.8pt; background: #e5e3da; border-radius: 2.5pt; padding: 0.5pt 4pt; }
+pre { background: #e5e3da; border-radius: 4pt; padding: 8pt 10pt; font-size: 8.8pt; line-height: 1.45; }
+pre code { background: none; padding: 0; }

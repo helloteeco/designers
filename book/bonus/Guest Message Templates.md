@@ -66,7 +66,7 @@ Know when to refund and when to defend. Don't default to over-refunding.
 | Minor issue | Not enough pillows | Empathy, a small gesture, and standing firm |
 
 - [ ] Document everything through Airbnb's Resolution Center
-- [ ] For minor issues fixed fast, a small gesture works: a $50 credit or a $50 gift card to a local restaurant can turn a complaint into a 5-star review. A satisfied guest is worth roughly $2,000 to $3,800 in lifetime value, so the gesture protects a guest worth thousands.
+- [ ] For minor issues fixed fast, a small gesture works: a $50 credit or a $50 gift card to a local restaurant can turn a complaint into a 5-star review. A satisfied guest is worth roughly $2,000 to $3,800 in lifetime value (an estimate, but the size is the point), so the gesture protects a guest worth thousands.
 - [ ] Not sure how to word a response to a refund request or an odd complaint? Ask an AI assistant (we use ChatGPT) for tone and logic. It usually gets you two or three solid options.
 
 ---

@@ -1,7 +1,7 @@
 # The Six-Week Launch Checklist
 
 **From contract to first guest, week by week.**
-Companion to Chapter 13 of *Vacation Rentals That Pay You*. Print it, tape it to the wall, check the boxes.
+Companion to Chapter 13 of the book. Print it, tape it to the wall, check the boxes.
 
 ---
 

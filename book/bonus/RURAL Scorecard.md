@@ -72,7 +72,7 @@ The asset should run without you. About $100 a month in software and smart-devic
 
 ## Walk-Away Rules
 
-One rule, three checks. Fail any one, walk.
+One rule. Fail any check below, walk.
 
 - [ ] **The 30% Floor.** Judge cash-on-cash at the moderate projection, the median of the comps. Under 30% there, walk.
 - [ ] **The 25th-percentile underwrite.** At the conservative 25th percentile the deal must still cash flow, and ideally lands near 25% on your cash.

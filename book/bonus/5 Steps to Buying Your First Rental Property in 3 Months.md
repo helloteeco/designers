@@ -1,6 +1,6 @@
 # 5 Steps to Buying Your First Rental Property in 3 Months
 
-The whole RURAL Method as a month-by-month buying roadmap. Five steps, five letters, one rule: follow them in order, every time. Most first deals die from doing the right steps in the wrong order. My business partner Ryu ran this exact sequence in twelve weeks, spreadsheet to launch, and Lookout Lodge grossed $83,937.81 in its first year live. The book's own deal timeline runs the same way: 45 days to close, 30 days of light renovation if needed, guests within 90 days.
+The whole RURAL Method as a month-by-month buying roadmap. Five steps, one rule: follow them in order, every time. Most first deals die from doing the right steps in the wrong order. My business partner Ryu ran this exact sequence in twelve weeks, spreadsheet to launch, and Lookout Lodge grossed $83,937.81 in its first year live. The book's own deal timeline runs the same way: 45 days to close, 30 days of light renovation if needed, guests within 90 days.
 
 Three months is the aggressive-but-real pace, not a stunt. Steps overlap where the roadmap shows they do. If your timeline slips a couple of weeks, nothing breaks; if you skip a step, everything does.
 
@@ -8,7 +8,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 |---|---|---|---|
 | 1 | 1–4 | 1. Pick the market | R — Right Market First |
 | 1 | 2–4 | 2. Line up the money (in parallel) | U — Under Budget |
-| 2 | 5–8 | 3. Find the house and negotiate | U + R — Room for Everyone |
+| 2 | 5–8 | 3. Find the house and negotiate | R — Room for Everyone |
 | 2–3 | 6–9 | 4. Verify and close remotely | (Chapter 6) |
 | 3 | 9–12 | 5. Set up, list, launch | A + L |
 
@@ -36,7 +36,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 **The rule:** amateurs chase revenue. Pros guard the payment.
 **Walk away if:** closing would leave you below six months of PITI in reserves. (And underwrite the typical seller carry, about 10% down, 6–7% interest, five-year balloon. Ryu's 0% note is a top-1% outcome, not the template.)
 
-## Step 3 — Find the House and Negotiate (Weeks 5–8) · U + R
+## Step 3 — Find the House and Negotiate (Weeks 5–8) · R
 
 *Chapters 8–10. Income follows sleeping capacity.*
 

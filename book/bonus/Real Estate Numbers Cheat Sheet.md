@@ -1,6 +1,6 @@
 # Real Estate Numbers Cheat Sheet
 
-**From *Vacation Rentals That Pay You*.** Every term and formula the money math runs on, one page. When you're starting out, only one number matters, and that number is cash-on-cash return. Everything below either feeds that number or protects it.
+**From the RURAL Method.** Every term and formula the money math runs on, one page. When you're starting out, only one number matters, and that number is cash-on-cash return. Everything below either feeds that number or protects it.
 
 ## The terms, in plain English
 
