@@ -1,0 +1,26 @@
+@page {
+  size: letter;
+  margin: 0.8in 0.75in 0.9in 0.75in;
+  @top-left { content: string(doctitle); font-family: "Inter"; font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; color: #0d2a1f; }
+  @top-right { content: "R U R A L"; font-family: "Archivo Black"; font-size: 8pt; letter-spacing: 0.3em; color: #e8890c; }
+  @bottom-center { content: "From the RURAL Method  ·  teeco.co/bookbonus  ·  Last updated July 2026  ·  Page " counter(page); font-family: "Inter"; font-size: 7.5pt; color: #555; }
+}
+@page :first { @top-left { content: none; } @top-right { content: none; } }
+body { font-family: "Bitstream Charter", serif; font-size: 10pt; line-height: 1.5; color: #1a1a1a; }
+h1 { string-set: doctitle content(); font-family: "Archivo Black"; font-size: 21pt; line-height: 1.15; color: #0d2a1f; margin: 0 0 4pt; }
+h1::after { content: ""; display: block; width: 1in; border-top: 3pt solid #e8890c; margin-top: 8pt; }
+h2 { font-family: "Inter"; font-weight: 600; font-size: 13pt; color: #0d2a1f; margin: 16pt 0 5pt; break-after: avoid; }
+h3 { font-family: "Inter"; font-weight: 600; font-size: 11pt; color: #1a1a1a; margin: 12pt 0 4pt; break-after: avoid; }
+p { margin: 0 0 6pt; }
+ul, ol { margin: 4pt 0 8pt 1.4em; padding: 0; }
+li { margin-bottom: 3pt; }
+li.check { list-style: none; margin-left: -1.2em; }
+li.check label { display: inline; }
+.cbox, input[type="checkbox"] { display: inline-block; width: 9pt; height: 9pt; border: 1pt solid #0d2a1f; border-radius: 2pt; margin-right: 6pt; vertical-align: -1pt; }
+table { width: 100%; border-collapse: collapse; margin: 8pt 0 12pt; font-size: 9pt; }
+th { font-family: "Inter"; font-weight: 600; text-align: left; border-top: 1.2pt solid #0d2a1f; border-bottom: 0.7pt solid #0d2a1f; padding: 4pt 5pt; background: #f3efe4; }
+td { padding: 3.5pt 5pt; border-bottom: 0.4pt solid #ccc; vertical-align: top; }
+blockquote { margin: 8pt 1.2em; font-style: italic; color: #333; }
+hr { border: none; border-top: 0.7pt solid #c9a25c; margin: 12pt 0; }
+strong { color: #0d2a1f; }
+code { font-family: "Inter"; font-size: 9pt; background: #f3efe4; padding: 0 3pt; }

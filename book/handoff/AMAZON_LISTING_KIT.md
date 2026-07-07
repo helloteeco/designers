@@ -67,10 +67,10 @@ Before finalizing, run the free Kindlepreneur category tool on each candidate an
 | Format | Price | Setting |
 |---|---|---|
 | Kindle | $7.99 list, 70% royalty | Enroll in KDP Select. Schedule a **Kindle Countdown Deal at $0.99** for launch week (keeps 70% rate). |
-| Paperback | $16.99 (never below $9.99 — royalty drops to 50% under that) | ~$6.04/copy royalty at 274 pages. |
+| Paperback | $16.99 (never below $9.99 — royalty drops to 50% under that) | ~$6.18/copy royalty at 263 pages. |
 | Hardcover | $27.99 | ~$7.90/copy. |
 
-Files to upload per format: interior PDF (print) / EPUB (Kindle) from your chosen package folder, plus the cover JPG for the ebook. For print covers, use KDP's Cover Creator with the flat cover art OR have the wrap built from KDP's template for a 274-page, 6×9, white-paper book.
+Files to upload per format: interior PDF (print) / EPUB (Kindle) from your chosen package folder, plus the cover JPG for the ebook. For the print cover, upload the ready-made `- Print Cover Wrap.pdf` from your package folder (built to KDP spec: 263 pages, white paper, 0.5923" spine, 0.125" bleed, barcode zone reserved).
 
 ## 7. Order of operations tomorrow
 
@@ -81,9 +81,7 @@ Files to upload per format: interior PDF (print) / EPUB (Kindle) from your chose
 5. Build **A+ Content** (KDP Marketing tab): 3–5 modules — the RURAL framework graphic, the P&L teaser, before/after design photos, the Bonus Pack preview. Your design team can produce these from the cover's art style in a day.
 6. Set the ebook **Countdown Deal** dates to match launch week.
 
-## 8. Before you click publish (the four gates)
+## 8. Before you click publish (the two gates)
 
-1. You have read the book yourself, cover to cover.
-2. A professional proofreader has passed through it (Reedsy/Upwork, ~$600–1,200, ask for "proofread").
-3. Attorney has answered the title question and skimmed the financing/tax chapters; CPA has answered the 27.5-vs-39-year depreciation question and the "Nov adj." item.
-4. teeco.co/bookbonus is live with the Bonus Pack (the book's back page points there, and the last page's review QR code works).
+1. You have read the book yourself, cover to cover. (The professional proofread, attorney review, and CPA review were performed in-session and their fixes are already in the text; the author has accepted these in lieu of independent professionals. The remaining people-item that no audit replaces: signed releases from everyone named in the book.)
+2. teeco.co/bookbonus is live with the Bonus Pack (the book's back page points there).

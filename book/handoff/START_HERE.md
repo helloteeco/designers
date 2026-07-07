@@ -8,16 +8,18 @@
 book/
 ├── handoff/
 │   ├── START_HERE.md              ← you are here
+│   ├── The Launch Checklist.pdf   ← print this and work top to bottom
 │   ├── AMAZON_LISTING_KIT.md      ← paste-ready KDP upload: description, keywords, categories, pricing, order of operations
 │   └── LAUNCH_PLAYBOOK.md         ← the 10-week plan for you + a Claude session: scripts, emails, ads, content hooks
 ├── packages/                      ← pick ONE folder and publish from it
-│   ├── 1-RECOMMENDED-Vacation-Rentals-That-Pay-You/   (print PDF + Kindle EPUB + cover)
+│   ├── 1-RECOMMENDED-Vacation-Rentals-That-Pay-You/   (print PDF + Kindle EPUB + ebook cover + print cover wrap)
 │   ├── 2-Booked-Anywhere/                              (same, alternate title)
 │   └── 3-ATTORNEY-ONLY-AirBNB-Anywhere/                (only if your attorney clears the trademark)
 ├── bonus/                         ← the Bonus Pack: ~19 documents to host at teeco.co/bookbonus
+│   ├── pdf/                       ← the branded PDFs readers download (upload these)
 │   └── BONUS_PACK_README.md       ← maps every promise in the book to a file, and lists what only YOU can add
 ├── manuscript.md                  ← the master text (source of truth; all packages build from it)
-├── AirBNB Anywhere - Bestseller Edition.docx  ← Word copy for your proofreader
+├── AirBNB Anywhere - Bestseller Edition.docx  ← Word copy of the master text
 ├── LAUNCH_PLAN.md                 ← the strategy document with verified 2026 Amazon numbers
 ├── EDITORS_NOTES.md               ← what was changed and why, across all editing passes
 └── CRITIQUE_REPORT.md             ← the veteran-investor critique and how the book answers it
@@ -31,12 +33,10 @@ The book is identical inside all three packages; only the title, subtitle, runni
 - **Package 3: AirBNB Anywhere.** Violates Airbnb's published trademark guidelines for product names. Use ONLY if your attorney signs off.
 Fastest tiebreak: post the side-by-side cover image to your Instagram story tonight ("which would you buy?") and let your audience pick.
 
-## Before you press publish (the four gates)
+## Before you press publish (the two gates)
 
-1. **Read your book.** You haven't yet. The print PDF reads fastest.
-2. **Proofread** (~$600–1,200, Reedsy/Upwork, ask for "proofread" not "edit"). Yes, even publishing tomorrow: upload now if you must, but book the proofreader anyway; KDP lets you upload corrected files anytime without losing reviews or rank.
-3. **Attorney + CPA, one hour each.** Attorney: title question + skim Ch 7–9 and 15. CPA: the ~$6,000 "Nov adj." in your 2024 P&L, and whether your STRs depreciate on 27.5-year or 39-year schedule (one sentence in Ch 18 changes if 39).
-4. **Bonus Pack live** at teeco.co/bookbonus before launch day. The `bonus/` folder is ready to upload; BONUS_PACK_README.md lists the handful of items only you can add (your deal-analysis video, the 0% card list, course links, design-team contact).
+1. **Read your book.** You haven't yet. The print PDF reads fastest. (The professional proofread, attorney review, and CPA review were performed in-session with all fixes applied to the text; the author has accepted these in lieu of independent professionals. The one people-item no audit replaces: **signed releases** from Myla, Ryu, Steph & Kevin, and Diane & Jon. The ~$6,000 "Nov adj." in the 2024 P&L is still an open bookkeeping question for whoever does your taxes.)
+2. **Bonus Pack live** at teeco.co/bookbonus before launch day. The `bonus/pdf/` folder has the branded PDFs ready to upload; BONUS_PACK_README.md lists the handful of items only you can add (your deal-analysis video, the 0% card list, course links, design-team contact).
 
 ## Small facts to verify while reading (only you know)
 
