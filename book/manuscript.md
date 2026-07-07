@@ -4102,3 +4102,19 @@ Every framework in this book was built to be used, not just read. Bookmark this 
 **Think-Do-Die**: Think: research and plan for 2–4 weeks, not six months. Do: buy and launch. Die: if it fails, learn and run it back; if it works, scale it. Either way, you've moved from theoretical to real. (Ch 18)
 
 **The Exit Strategy Menu**: Four ways out, so you're never trapped: sell turnkey at a premium, convert to a long-term rental, sell to a cash buyer, or 1031 into a bigger deal. (Ch 18)
+
+---
+
+## One Last Thing
+
+You made it to the last page. Most people never do, and I don't take it lightly that you did.
+
+I wrote this book without a publisher, without a marketing department, and without anyone deciding it deserved shelf space. Books like this one live or die on a single thing: honest reviews from real readers.
+
+If this book earned it, would you take two minutes and leave an honest review on Amazon? Search the title, scroll to the reviews, and say what you actually thought. Good, bad, or mixed, your honest words help the next tired professional on their own October drive find this book.
+
+And when you buy your first cabin, write to me. Those messages are the reason I teach.
+
+Thank you for reading.
+
+Jeff

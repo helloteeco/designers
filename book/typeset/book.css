@@ -1,0 +1,99 @@
+/* ===== AirBNB Anywhere — 6x9 print interior ===== */
+
+@page { size: 6in 9in; }
+@page :right {
+  margin: 0.72in 0.62in 0.78in 0.85in;
+  @top-right { content: counter(page); font-family: "Bitstream Charter"; font-size: 9pt; color: #333; }
+  @top-center { content: string(chaptitle); font-family: "Bitstream Charter"; font-style: italic; font-size: 9pt; color: #333; }
+}
+@page :left {
+  margin: 0.72in 0.85in 0.78in 0.62in;
+  @top-left { content: counter(page); font-family: "Bitstream Charter"; font-size: 9pt; color: #333; }
+  @top-center { content: "AIRBNB ANYWHERE"; font-family: "Bitstream Charter"; font-size: 8pt; letter-spacing: 0.18em; color: #333; }
+}
+
+}
+@page :blank { @top-left { content: none; } @top-center { content: none; } @top-right { content: none; } @bottom-center { content: none; } }
+
+/* ===== base type ===== */
+html { font-family: "Bitstream Charter", serif; }
+body { font-size: 10.6pt; line-height: 1.45; color: #111; }
+p { margin: 0; text-align: justify; text-indent: 1.15em; hyphens: auto; orphans: 2; widows: 2; }
+h3 + p, h4 + p, header + p, .ch-open + p, hr + p, blockquote + p, table + p, ul + p, ol + p, div + p, p.noindent { text-indent: 0; }
+section.chapter > p:first-of-type { text-indent: 0; }
+strong { font-weight: bold; }
+a { color: inherit; text-decoration: none; }
+
+/* ===== front matter ===== */
+.page-plain { break-before: right; }
+.ht-title { margin-top: 2.6in; text-align: center; font-size: 21pt; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.35; }
+.titlepage { text-align: center; }
+.tp-title { margin-top: 1.9in; font-size: 34pt; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold; }
+.tp-rule { width: 1.1in; border-top: 1.2pt solid #111; margin: 0.28in auto; }
+.tp-sub { font-size: 11.5pt; font-style: italic; line-height: 1.5; margin: 0 0.3in; }
+.tp-author { margin-top: 1.1in; font-size: 15pt; letter-spacing: 0.12em; text-transform: uppercase; }
+.tp-pub { margin-top: 1.5in; font-size: 9.5pt; letter-spacing: 0.3em; }
+.copyright { break-before: left; font-size: 8.6pt; line-height: 1.5; }
+.copyright p { text-indent: 0; margin-bottom: 7pt; margin-top: 0; text-align: left; }
+.copyright { padding-top: 3.1in; }
+.dedication { text-align: center; }
+.dedication p { text-indent: 0; text-align: center; margin-top: 3in; font-size: 11.5pt; }
+
+/* ===== contents ===== */
+.toc { break-before: right; }
+.toc-h { font-size: 20pt; text-align: center; margin: 0.55in 0 0.45in; font-weight: bold; }
+.toc-part { margin: 13pt 0 4pt; font-weight: bold; font-size: 10.6pt; }
+.toc-part a::after { content: leader(" ") attr(data-pg); font-weight: normal; }
+.toc-ch, .toc-sp { margin: 3.2pt 0 3.2pt 14pt; font-size: 10.2pt; }
+.toc-ch a::after, .toc-sp a::after { content: leader(". ") attr(data-pg); }
+.toc-sp { margin-left: 0; font-style: italic; }
+.toc-n { display: inline-block; min-width: 1.5em; padding-right: 0.45em; color: #555; }
+
+/* ===== main matter ===== */
+
+
+/* part dividers */
+.part { break-before: right; }
+.part-eyebrow { margin-top: 1.15in; text-align: center; font-size: 11pt; letter-spacing: 0.32em; text-transform: uppercase; color: #444; }
+.part-title { text-align: center; font-size: 24pt; line-height: 1.2; margin: 0.22in 0.1in 0.3in; font-weight: bold; }
+.part-intro { margin: 0.35in 0.32in 0; font-size: 10.2pt; }
+.part-intro p { text-align: justify; }
+.part-intro p:first-child { text-indent: 0; }
+
+.chapter { break-before: right; }
+
+/* chapter opener */
+.ch-open { margin: 0.85in 0 0.5in; break-after: avoid; }
+.ch-num { font-size: 10pt; letter-spacing: 0.3em; text-transform: uppercase; color: #555; margin-bottom: 10pt; }
+.ch-title { font-size: 23pt; line-height: 1.18; font-weight: bold; margin: 0; string-set: chaptitle attr(data-rh); }
+.sp-title { font-size: 21pt; }
+.sp-sub { font-size: 15pt; font-weight: normal; font-style: italic; }
+
+/* in-chapter headings */
+h3 { font-size: 12.5pt; font-weight: bold; margin: 16pt 0 6pt; break-after: avoid; text-align: left; line-height: 1.25; }
+h4 { font-size: 10.8pt; font-weight: bold; margin: 12pt 0 4pt; break-after: avoid; }
+h3.summary-h { margin-top: 22pt; padding-top: 10pt; border-top: 0.7pt solid #999; font-size: 11pt; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* lists */
+ul, ol { margin: 6pt 0 8pt 1.5em; padding: 0; }
+li { margin-bottom: 3pt; text-align: justify; hyphens: auto; }
+li p { text-indent: 0; }
+
+/* blockquotes */
+blockquote { margin: 9pt 1.6em; font-style: italic; }
+blockquote p { text-indent: 0; }
+
+/* tables — booktabs style */
+table { width: 100%; border-collapse: collapse; margin: 11pt 0 13pt; font-size: 9.1pt; line-height: 1.32; break-inside: auto; }
+thead { display: table-header-group; }
+th { font-weight: bold; text-align: left; border-top: 1.1pt solid #111; border-bottom: 0.6pt solid #111; padding: 4pt 5pt; }
+td { padding: 3.4pt 5pt; text-align: left; vertical-align: top; border: none; }
+tbody tr:last-child td { border-bottom: 1.1pt solid #111; }
+tr { break-inside: avoid; }
+
+/* horizontal rules inside chapters = scene breaks */
+hr { border: none; text-align: center; margin: 13pt 0; }
+hr::after { content: "•  •  •"; color: #666; font-size: 9pt; letter-spacing: 0.4em; }
+
+/* keep openers tidy */
+.ch-open + p::first-letter { }
