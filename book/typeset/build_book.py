@@ -105,7 +105,7 @@ for kind, title, body in segs:
 def toc_block(pg):
     out = []
     for lvl, lbl, tgt in toc:
-        attr = f' data-pg="{pg(tgt)}"' if pg else ""
+        attr = f' data-pg="{pg(tgt)}"' if pg else ' data-pg="888"' 
         cls = {"part": "toc-part", "ch": "toc-ch", "sp": "toc-sp"}[lvl]
         out.append(f'<div class="{cls}"><a href="#{tgt}"{attr}>{lbl}</a></div>')
     return "".join(out)
@@ -156,10 +156,26 @@ FOLIO = "@bottom-center { content: counter(page); font-family: 'Bitstream Charte
 opener_css = "".join(f"@page :nth({n}) {{ {KILL} {FOLIO} }}\n" for n in opener_pages)
 opener_css += "".join(f"@page :nth({n}) {{ {KILL} }}\n" for n in divider_pages + front_pages)
 
-# pass 2
-html2 = document(toc_block(display)).replace("</head>", f"<style>{opener_css}</style></head>")
-open(OUT_HTML, "w").write(html2)
-HTML(OUT_HTML).write_pdf(OUT_PDF)
+# pass 2+: iterate to a fixed point so :nth() kills match real pagination
+for it in range(4):
+    html2 = document(toc_block(display)).replace("</head>", f"<style>{opener_css}</style></head>")
+    open(OUT_HTML, "w").write(html2)
+    doc2 = HTML(OUT_HTML).render()
+    new_anchor = {}
+    for i, page in enumerate(doc2.pages):
+        for name in page.anchors:
+            new_anchor.setdefault(name, i + 1)
+    if all(new_anchor.get(t) == anchor_page.get(t) for _, _, t in toc):
+        print(f"pagination stable after iteration {it+1}")
+        break
+    anchor_page = new_anchor
+    opener_pages = sorted(anchor_page[t] for lvl, _, t in toc if lvl in ("ch", "sp"))
+    divider_pages = sorted(anchor_page[t] for lvl, _, t in toc if lvl == "part")
+    first_main = min(anchor_page[t] for _, _, t in toc)
+    front_pages = list(range(1, first_main))
+    opener_css = "".join(f"@page :nth({n}) {{ {KILL} {FOLIO} }}\n" for n in opener_pages)
+    opener_css += "".join(f"@page :nth({n}) {{ {KILL} }}\n" for n in divider_pages + front_pages)
+doc2.write_pdf(OUT_PDF)
 info = subprocess.run(["pdfinfo", OUT_PDF], capture_output=True, text=True).stdout
 print(chapnum, "chapters,", partnum, "parts; opener pages:", opener_pages)
 print([l for l in info.splitlines() if l.startswith(("Pages", "Page size"))])

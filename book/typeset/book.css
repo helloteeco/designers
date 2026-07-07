@@ -60,7 +60,7 @@ a { color: inherit; text-decoration: none; }
 .part-intro p { text-align: justify; }
 .part-intro p:first-child { text-indent: 0; }
 
-.chapter { break-before: right; }
+.chapter { break-before: page; }
 
 /* chapter opener */
 .ch-open { margin: 0.85in 0 0.5in; break-after: avoid; }
