@@ -55,8 +55,8 @@ REAL NUMBERS FROM THE BOOK (use these, never invent new ones, never round them):
 - The 5-year wealth model in Chapter 18: $300K deployed becomes about $434,810
   of cash-equivalent wealth, and $7,600 a month of passive income by year 5.
 - Students: Steph and Kevin made about $100K in under 7 months on a home they
-  have never visited, net a steady $7K a month across the pair, and are pacing
-  past $20K a month in gross bookings this summer. Diane
+  bought sight unseen, net a steady $7K a month across the pair, and cleared
+  $24K in June and $27K in July in gross bookings this summer. Diane
   and Jon's Gatewood Orchard grossed $81,210.38 in year one, fully done for you.
 - Catchphrases: "Booked is not banked." "Famous markets pay you in bragging
   rights. Boring markets pay you in cash."
@@ -669,7 +669,7 @@ Jeff
 | Day 2 (Wed) | Repost every tag. Launch team nudge in the group. Fulfill receipts. | "24 hours in: here is the rank chart. You did this." | Rank climb screenshot, first review screenshot (with reviewer permission), poll: "own an STR yet?" |
 | Day 3 (Thu) | First podcast episode drops; push it. Fulfill receipts. | "Ryu put $15K down at 0% interest. Year one: $83,937.81. His whole deal is in Chapter 9." | Podcast clip, behind-the-scenes of launch, "4 days left at $0.99" |
 | Day 4 (Fri) | Story Q&A box; answer on camera. Resend Day 1 email to non-openers with a new subject. | "I printed my actual P&L. 52 cents of every dollar goes to running the house. Here is the page." | Question box, 3 answer videos, P&L close-up, buy link |
-| Day 5 (Sat) | Badge push day: rally the team, repost tags. Fulfill receipts. | "Steph and Kevin have never visited their first cabin. It made about $100K in under 7 months." | Badge-or-rank screenshot, student screenshots, "weekend read for $0.99" |
+| Day 5 (Sat) | Badge push day: rally the team, repost tags. Fulfill receipts. | "Steph and Kevin bought their first rental sight unseen. It made about $100K in under 7 months." | Badge-or-rank screenshot, student screenshots, "weekend read for $0.99" |
 | Day 6 (Sun) | Reader photo repost day. Prep last-call email. | "The night a guest's kid set a lamp on fire, I was 2,000 miles away. Chapter 15 is what happened next." | Reader photos, lamp-fire teaser, "last full day tomorrow" |
 | Day 7 (Mon) | Last-call email at 8 a.m. Bonus stack closes midnight. Thank-you story at night. Screenshot every category rank before bed. | "Last day at $0.99. Tomorrow it goes to $7.99. Everything in it stays true either way." | Countdown, final rank screenshots, thank-you video, "the Bonus Pack stays free forever" |
 
@@ -734,7 +734,7 @@ a checklist I can execute in the Ads console in 15 minutes.
 9. Booked is not banked. The difference is the whole game.
 10. Famous markets pay you in bragging rights. Boring markets pay you in cash.
 11. Steph and Kevin have never visited their first cabin. It made about $100K in under 7 months.
-12. Steph and Kevin net a steady $7K a month across two homes and are pacing past $20K a month in gross bookings this summer.
+12. Steph and Kevin net a steady $7K a month across two homes and cleared $24K in June and $27K in July in gross bookings this summer.
 13. Diane and Jon outsourced every piece of it and still grossed $81,210.38 in year one.
 14. $300K deployed. Five years. About $434,810 of wealth. Here is the row-by-row math.
 15. $7,600 a month by year 5 on three to four cabins. That is the whole plan.

@@ -419,7 +419,7 @@ Messaging, pricing, cleaners: about $100 a month in software and smart-device su
 
 I learned this step the hard way. In the beginning a friend managed my properties, and honestly, it was a relief. When Myla and I took over managing them ourselves, every guest message landed on her phone, we were slow to answer, and it stayed stressful until we built real systems. Today I run multiple cabins in about three hours a week per property.
 
-My students Steph and Kevin net a steady $7K a month across two homes with this same playbook; by this summer they were pacing past $20K a month in gross bookings. The operations part of this book teaches this step: automation, remote teams, and what happens after launch.
+My students Steph and Kevin net a steady $7K a month across two homes with this same playbook; their best month this summer topped $27K in gross bookings. The operations part of this book teaches this step: automation, remote teams, and what happens after launch.
 
 ### The Method, in Order
 
@@ -819,7 +819,7 @@ We'll spend all of Part 5 on this. That's the A in RURAL, Aesthetics That Win th
 
 Once you find your first winner, you'll start to trust the process. Your team-building gets faster. Your furnishing plan becomes copy-and-paste. Your pricing strategy scales. Your cleaner, photographer, and systems become templates with new addresses.
 
-My students Steph and Kevin, the couple you met in Chapter 3, net a steady $7K a month across two homes as the conservative number. Their first home, a $275K house in Greenville, South Carolina, grossed about $100K in under seven months, and this summer they're pacing past $20K a month in gross bookings across the pair. And the second property is always easier than the first, because by then the playbook exists.
+My students Steph and Kevin, the couple you met in Chapter 3, net a steady $7K a month across two homes. Their first home, a $275K house in Greenville, South Carolina, grossed about $100K in under seven months, and this summer they pushed past a $27K month in gross bookings across the pair. And the second property is always easier than the first, because by then the playbook exists.
 
 You're no longer guessing. You're running a real estate business with replicable steps, not an emotional side hustle.
 
@@ -3228,13 +3228,13 @@ Delegation is not abdication. Review weekly, then go live your life.
 
 ### The First Domino in Motion: Steph and Kevin
 
-Steph and Kevin came into our community as students. These days they help teach it. They're a married couple. Stephanie runs her own business full-time, and Kevin earns a high income at his W2. If you're reading this book, one of them probably looks a lot like you.
+Steph and Kevin came into our community as students. These days they know the playbook well enough to support their peers. They're a married couple. Stephanie is an entrepreneur, and Kevin earns a high income at his W2. If you're reading this book, one of them probably looks a lot like you.
 
-Their first home is in Greenville, South Carolina. They bought it for $275K and have never visited it. Not for the closing, not for the setup, not once since. It made them about $100K gross in under seven months, and it reappraised around $450K after the redesign.
+Their first home is in Greenville, South Carolina. They bought it for $275K sight unseen. It generated about $100K in bookings in under seven months, and it reappraised at $451K after strategic renovations and redesign.
 
-Home number two, in Oak Hill, West Virginia, tested them the way Myla's tested her. Contractor problems, delays, a timeline that kept slipping. They got it finished just before peak season, made it look beautiful, and it became a top performer.
+Home number two, in Oak Hill, West Virginia, tested them the way Myla's tested her. Contractor problems, delays, a timeline that kept slipping. They got it finished just before peak season, made it look beautiful, and it became a top performer. In its peak July it grossed about $17,300 on its own.
 
-They self-manage both. I helped them find and design the homes, and they took it from there; I don't touch the operation. As I write this, they're on pace for more than $20K a month in gross bookings across the two properties in June and July, and they're buying home number three.
+They self-manage both. I helped them find and design the homes, but I don't touch the operations; they took it from there. As I write this, they've cleared $24K in June and $27K in July in gross bookings across the two properties, and they're in the process of buying home number three.
 
 I mention them for one reason. They prove that moving beats waiting to be perfect. They launched, they learned, and they kept going. The first domino tips the second. Then it tips a third.
 
@@ -3531,7 +3531,7 @@ No hypotheticals here. These are people who ran the letters, in order. You've me
 
 **Ryu's Lookout Lodge:** $83,937.81 gross in year one on 0% seller financing with $15K down, the strongest of our three West Virginia homes. Sometimes the best leverage is a motivated seller, not a bank.
 
-**Steph and Kevin:** two self-managed homes and a third on the way. Their first, which they've never visited, made about $100K in under seven months, and this June and July they're pacing past $20K a month across the pair.
+**Steph and Kevin:** two self-managed homes and a third on the way. Their first, bought sight unseen, made about $100K in under seven months, and this June and July they averaged more than $25,500 a month across the pair.
 
 **Diane and Jon's Gatewood Orchard:** $81,210.38 gross in year one as fully done-for-you clients. The model works even when you outsource every piece of it.
 
@@ -3832,7 +3832,7 @@ This strategy isn't bulletproof. But run well, it holds up better than most real
 ### Chapter Summary
 
 - Five focused years and a real asset beat twenty distracted ones.
-- Real operators, real results: Myla's $103K cash cabin that grossed $150K in two years, Gatehouse Getaway's $72K first year on $20K down, Ryu's $83,937.81 first year on a 0% seller loan, Steph and Kevin pacing past $20K a month this summer, and Diane and Jon's hands-off $81,210.38 first year.
+- Real operators, real results: Myla's $103K cash cabin that grossed $150K in two years, Gatehouse Getaway's $72K first year on $20K down, Ryu's $83,937.81 first year on a 0% seller loan, Steph and Kevin averaging more than $25K a month this summer, and Diane and Jon's hands-off $81,210.38 first year.
 - The Wealth Equation: net cash flow + appreciation + tax savings, with debt service already paid inside the net. Run it before you buy anything.
 - The 5-year model: $300K deployed becomes roughly $435K of cash-equivalent wealth, with tax deductions counted at their 32%-bracket cash value. The $312K of cash flow builds the machine first and retires the setup cards; year six is when the run rate becomes yours.
 - Rural STRs win on return and control; they lose on liquidity and labor. That's the trade, and it's worth it for the right person.
