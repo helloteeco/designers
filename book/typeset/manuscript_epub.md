@@ -40,7 +40,7 @@ Pharmacy school had been my dream my whole life. I had the support of family and
 
 And I quickly learned that being good at your job comes with a cost. You become in demand, and your schedule stops being yours.
 
-That moment on the highway did what years of burnout hadn't. I decided, right then, that I was going to change my life.
+Which brings me back to that highway. Years of burnout hadn't been enough to make me move. A phone full of holidays I was about to miss did it in one glance. I decided, right there on the drive, that I was going to change my life.
 
 I tried everything first. I picked up side hustles, flipped bikes, day traded stocks, dabbled in crypto. I was desperate to find another way to make money and build passive income, and I burned through one idea after another. Every failure pointed me back to the same answer: real estate.
 
