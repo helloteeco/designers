@@ -86,7 +86,7 @@ This is debt service plus operating expenses: mortgage, insurance, utilities, cl
 - Property 3: ~$38,000/year
 - Property 4: ~$36,000/year
 
-One flag first. Property 1 nets about 16% on its deployed capital here, well under Chapter 8's 30% Floor, and that's deliberate. The floor screens a deal at its moderate projection. This model runs at conservative realized numbers, the returns you accept, not the ones you screen for.
+One flag first. Property 1 nets about 16% on its deployed capital here, a hair under Chapter 8's 18% Floor, and that's deliberate. The floor screens a deal before you buy, at the conservative underwrite. This model runs at conservative realized numbers, the returns you accept after a rough year, not the ones you screen for.
 
 What follows is a hypothetical model, not a projection of your results. It assumes every purchase, refinance, and stabilization lands on schedule; in real life many will not, results vary widely, and some investors lose money. Nothing here is a promise of income.
 
@@ -255,7 +255,7 @@ Expected outcome: $3,000–$5,000 a month net across two properties. Two income 
 
 **Year 3: Optimize and Reinvest**
 
-Tighten the machine and grow without adding hours. Master PriceLabs and seasonal pricing. Explore direct booking and Furnished Finder to fill slow seasons. Don't inflate your lifestyle; fund deal three from the portfolio's own cash flow. (A Property 2 refi or DSCR loan stays in your back pocket for speed.)
+Tighten the machine and grow without adding hours. Master your pricing tool and seasonal pricing. Explore direct booking and Furnished Finder to fill slow seasons. Don't inflate your lifestyle; fund deal three from the portfolio's own cash flow. (A Property 2 refi or DSCR loan stays in your back pocket for speed.)
 
 - Property 3: $200K purchase, funded by saved portfolio cash flow, setup on 0% cards
 - Combined net cash flow: $66,000 stabilized

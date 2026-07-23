@@ -169,7 +169,7 @@ If your deal needs 80%+ occupancy to cash flow, you bought a slot machine. The b
 
 **Deal-Killer #2: Single-season market.**
 Ski-only. Lake-only. Foliage-only. If 60–80% of revenue lands in one three-month season, you bleed the other nine months. That's a seasonal rental, not a year-round business.
-*Walk test:* Pull the monthly revenue distribution from AirDNA. Any month at zero bookings? Skip it. Three consecutive months under 5% of annual revenue? Skip it.
+*Walk test:* Pull the monthly revenue distribution from your market-data tool. Any month at zero bookings? Skip it. Three consecutive months under 5% of annual revenue? Skip it.
 
 **Deal-Killer #3: An HOA that restricts — or could restrict — STRs.**
 Some covenants prohibit short-term rentals outright. Some cap rental days or require written approval. Some say nothing, which means they can try to restrict later, once Airbnbs multiply on the street.
@@ -181,7 +181,7 @@ Many rural properties run on septic instead of city sewer and wells instead of c
 
 **Deal-Killer #5: Over-saturated market with declining ADR.**
 In some areas, every other home is on Airbnb. Supply exceeds demand and the average daily rate (ADR) sinks year over year.
-*Walk test:* Use AirDNA's trendline feature. Check ADR and occupancy over the past 12–24 months. If either is trending down, especially with 200+ active listings in a small market, skip it. You want tight supply and stable or rising ADR. That's the R in RURAL doing its job before the U ever gets tested.
+*Walk test:* Use your tool's trendline feature. Check ADR and occupancy over the past 12–24 months. If either is trending down, especially with 200+ active listings in a small market, skip it. You want tight supply and stable or rising ADR. That's the R in RURAL doing its job before the U ever gets tested.
 
 ### Real Example: Myla's Deal in Oak Hill, West Virginia
 
@@ -195,7 +195,7 @@ My wife Myla bought a rural home in Oak Hill, WV, and her deal shows every piece
 
 That renovation number is bigger than it should have been. The contractors botched roughly 90 days of work, and in the end Myla, our friends, and I finished the house ourselves. A straightforward project turned into about four months, and the overruns are baked into that $70K. I'm telling you this on purpose, because the deal still worked.
 
-The home appraised at about $240,000 after the reno, more than double what she paid. Over her first two years it grossed $150,000, roughly a $75,000-a-year pace, and her best single month was $10,195. Gross, before expenses. Still wins. And she ran it with no property manager, just a local cleaner, a virtual assistant, and software, holding a 4.95-star rating across her first 70+ stays.
+The home appraised at about $240,000 after the reno, more than double what she paid. Over her first two years it grossed $150,000, roughly a $75,000-a-year pace, and her best single month was $10,195. Gross, before expenses. Still wins. And she ran it herself, just a local cleaner, a virtual assistant, and software, with reviews strong enough to keep the calendar full.
 
 On cash flow alone, a heavy-renovation deal like this returns capital more slowly at first than a turnkey stack; she put real money into that rehab. The reason it's one of the best deals I've watched happen shows up in the two layers most beginners never model: taxes and equity.
 

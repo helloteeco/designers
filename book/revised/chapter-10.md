@@ -109,7 +109,7 @@ And who books four nights instead of two? Groups. The reunion that finally synce
 
 ### Minimum Stays and Orphan Nights: Capacity's Pricing Rules
 
-If revenue per turn is the metric, minimum-stay rules are how you enforce it. Set these in your pricing tool (I use PriceLabs) and let them run:
+If revenue per turn is the metric, minimum-stay rules are how you enforce it. Set these in your pricing tool and let them run:
 
 1. **Weekends: 3-night minimum.** Weekend demand is strong enough to support the rule. This one setting reduces turnover burnout and raises what every booking nets you.
 2. **Weekdays: 2-night minimum.** Softer demand, softer rule. But still no 1-night turnovers as the default.

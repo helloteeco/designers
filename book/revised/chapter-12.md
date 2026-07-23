@@ -75,7 +75,7 @@ A durability note before the specifics, because the platform retunes its search 
 
 1. **New listing boost.** New listings get priority visibility when they launch. This one isn't a host rumor; Airbnb's own search documentation says new listings get an immediate boost in search to help them get booked before they have reviews. This is your golden window, when the algorithm hands you free traffic. Use it aggressively. Launch pricing 15–20% below market, give early guests amazing experiences, and rack up reviews fast.
 
-2. **Response time (under 1 hour = ranking boost).** Airbnb measures how fast you respond to inquiries. Under an hour earns a ranking boost; 12+ hours sinks you. During your first two weeks, respond within 15 minutes to everything. Set up auto-responses through an automation platform like Hospitable immediately so you're always "responding" fast, even while you sleep.
+2. **Response time (under 1 hour = ranking boost).** Airbnb measures how fast you respond to inquiries. Under an hour earns a ranking boost; 12+ hours sinks you. During your first two weeks, respond within 15 minutes to everything. Set up auto-responses through your automation platform immediately so you're always "responding" fast, even while you sleep.
 
 3. **Instant Book premium.** Properties with Instant Book enabled rank higher than those requiring host approval. Turn it on from day one. Airbnb no longer lets hosts set their own security deposits, so your protection is AirCover (Airbnb's built-in damage program), your own STR insurance policy, and the guest requirements you set for who can Instant Book.
 

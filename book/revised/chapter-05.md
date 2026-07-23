@@ -166,7 +166,7 @@ You met Ryu at the top of this chapter. This is his complete process, twelve wee
 
 **Weeks 3–4:** Researched the towns near those parks. Pulled Zillow and Redfin pricing. Estimated acquisition costs. Narrowed to 2 towns.
 
-**Weeks 5–6:** Ran AirDNA analysis. Tracked occupancy and ADR for 20+ listings in each market. Mapped both markets onto the Saturation Curve and determined which one was earlier in the curve.
+**Weeks 5–6:** Ran the market-data analysis. Tracked occupancy and ADR for 20+ listings in each market. Mapped both markets onto the Saturation Curve and determined which one was earlier in the curve.
 
 **Week 7:** Identified actual properties. Found a $170K home with seller-financing potential: solid fundamentals, good bones, fixable cosmetics.
 
