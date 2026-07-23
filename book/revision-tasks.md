@@ -48,7 +48,7 @@
 **Problems:** Myla PM story wrong (needs the in-house-company canon); phantom "$100K purchase/$78K" line must die; first-year rating claim → ~4.7 (or time-anchored truth); team today = 3 VAs + AI + director; 90,000+ two-year growth stat; setup-trip story (Myla, her brother, local friends, ~4 homes, Lookout Lodge + a client's) told accurately.
 **Done when:** PM story matches the canon block above · $100K purchase gone · ratings claim honest · setup trip accurate and vivid · acceptance test passes.
 
-### ☐ 03 · Chapter 3 — The RURAL Method
+### ☑ 03 · Chapter 3 — The RURAL Method — DONE (revised/chapter-03.md, July 23; taken before Ch 4 per Jeff)
 **Problems:** the $103K-vs-JT comparison confuses readers (needs a small side-by-side table); bathroom-sqft adjustment missing from the R rule; "delegation is not abdication" undefined.
 **Done when:** comparison lands in one glance (table) · R rule includes the −150 sqft/bathroom step, matching Ch 10 · both jargon terms defined in plain words · acceptance test passes.
 
