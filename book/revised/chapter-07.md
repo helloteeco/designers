@@ -179,7 +179,7 @@ Structure it one of two ways:
 
 **Find private lenders through:** friends and family with idle cash in savings or retirement accounts, one-to-one conversations with people you already know (not public posts), and hard money brokers (many offer "soft" private options).
 
-**Pro tip:** Show them your research and revenue projections: AirDNA, a comps dashboard like Rabbu, actual comps (comparable properties, meaning what similar homes nearby really earn). A confident, numbers-based pitch makes you more trustworthy than any stockbroker. Chapter 9 gives you the full pitch deck, page by page. Before you raise a dollar this way, read the legal note in Chapter 9's pitch-deck section; private notes can be securities.
+**Pro tip:** Show them your research and revenue projections: your market-data tools, actual comps (comparable properties, meaning what similar homes nearby really earn). A confident, numbers-based pitch makes you more trustworthy than any stockbroker. Chapter 9 gives you the full pitch deck, page by page. Before you raise a dollar this way, read the legal note in Chapter 9's pitch-deck section; private notes can be securities.
 
 ### Path 5: 0% APR Credit Cards to Cover Setup Costs
 

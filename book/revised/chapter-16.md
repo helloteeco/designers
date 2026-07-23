@@ -90,7 +90,7 @@ Stability doesn't mean "set it and forget it." It means your systems work so you
 
 - Update minimum-stay rules based on demand
 - Adjust for upcoming holidays or local events
-- Review your PriceLabs base price
+- Review your pricing tool's base price
 
 **Team touchpoints** (via Slack or app, 10 minutes)
 

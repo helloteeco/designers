@@ -1,6 +1,6 @@
-# Airbnb Anywhere
+# Vacation Rentals That Pay You
 
-**The 5-Step RURAL Method for Buying Vacation Rentals That Pay You — From Towns You've Never Visited**
+**The 5-Step RURAL Method for Building Cash Flow From Small Towns You've Never Visited**
 
 Jeff Chheuy
 
@@ -141,6 +141,8 @@ Part 1, the three chapters you're about to read, tears down the assumptions keep
 
 Read it straight through the first time. After that, use it like a field manual; each part stands on its own when you're mid-deal and need the checklist.
 
+I've also kept this book deliberately lean. The deep worksheets, calculators, checklists, and step-by-step SOPs live in the free Bonus Pack at the back of this book, so the chapters stay readable and the depth is there the day you need it. When a chapter points you to the Bonus Pack, that's where to go.
+
 One more thing before we start. Every number in this book is real: real purchase prices, real revenue, real mortgage payments, from my own properties, my business partner's, and my students'. When a figure is gross revenue rather than take-home profit, I'll say so, because booked is not banked: gross revenue is what guests paid, not what you keep. I'd rather under-promise on paper and let the deals over-deliver in your bank account.
 
 Here are the five letters. By the end of this book you'll know them by heart:
@@ -257,6 +259,8 @@ In fact, I'd rather you didn't quit. Your W2 is the engine that qualifies you fo
 You need a strategy. A repeatable one, with numbers you can check and steps in a fixed order. That's what the rest of this book is.
 
 The next chapter shows you where this strategy works best, and I'll warn you now that it's probably nowhere near you.
+
+**Before the next chapter, do one thing.** Run your own five-year math, honestly, on one sheet of paper: your salary times five, minus taxes, minus what your lifestyle actually spends. Look at the number you'd keep. That number is the case for everything that follows.
 
 ### Chapter Summary
 
@@ -1530,7 +1534,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 - Spring/fall months: $100–150/month
 - Annual total: ($400 × 3) + ($300 × 3) + ($125 × 6) = about $2,850/year, not the $1,800 a $150 average would suggest.
 
-**Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy. A homeowners policy typically voids your coverage the moment you host paying guests, and the platforms' damage programs are not insurance; they're goodwill programs with fine print. STR-specific policies on rural cabins with hot tubs and wood stoves commonly run $2,500–$6,000 a year. Get a bindable quote (one you could accept on the spot, not a website estimate) during due diligence.
+**Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy. A homeowners policy typically voids your coverage the moment you host paying guests, and the platforms' damage programs are not insurance; they're goodwill programs with fine print. STR-specific policies on rural cabins with hot tubs and wood stoves commonly run $2,500–$6,000 a year. Get a real quote during due diligence: a firm number you could accept on the spot, not a website estimate.
 
 **Property taxes and lodging taxes.** The seller's tax bill reflects the seller's assessment. Many counties reassess at your purchase price, so model property taxes on what you're paying, not on the number in the listing. Some counties reclassify short-term rentals at commercial rates. And before you list, call the county and ask about occupancy or lodging tax, the per-night tax on short stays. Platforms collect it in some counties and not in others, and "I didn't know" doesn't erase the bill.
 
@@ -1542,7 +1546,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 - Furniture replacement: 8–10% of furniture cost annually
 - Platform fees: whichever schedule you're actually on, 3% old-style or roughly 15% host-only, off the gross
 - Seasonal utilities: actual high/low months, not averages
-- STR insurance: a bindable STR-policy quote, not the homeowners number
+- STR insurance: a firm STR-policy quote, not the homeowners number
 - Property and lodging taxes: modeled on your purchase price and your county's actual rules
 - Capex sinking fund: 1–2% of home value per year, minimum $10K liquid per property
 - Emergency reserve: 5–10% of gross revenue. Not optional.
@@ -1876,7 +1880,7 @@ You met these five in Chapter 7. Here's how to actually play each one.
 Best for W2 earners with good credit who'll use the property personally and rent it the rest of the year. Chapter 7 covered the requirements. *Strategy note:* use this for your first one or two properties, pair it with 0% cards for furnishing, and keep your reserves intact. It's often the cheapest way in.
 
 **Path 2: Seller Financing.**
-The most overlooked funding tool, and one of the most powerful in rural markets. You saw it in this chapter's opening. Ryu's $15K-down, 0%-interest, $1,000-a-month deal existed because he offered a retiring owner exactly what he wanted. *Where to find it:* search "seller financing," "owner will carry," "rent to own," and "contract for deed"; filter Zillow for 90+ days on market; check Craigslist and Facebook Marketplace; go deeper with tools like BatchLeads or PropStream. *How to ask:* frame it around what they want (speed, price, or income), then put the Three Offer Strategy from earlier in this chapter in front of them and let them choose.
+The most overlooked funding tool, and one of the most powerful in rural markets. You saw it in this chapter's opening. Ryu's $15K-down, 0%-interest, $1,000-a-month deal existed because he offered a retiring owner exactly what he wanted. *Where to find it:* search "seller financing," "owner will carry," "rent to own," and "contract for deed"; filter Zillow for 90+ days on market; check Craigslist and Facebook Marketplace; go deeper with a dedicated lead-generation tool (search "real estate seller lead software" for the current options). *How to ask:* frame it around what they want (speed, price, or income), then put the Three Offer Strategy from earlier in this chapter in front of them and let them choose.
 
 **Path 3: DSCR Loan (15% down).**
 Best for entrepreneurs and the self-employed who want to scale without W2 verification. Approval rides on the property's ability to pay for itself; lenders want projected income of at least 1.0–1.25x the monthly payment. Requirements: 15% down, 660–700+ credit, an STR income projection from a market-data tool or a property manager, and a location that doesn't restrict STRs. Here's what it looks like in real life. My friends Diane and Jon, full-service clients of ours, bought a home called Gatewood Orchard in the same corner of West Virginia as our other properties. It wasn't a true vacation home, so the 10% second-home loan was off the table; they went with a typical 15%-down DSCR program that underwrites short-term-rental rent (the right answer to the question in Chapter 7) and put $37,370 down on a $230,000 purchase, with a $5,000 seller credit negotiated in. One year later it reappraised at $322,000, and it grossed $81,210.38 in its first year live. If you're busy, notice that they hired Teeco for the whole thing (finding the home, design, setup, coaching, and management). *Strategy note:* this is the go-to for scaling past deal one, or for a home that doesn't qualify as a vacation home. Combine with 0% cards and you can be all-in for under $50K. Watch the costs, though. DSCR money runs a point or more above vacation-home rates (a full percentage point of interest), and 2–3 points at closing aren't unusual (a closing point is an upfront fee of 1% of the loan). Rates move; that premium is the part that doesn't.
@@ -1885,7 +1889,7 @@ Best for entrepreneurs and the self-employed who want to scale without W2 verifi
 Best for down payments and furnishing when your network has idle cash. Nobody's begging here. You're offering someone an 8–12% return backed by real property, far better than their savings account or bonds. The ask, without the cringe: "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly — much better than letting it sit in savings." Back it with the pitch deck above. This works best with family and friends who trust you, coworkers with idle savings, local professionals, and retirees with rollover funds. And you're not recruiting a hundred rich people. One or two with idle cash and a fear of inflation will do. Always get it in writing (a promissory note plus terms), and for larger loans, record a lien or deed of trust.
 
 **Path 5: 0% Interest Business Credit Cards.**
-Best for covering the $20K–$40K+ furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards inside the same day or two, starting with Chase (historically the strictest issuer about recent applications). Each application is its own hard pull either way; the tight window just means issuer two hasn't seen issuer one's inquiry yet. Nothing dishonest about the timing, but know that's what you're doing. If any application asks about other recent or pending credit requests, answer truthfully, even if it costs you the approval. And read each cardmember agreement before you rely on it: intro-APR terms, business-use requirements, and balance-transfer rules vary by issuer and change without notice. This is not lending or credit advice. Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: spread across Chase, Amex, Capital One, and US Bank, and request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). LLC or sole proprietor, either way, one business can carry 3–5 cards from different issuers at $10K–$30K+ each.
+Best for covering a big slice of the furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt. *Strategy notes:* apply for 2–3 cards inside the same day or two, starting with Chase (historically the strictest issuer about recent applications). Each application is its own hard pull either way; the tight window just means issuer two hasn't seen issuer one's inquiry yet. Nothing dishonest about the timing, but know that's what you're doing. If any application asks about other recent or pending credit requests, answer truthfully, even if it costs you the approval. And read each cardmember agreement before you rely on it: intro-APR terms, business-use requirements, and balance-transfer rules vary by issuer and change without notice. This is not lending or credit advice. Use the cards for high-ticket items: beds, sofas, appliances, fire pits. Set a reminder 60 days before each 0% promo ends and aim to pay off within 9–12 months from Airbnb income. Scaling hack: spread across Chase, Amex, Capital One, and US Bank, and request limit increases every 3–6 months (usually a soft pull if you haven't missed a payment). LLC or sole proprietor, either way, one business can carry 3–5 cards from different issuers at $10K–$30K+ each.
 
 ### Creative Combinations That Stretch Every Dollar
 
@@ -1976,6 +1980,8 @@ You close that gap with furniture, not square footage:
 - **Pull-out sofas.** The living room works all day and sleeps two at night. Buy a good one; a bad pull-out generates bad reviews.
 
 Stack those moves in that same two-bedroom cabin and watch the count climb. The two queens sleep four. Add a trundle and you're at six. Make the sofa a pull-out and you're at eight. Run the rule to check: 1,000 square feet minus 150 for the bath plans as 850, so eight or nine sleepers is right on target. If the rooms can take it, a queen-over-queen bunk pushes you to ten.
+
+I love the queen-over-queen hack, so let me push it to its ceiling — literally. If a room is genuinely big enough (a safe layout, a ceiling high enough for the top sleeper to sit up, no fan waiting at head height), two queen-over-queen bunks put eight people in a single room. Run single queen-over-queens across a 3-bedroom home and it sleeps twelve. Two cautions ride along. Keep one bunk-free bedroom, because some guests just don't do ladders. And check your insurer's rules and the local code before you build up: in Columbus, Georgia, we once had to pull a bunk out of a home because the ceiling height didn't allow it. Measure first, then stack.
 
 That little cabin is the floor, the smallest home the math still works on, not the home I'm telling you to buy. My minimum spec is 3 bedrooms, 2 baths, and 1,500 square feet. What I actually recommend is 4 bedrooms, 3 baths, and 2,000-plus square feet. I never suggest a 2 bed, 1 bath.
 

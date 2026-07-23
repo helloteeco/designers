@@ -91,6 +91,8 @@ You need a strategy. A repeatable one, with numbers you can check and steps in a
 
 The next chapter shows you where this strategy works best, and I'll warn you now that it's probably nowhere near you.
 
+**Before the next chapter, do one thing.** Run your own five-year math, honestly, on one sheet of paper: your salary times five, minus taxes, minus what your lifestyle actually spends. Look at the number you'd keep. That number is the case for everything that follows.
+
 ### Chapter Summary
 
 - A six-figure salary is a leash. The more you earn, the more your life organizes itself around keeping it.

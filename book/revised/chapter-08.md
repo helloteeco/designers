@@ -140,7 +140,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 - Spring/fall months: $100–150/month
 - Annual total: ($400 × 3) + ($300 × 3) + ($125 × 6) = about $2,850/year, not the $1,800 a $150 average would suggest.
 
-**Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy. A homeowners policy typically voids your coverage the moment you host paying guests, and the platforms' damage programs are not insurance; they're goodwill programs with fine print. STR-specific policies on rural cabins with hot tubs and wood stoves commonly run $2,500–$6,000 a year. Get a bindable quote (one you could accept on the spot, not a website estimate) during due diligence.
+**Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy. A homeowners policy typically voids your coverage the moment you host paying guests, and the platforms' damage programs are not insurance; they're goodwill programs with fine print. STR-specific policies on rural cabins with hot tubs and wood stoves commonly run $2,500–$6,000 a year. Get a real quote during due diligence: a firm number you could accept on the spot, not a website estimate.
 
 **Property taxes and lodging taxes.** The seller's tax bill reflects the seller's assessment. Many counties reassess at your purchase price, so model property taxes on what you're paying, not on the number in the listing. Some counties reclassify short-term rentals at commercial rates. And before you list, call the county and ask about occupancy or lodging tax, the per-night tax on short stays. Platforms collect it in some counties and not in others, and "I didn't know" doesn't erase the bill.
 
@@ -152,7 +152,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 - Furniture replacement: 8–10% of furniture cost annually
 - Platform fees: whichever schedule you're actually on, 3% old-style or roughly 15% host-only, off the gross
 - Seasonal utilities: actual high/low months, not averages
-- STR insurance: a bindable STR-policy quote, not the homeowners number
+- STR insurance: a firm STR-policy quote, not the homeowners number
 - Property and lodging taxes: modeled on your purchase price and your county's actual rules
 - Capex sinking fund: 1–2% of home value per year, minimum $10K liquid per property
 - Emergency reserve: 5–10% of gross revenue. Not optional.
