@@ -9,7 +9,7 @@
 
 - **Cash-on-cash floor: 18%+** everywhere. The "30% floor" dies. (Anchor: Ch 8.)
 - **Occupancy: target 60–70%, framed as a tuning signal** — never a pass/fail floor. Kill stray "40–60%" and "50–70%."
-- **Rating standard: 4.7+ holdable** (4.9+ = great but hard). Historical 4.95 facts stay only if time-anchored.
+- **Rating standard: 4.8+ is the standard; 4.7 is a warning sign; below 4.7 = get better.** Many students hold 4.9+. No unverified rating claims.
 - **Evergreen over dated dollars.** Hard numbers become frameworks + "how to find today's number"; any number that stays gets a time-stamp ("as of July 2026").
 - **Named tools out of the body.** In-body: generic ("search for X"). All product names (edge.teeco.co, photolab, PriceLabs, Turno, Hospitable, Steadily/Proper, HostGPO, Helix, Loom, Bravo VA, StayFi…) move to ONE back-of-book "Jeff's current stack" page + Bonus.
 - **AI framing: "use an AI agent"** as a framework — never a Claude ad, never an AI book.
@@ -23,10 +23,10 @@
 ## ✅ Conflicts — RULED by Jeff (July 23, 2026; these are now canon)
 
 1. **Joshua Tree = $355K.** Feedback's "155k" was a voice-to-text garble.
-2. **Lookout Lodge is Ryu's home.** Ryu did NOT assemble it himself — he hired a team to do it remotely; Jeff's crew (the Myla setup trip) came in near the end to help with photos and small stuff. The setup-trip story must say "helped finish," never "assembled his home."
+2. **Lookout Lodge is Ryu's home — refined canon (July 23):** at that time Ryu was one of Jeff's FIRST STUDENTS (now business partner). Ryu hired a team to set his home up remotely. On the same setup trip, Jeff — with his brother-in-law (Myla's brother), whom Jeff hired to come out and help — was assembling about four homes; they pitched in near the end on Ryu's with photos and small stuff, and Lookout Lodge was the first to finish. Never say Ryu assembled it himself; never say Jeff's crew assembled it fully either.
 3. **Myla's cabin:** $70K+ in year one (no exact figure — never print a fake-precise one), $150K+ over two years. Flagship stat stays "$150K over its first two years"; use "cleared $70K in year one" where a year-one figure is needed — including as the REPLACEMENT for the phantom "$100K purchase / $78K" line in Ch 4.
 4. **Stephanie is described exactly as her signed feedback says:** "Stephanie is an entrepreneur." No Teeco-full-time mention, no job title for Kevin beyond "high income at his W2."
-5. **Myla's rating: the 4.95 claim comes OUT.** Her Airbnb isn't 4.95 (ratings dipped as they scaled). New treatment everywhere: 4.7+ is the holdable standard for a great Airbnb; many students hold 4.9+; Myla's review-obsession story stays but without the 4.95 number. (Her advance-pages doc must be updated to match before she signs.)
+5. **Myla's rating: the 4.95 claim comes OUT** (ratings dipped as they scaled). **Rating standard (updated ruling): 4.8+ is the standard. 4.7 is a warning sign. Below 4.7 means get better.** Many students hold 4.9+. Myla's review-obsession story stays without the 4.95. (Her advance-pages doc must be updated before she signs.)
 
 ## Open decisions (defaults I'll use unless you say otherwise)
 
@@ -40,7 +40,7 @@
 
 ## The queue (priority order)
 
-### ☐ 01 · Chapter 2 — The Quiet Goldmine  *(heaviest factual load; sets the tier system everything else leans on)*
+### ☑ 01 · Chapter 2 — The Quiet Goldmine — DONE (revised/chapter-02.md, July 23)  *(heaviest factual load; sets the tier system everything else leans on)*
 **Problems:** market-tool line (AirDNA → edge.teeco.co now / rabbu then, rest to Bonus); missing JT context (later visits, permitting story, no longer recommends JT/Yucca); Tier 3 examples wrong (→ Mammoth Cave, Daniel Boone NF, Cuyahoga Valley; drop Arkansas); Tier 4 band wrong (→ ~$100K–$350K, often $100K–$250K, buys less often, research-backed thesis); tier bands need 2022–2024 time-stamps + "top-quartile operator" honesty + ~40–50 homes since, avg ~$7K/mo; "price bands" undefined; "can't outspend someone who isn't counting" technically wrong; "$100K all-in either way" needs the real nuance (down payment, competition, seller-financing access, downside/upside asymmetry); PUCK "catch-up" line unclear; "nobody posts a photo…" closer is cheesy; "$250K with 10% down" underfunds reality; "you don't need millions, you need a friend" update.
 **Done when:** every tier fact matches feedback §6 and carries a time-stamp · JT story has the visit/permitting/no-longer-recommend context · both flagged lines rewritten accurately · chapter passes the 8-point acceptance test.
 
