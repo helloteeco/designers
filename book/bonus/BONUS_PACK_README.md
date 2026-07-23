@@ -12,7 +12,9 @@ These are done and included here:
 2. **Market Scoring Template** — covers the scoring half of "Puck Principle Checklist and Market-Scoring Template" (Ch 5)
 3. **Puck Principle Checklist** — covers the other half (Ch 2)
 4. **Deal Analysis Calculator** — supports the Ch 8 "running the numbers" promise; pairs with your Deal Analysis Video
-5. **Real Estate Numbers Cheat Sheet** — covers "Real Estate Numbers Cheat Sheet" (Ch 8)
+5. **Real Estate Numbers Cheat Sheet** — covers "Real Estate Numbers Cheat Sheet" (Ch 8) — now also holds the full expense-range table moved out of Ch 8 in the finish-rate pass
+5b. **The 5-Year Wealth Model** (PDF) + **5-Year Wealth Model** (xlsx) — NEW (July 23 finish-rate pass): the full math moved out of Ch 17–18 (wealth equation components, year-by-year scenario, stacking mechanics, refi checklist, full exit playbook, the Ch 9 month-by-month stack) plus the working spreadsheet the book promises; the xlsx reproduces the book's $434,810 exactly and recalculates from editable assumptions
+5c. **Private Money Pitch Deck Template** — NEW (July 23 finish-rate pass): the full seven-page deck moved out of Ch 9; fixes what was previously a broken promise (the book referenced a Bonus Pack deck that didn't exist)
 6. **Guest Message Templates** — covers the guest-messaging piece of "The SOP Pack" (Ch 6, 14)
 7. **Cleaning and Turnover SOP** — covers "Cleaning Checklist" (Ch 14, 16) and the cleaning-SOP piece of the SOP Pack
 8. **Emergency Escalation Card** — covers the emergency-protocols piece of the SOP Pack (Ch 15's Escalation Matrix)

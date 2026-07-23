@@ -77,65 +77,18 @@ One legal line before you pitch anyone. Promissory notes and profit-sharing arra
 
 Most beginners are terrified of asking for money. They think it's unprofessional, or that only seasoned investors get to do it. Wrong on both counts. People with idle cash are hunting for better returns than the next-to-nothing their bank pays. Show them a deal returning 8–12% annually, secured by real property, and you're solving *their* problem.
 
-Here's exactly what to include when you approach a private lender. Seven pages, no fluff.
+The deck is seven pages, no fluff, and here's each page's one job:
 
-**Page 1: Executive Summary.**
-One page, in plain numbers: "I'm buying a $250,000 short-term rental in [market] with the following terms: $25,000 down, $225,000 first-mortgage financing, projected $55,000 in annual revenue on conservative comps. I'm seeking $20,000 in private financing to cover furnishing and setup: 18 months at 10% annual interest, secured by a second deed of trust on the property. That returns you $3,000 in interest income, paid monthly or quarterly, with full repayment by month 18 from the property's cash flow or a refinance."
+1. **Executive summary.** The deal and the ask in plain numbers: "I'm buying a $250,000 short-term rental in [market]. I'm seeking $20,000 for furnishing and setup: 18 months at 10% annual interest, secured by a second deed of trust. In plain English, that's a recorded claim on the house, behind the bank's, so if everything fails you're in line to be paid from the sale."
+2. **Market analysis** (two pages). Screenshots from your data tools: comps, occupancy history, the ADR trend. Show them the data is real, not your gut feeling.
+3. **Deal summary.** Price, down payment, mortgage, what their capital buys, and the timeline: close in 45 days, guests within 90.
+4. **Returns for the lender.** The rate, the payment schedule, and the total interest in dollars — $3,000 over 18 months on that $20,000.
+5. **Risk mitigation.** Insurance, six months of reserves (show the actual number), your personal guarantee, and your research.
+6. **Exit strategy.** How they get repaid: at this deal's numbers the cash flow alone earns the principal inside a year, with a refinance as the backup. Paid in full by month 18 either way.
 
-A second deed of trust, in plain English, is a recorded claim on the house, behind the bank's, so if everything fails your lender is in line to be paid from the sale.
+And the message the whole deck exists to deliver: "You're not betting on me. You're betting on the property's cash flow and the equity I'm building. Worst case, the property still has value and you have a lien against it."
 
-**Pages 2–3: Market Analysis.**
-Prove the demand:
-
-- Market-tool comps: what similar properties rent for
-- Historical occupancy
-- The ADR trend, whether rising, falling, or stable
-- How revenue distributes across the months
-
-Use actual screenshots from your data tools. Show them the data is real, not your gut feeling.
-
-**Page 4: Deal Summary.**
-
-- Purchase price: $250,000
-- Down payment: $25,000 (10%)
-- First mortgage: $225,000
-- Their capital request: $20,000 private loan
-- Total capital deployed: $45,000
-- Property control: 100% ownership; lender holds a second lien
-- Timeline: 45 days to close, 30 days of light renovation if needed, guests within 90 days
-- Expected revenue: $55,000/year, conservative projections
-- Expected expenses, mortgage included: ~$30,000/year
-- Net cash flow: ~$25,000/year after all costs
-
-**Page 5: Returns for the Lender.**
-
-- Loan amount: $20,000
-- Term: 18 months
-- Rate: 10% annual
-- Repayment: monthly interest ($167/month) or quarterly ($500/quarter), plus lump-sum principal at refinance
-- Total interest earned: $3,000 over 18 months
-- Security: second deed of trust on a $250,000 property
-- Exit: repayment from cash flow, or a refinance at month 12–18 once the property is seasoned (lender-speak for having months of real income history on the books)
-
-**Page 6: Risk Mitigation.**
-Show how you protect their money:
-
-- Insurance: full hazard coverage plus liability
-- Reserves: six months of operating costs, with the actual number shown
-- Personal guarantee: you're personally liable
-- Track record: past properties, cash flow, and exits, if you have them
-- Preparation: your market research and operating plan
-
-**Page 7: Exit Strategy.**
-Show them how they get paid back:
-
-- Months 0–3: property launches and generates revenue
-- Month 6: cash flow covering the interest payments with room to spare
-- Months 12–18: repay the $20,000 principal, from cash flow alone (at ~$25K/year net, the property earns it inside a year) or from a refinance if the appraisal supports one
-- Either way, the lender is paid in full by month 18
-- You keep the property and the cash flow
-
-The key message: "You're not betting on me. You're betting on the property's cash flow and the equity I'm building. Worst case, the property still has value and you have a lien against it."
+The full deck — every page written out with the numbers templated, ready to copy — is the Private Money Pitch Deck Template in the Bonus Pack at the back of this book.
 
 ### The Negotiation Playbook
 
@@ -214,20 +167,7 @@ The smartest investors stretch $1 like it's $10, not by cutting corners but by s
 - **Total property value: $250,000**
 - **Control: full ownership**
 
-Now run a bigger one, start to finish. Take a $280K home and $40K saved. Here's the stack:
-
-- Vacation-home loan, 10% down: $28,000
-- Closing costs after a negotiated $4,000 seller credit: $3,000
-- 0% business credit cards: $20,000 for furniture and setup
-- Cash remaining for reserves: $9,000
-
-First-year projections on solid comps: $70,000 in revenue, about $40,000 in expenses including the mortgage, and roughly $30,000 in net cash flow.
-
-Be honest about that $9,000, though. It sits below the six-months-of-PITI floor from Chapter 7, so either bring a bigger cushion to closing or send the first months of cash flow to reserves before anything else and accept a slower second deal.
-
-Run that projection forward. By month 18, the card balances are cleared and reserves sit around $25,000. By month 24, reserves are past $40,000: enough for the down payment on property #2, with cushion left over. By month 30, you control two properties, the cash flow has already paid back more than the $40K you started with, and you're rebuilding the reserve for property #3.
-
-That's $500K+ in real estate controlled, debt paid down, and cash generated, all starting from a $40K savings account and a plan. No windfall made that work; a stack did.
+Run a stack like that forward and the compounding moves fast: cards cleared around month 18, reserves rebuilt past a second down payment by month 24, property #2 by month 30. That's $500K+ of real estate controlled, starting from a $40K savings account and a plan. No windfall makes that work; a stack does. (The month-by-month version, with every balance traced, is in the Bonus Pack.)
 
 ### Getting In the Game
 

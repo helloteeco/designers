@@ -120,6 +120,30 @@ Every chapter now follows the same spine: cold open scene → one named principl
 
 ---
 
+## The Finish-Rate Pass (July 23, evening) — your "boring chapters" feedback, executed for real
+
+You asked whether your "this chapter is so boring I can't read it" notes were addressed or dismissed. Honest answer: they were captured, but only half-executed — the first revision simplified the heavy chapters in place instead of moving the math out, because "move whole sections to Bonuses" was still an open question waiting on your green light. Your latest message is that green light. Here's what moved:
+
+**Chapter 18 (your worst offender — "pure numbers, I cannot read a single word").** The Wealth Equation's four-component breakdown and the year-by-year five-year scenario — which the chapter told TWICE, once as annual blocks and once as a narrated year-by-year — are now ONE five-row table plus one honest paragraph plus a five-line "What Each Year Feels Like" list. The exit menu compressed from a page per exit to four two-sentence doors. The chapter dropped from roughly 3,900 words to about 2,700, and every story, receipt, and framework survived.
+
+**Chapter 17 ("I started seeing the numbers and got overwhelmed already").** The Years 1–3 stacking walkthrough is now one three-row table plus the refi warning. The refi playbook's document checklists compressed to prose with the full checklist in the Bonus Pack.
+
+**Chapter 9.** The seven-page pitch deck (previously written out page by page, list by list) is now seven one-line jobs plus the key message. The second worked funding stack compressed to three sentences. Bonus: this fixed a real broken promise — the book referenced a "full pitch deck in the Bonus Pack" that didn't exist. Now it does.
+
+**Chapter 8.** The seasonal-utilities arithmetic and the ten-line expense-range table moved to the Real Estate Numbers Cheat Sheet; the chapter keeps the one rule (pad, don't pinch).
+
+**Where it all went — three new Bonus Pack items, built and branded:**
+
+1. **The 5-Year Wealth Model** (7-page Teeco-branded PDF): every number that left Chapters 17, 18, 9, with full traceability, the refi checklist, and the complete exit playbook including depreciation recapture and 1031 mechanics.
+2. **5-Year Wealth Model.xlsx**: the working spreadsheet the book has promised all along — editable assumptions, live formulas, and it reproduces the book's $434,810 exactly.
+3. **Private Money Pitch Deck Template** (branded PDF): all seven pages written out with the ask scripted.
+
+**Net effect:** the main read dropped from 64,646 to 61,831 words — about 2,800 words of arithmetic wall removed — while the Bonus Pack got deeper. Em-dashes re-thinned to 153. The consistency audit still passes clean (and the sweep caught two "bindable quote" leftovers hiding in the Bonus Pack itself).
+
+**What I deliberately did NOT do:** Chapter 13 kept its numbers — they're shopping guidance a reader uses mid-launch, not derivations — and Chapter 5's frameworks stayed, since you never flagged it and it's the book's engine room. If either still reads heavy to you on this pass, say the word and I'll cut deeper.
+
+---
+
 ## Still waiting on you (nothing blocks reading the draft)
 
 1. **The "90,000+ over two years" growth stat** — I never printed it because the unit is ambiguous (guests? nights? dollars?). Tell me what it counts and where you want it, and I'll add it.

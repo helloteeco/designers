@@ -53,7 +53,7 @@ Cut revenue, not just occupancy: in a real downturn hosts cut nightly rates to d
 
 > **(Annual Revenue × 0.6) − Annual Mortgage = Annual Cash Flow**
 
-The 0.6 assumes 40% of revenue goes to cleaning, cohosting, utilities, maintenance, supplies, insurance, and taxes. Insurance sits inside that 40%, but get the bindable quote anyway; a high premium eats the cushion. Example: $70K revenue − $28K expenses − $21,600 mortgage = roughly $20,400 a year. Clear at least $1,500 a month net, move forward.
+The 0.6 assumes 40% of revenue goes to cleaning, cohosting, utilities, maintenance, supplies, insurance, and taxes. Insurance sits inside that 40%, but get a firm quote anyway — a number the insurer will actually issue; a high premium eats the cushion. Example: $70K revenue − $28K expenses − $21,600 mortgage = roughly $20,400 a year. Clear at least $1,500 a month net, move forward.
 
 **The leverage ratio**
 
@@ -90,3 +90,24 @@ Net means net: the cash flow term already has every expense and every mortgage p
 ---
 
 **The underwriting bar, memorized:** occupancy of 60–70% at least, and whatever nightly rate it takes to pencil at least $70K a year. If a deal only works at 80%+ occupancy, skip it — you're buying stress. Don't chase the highest percentage return. Chase the fastest capital recovery.
+
+---
+
+## Realistic expense ranges (rural STR, $150K–$300K property)
+
+The actual ranges we use, built from running remote Airbnbs across multiple states. Pad your expenses, don't pinch them — if the deal still works at the upper end of every range, it's a home run.
+
+| Expense | Typical range |
+|---|---|
+| Mortgage (PITI) | $1,200–$2,400/month |
+| Cleaning and turnover | $100–$150/stay (1–3BR), $150–$400 larger homes |
+| Utilities (all) | $150–$300/month, higher in winter with heating |
+| STR insurance | $210–$500/month ($2,500–$6,000/year for the cabins the book targets) |
+| Property taxes | $50–$200/month, if not escrowed |
+| Maintenance and repairs | $150–$300/month |
+| Restocking and amenities | $100–$200/month |
+| Software and tools | $50–$100/month |
+| Property manager (if used) | $500–$1,500/month |
+| Lawn and snow (seasonal) | $200–$500/month |
+
+Budget seasonal utilities at the high months, not the average: winter $400–$500 (propane/heating), summer $300–$400 (AC), shoulder seasons $100–$150 — about $2,850 a year on a typical cabin, not the $1,800 a $150 average would suggest.

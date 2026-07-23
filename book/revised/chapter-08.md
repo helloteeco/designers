@@ -133,12 +133,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 
 **Platform fees.** The guest's total ends up about the same either way; what changes is which line of your statement the fee comes from. So find the schedule you're actually on and haircut your gross before you model anything else. Airbnb has been shifting hosts from the old 3% host fee to a host-only fee of roughly 15% (guests no longer pay a separate service fee under that structure, so listed prices absorb it), and Vrbo runs about a 5% commission plus a 3% payment processing fee. These moved on hosts recently, so check the current schedule before you underwrite, and set your nightly price with the fee in mind.
 
-**Seasonal utility spikes.** Your average utility bill might be $150/month. But winter propane can triple it, and summer AC can double or triple it. Budget for high-season costs, not averages:
-
-- Winter months: $400–500/month (propane/heating)
-- Summer months: $300–400/month (AC)
-- Spring/fall months: $100–150/month
-- Annual total: ($400 × 3) + ($300 × 3) + ($125 × 6) = about $2,850/year, not the $1,800 a $150 average would suggest.
+**Seasonal utility spikes.** Your average utility bill might be $150 a month. Winter propane can triple it and summer AC can double it, so budget the high-season months, not the average: on a typical cabin that's roughly $2,850 a year, not the $1,800 the average suggests.
 
 **Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy. A homeowners policy typically voids your coverage the moment you host paying guests, and the platforms' damage programs are not insurance; they're goodwill programs with fine print. STR-specific policies on rural cabins with hot tubs and wood stoves commonly run $2,500–$6,000 a year. Get a real quote during due diligence: a firm number you could accept on the spot, not a website estimate.
 
@@ -228,20 +223,7 @@ Want it done for you? Grab the deal calculators from the Bonus Pack (back of the
 
 ### Realistic Expense Ranges for Rural Airbnbs
 
-It's easy to underestimate, especially in rural markets. Here are the actual ranges I use, built from running remote Airbnbs across multiple states, for a $150,000–$300,000 property:
-
-- Mortgage (PITI): $1,200–$2,400/month
-- Cleaning and turnover: $100–$150/stay for smaller homes (1–3BR), $150–$400 for larger homes
-- Utilities (all): $150–$300/month, higher in winter with heating
-- STR insurance: $210–$500/month ($2,500–$6,000 a year for the cabins this book targets)
-- Property taxes: $50–$200/month, if not escrowed
-- Maintenance and repairs: $150–$300/month
-- Restocking and amenities: $100–$200/month
-- Software and tools: $50–$100/month
-- Property manager (if used): $500–$1,500/month
-- Lawn and snow (seasonal): $200–$500/month
-
-**Pad your expenses. Don't pinch them.** If the deal still works at the upper end of every range, it's a home run.
+It's easy to underestimate, especially in rural markets. Rather than march you through ten more line items here, I've put my full expense-range table (the actual numbers I use for a $150,000–$300,000 property, mortgage to snow removal) in the Real Estate Numbers Cheat Sheet in the Bonus Pack. Take the one rule with you: **pad your expenses, don't pinch them.** If the deal still works at the upper end of every range, it's a home run.
 
 ### The Page I'd Show a Skeptic
 

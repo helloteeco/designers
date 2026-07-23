@@ -20,7 +20,7 @@ Companion to Chapter 13 of the book. Print it, tape it to the wall, check the bo
 
 - [ ] **Line up contractor bids.** Paint, flooring, handyman work — bids in hand so work begins Day 1 after closing.
 - [ ] **Complete your inspections** inside the contingency period.
-- [ ] **Get a bindable STR insurance quote before your inspection contingency expires.** A quote you could accept on the spot, not a website estimate. Homeowners policies void the moment you host; a rural cabin with a hot tub often quotes $2,500–$6,000 a year. A high premium eats the deal's cushion — know the number before you're locked in.
+- [ ] **Get a firm STR insurance quote before your inspection contingency expires.** A real number you could accept on the spot, not a website estimate. Homeowners policies void the moment you host; a rural cabin with a hot tub often quotes $2,500–$6,000 a year. A high premium eats the deal's cushion — know the number before you're locked in.
 - [ ] **Pre-schedule utilities, internet, and insurance.** Set start dates for electric, water, WiFi, and the STR policy to activate right after closing.
 - [ ] **Create a project calendar.** Block the first six weeks post-close plus a buffer. Plan the order: light reno → furniture install → photos → listing → launch.
 - [ ] **Prep your furniture financing.** For many hosts that's a 0% intro-APR card — **but only if you'll clear it inside the intro window. A bridge, not a balance.** Chapter 7's rules apply.

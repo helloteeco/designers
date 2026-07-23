@@ -8,70 +8,21 @@ That wire is the moment most real estate books gloss over. One property was neve
 
 This is the Portfolio Compound Effect. Property 1 generates cash flow, which funds Property 2's down payment. Property 2's tax benefits shelter Property 1's income. Both properties' equity grows, which enables a cash-out refi, which funds Property 3. Each round is bigger than the last.
 
-### The Stacking Math: Years One Through Three
+### The Stacking Math, in One Table
 
-Here's the model I teach. It assumes you buy with a loan, since that's how most people start; Myla ran her version with a cash purchase, and you'll see her BRRRR in the Refi Playbook later in this chapter. The numbers are deliberately conservative. I'll use round numbers to keep the math clean; the 4-bed homes I target today mostly run $250K–$350K, so scale the figures to your market.
+Here's the model I teach, compressed to its shape. It assumes you buy with a loan, since that's how most people start (Myla ran her version with a cash purchase, and you'll see her BRRRR in the Refi Playbook below). The numbers are deliberately conservative and rounded; the 4-bed homes I target today mostly run $250K–$350K, so scale to your market. The fully worked version (every down payment, every card balance, every write-off) lives in the Bonus Pack as a spreadsheet you can load your own numbers into.
 
-**Year 1: One property in motion**
+| Year | The move | Combined net cash flow | New wealth that year |
+|---|---|---|---|
+| 1 | Buy and stabilize Property 1 | $24,000 | ~$34,500 |
+| 2 | Refi Property 1 + saved cash flow buy Property 2 | $42,000 | ~$60,500 |
+| 3 | The pair's cash flow funds Property 3 | ~$60,000 | ~$85,000–$95,000 |
 
-- 1 property, worth $250K after renovation
-- Invested capital: $150K (down payment, renovation, setup)
-- Monthly net cash flow: $2,000 (conservative, after all expenses)
-- Annual net cash flow: $24,000
-- Equity created through appreciation: ~$5,000 (a conservative 2% rural rate)
-- Tax write-offs from depreciation: ~$5,500 a year (straight-line on a $150K building value at the residential rate; a short-stay rental may sit on the slower 39-year schedule, so treat this as the high end. That's the deduction, not cash)
-- **Year 1 total wealth increase: $34,500** (cash flow + equity + tax shelter)
+Read the right column top to bottom. Year 1 created $34K of net wealth (cash flow plus equity plus tax shelter). Year 3 created nearly triple that. Nothing about the properties changed — what changed is that each one started feeding the next, the tax benefits stacked, and every equity position supported a bigger refinancing round.
 
-Chapter 18 uses the fuller $12K first-year deduction, counts it at cash value, and pencils appreciation at 2.5% instead of the 2% here. That's why its Year 1 lands a few hundred dollars away from this one. The shape is what matters.
+One warning before you build your life around the Year 2 refinance. A cash-out loan underwritten on short-term-rental income typically tops out at 70–75% of the appraised value, not the clean 80% a spreadsheet assumes, and most lenders want "seasoning", meaning a full year of ownership and income, before they'll count it. If the appraisal comes in soft or the new rate makes the payment ugly, you don't refi. You keep the loan you have, keep saving the cash flow, and buy property two a year later. The plan slows. It doesn't break, because the house keeps paying you while you wait. Never make deal two dependent on deal one's appraisal.
 
-**Year 2: Stack Property 2, funded by Property 1**
-
-Here's where it gets interesting. After 12 months of stabilization, you refinance Property 1:
-
-- Original loan: $150K
-- New appraisal: $250K, which is $100K above the original loan
-- Cash-out refi at 80% LTV (loan-to-value, meaning the new loan can be up to 80% of what the home appraises for): $200K borrowed. That 80 is the model's best case; more in a moment
-- After paying off the original loan: $50K pulled out, call it $45K after closing costs
-- Plus the $24,000 of year-one cash flow you saved: **~$69K available for Property 2**
-
-One warning before you build your life around that refinance. The model assumes a clean 80% LTV, and lenders don't always hand you that. A cash-out loan underwritten on short-term rental income typically tops out at 70–75% of the appraised value, and most lenders want "seasoning," meaning a full year of ownership and income before they'll count it. If the appraisal comes in soft or the new rate makes the payment ugly, you don't refi. You keep the loan you have, keep saving the cash flow, and buy property two a year later. The plan slows. It doesn't break, because the house keeps paying you while you wait. Never make deal two dependent on deal one's appraisal.
-
-Property 2 is purchased at $200K. Instead of the minimum 10% down ($20K), your war chest lets you put down $40K, cutting your financing need and your year-two debt service. (You could also do minimum down and keep more cash in reserve. Both work; this model runs the bigger-down version.)
-
-- Property 2 purchase: $200K
-- Down payment: $40K (refi proceeds + saved cash flow)
-- Renovation and setup: $70K (stacked on 0% business cards; Chapter 18 shows those balances getting retired from cash flow, in the open)
-- Financing needed: $160K instead of $180K
-
-Result at the end of Year 2:
-
-- Property 1: $24,000 cash flow + $5,500 tax write-off + $5,000 equity = $34,500 of impact
-- Property 2: $18,000 cash flow (conservative, lower debt service) + $4,000 write-off + $4,000 equity = $26,000 of impact
-- Combined net cash flow: $42,000 a year
-- **Year 2 total wealth increase: ~$60,500**
-
-**Year 3: Multiply it again**
-
-By Year 3, Property 2 is stabilized. Now you hold:
-
-- Property 1: $250K value, $200K of debt after the refi, generating $24K a year net
-- Property 2: $200K value, $160K of debt, generating $18K a year net
-- Combined cash flow: $3,500 a month
-- Combined write-offs: ~$9,500 a year
-- Combined asset value: $450K, roughly $90K of it your equity
-
-Once Property 2 stabilizes, you have two ways to fund Property 3. You can refi it or take a DSCR loan (Debt Service Coverage Ratio: a loan qualified on the property's income, not your W2) and pull another $35K–$40K, since that $70K renovation is what moves the appraisal. Or skip the appraisal gamble and fund the deal from the $42,000 a year the pair already throws off. Either way, Property 3 looks the same: $200K purchase, $25K down, $70K setup, $175K financed. The five-year plan in the next chapter runs the cash-flow version.
-
-Result at the end of Year 3:
-
-- 3 properties generating ~$60,000 a year net after all expenses and debt service
-- Tax benefits across the portfolio: ~$14,000 a year
-- Combined portfolio value: $650K+
-- **Year 3 total wealth increase: ~$85,000–$95,000**
-
-Notice what happened. Year 1 created $34K of net wealth. Year 2 created $60K. Year 3 created $85K–$95K. Each property funds the next, the tax benefits stack, and every equity position supports a bigger refinancing round.
-
-Compare that to linear thinking. Save $2,000 a month from your W2 for five years and you have $120K. In this model, you pass $150K of compounded wealth by year three, while collecting $60K a year.
+Compare all of this to linear thinking. Save $2,000 a month from your W2 for five years and you have $120K. In this model, you pass $150K of compounded wealth by year three, while collecting $60K a year.
 
 Each deal funds the next, and that difference between adding and compounding is the whole game.
 
@@ -143,46 +94,15 @@ Amateurs optimize everything at once. Pros optimize in order.
 
 The strategic cash-out refinance is one of the biggest wealth accelerators available to a rural STR operator. It converts the equity you created into capital for the next deal, without selling the asset that's paying you.
 
-Here's the step-by-step process. Myla ran a version of it on her Oak Hill cabin, and I'll show you how hers played out at the end.
-
 **The timeline: months 10–14 after launch.** Start talking to lenders at month 10 so you're ready to close around month 12. Most lenders want to see 12 months of stabilized STR income, and starting early gives you time to shop.
 
-**Month 10: Gather your documentation**
+**What you'll need, and what lenders look for.** The paperwork is a morning's work: a year of bank statements showing the deposits, a profit-and-loss for the property, an appraisal, and your current mortgage statement. What the lender actually cares about is three things. Twelve months of consistent STR income. A property that earns comfortably more than the new loan payment; they usually want the income about 20% higher than the payment (they call that a 1.2). And an appraisal high enough to justify the cash-out, at the 70–75% loan-to-value that STR income typically supports. A 680+ credit score works; 740+ gets better terms. The full document checklist is in the Bonus Pack.
 
-- Full 12 months of bank statements showing Airbnb deposits
-- A profit-and-loss statement for the property
-- A current appraisal, or budget $400–$600 for a new one
-- Current mortgage statement (if you bought with cash, like Myla did, there's no old loan to pay off; the new loan minus closing costs is your cash out)
-- Title commitment
+**Shop three lenders, minimum.** Not every lender does STR refis. The ones that do: DSCR lenders, portfolio lenders (local and regional banks), STR-specialist mortgage shops, and credit unions. Compare rate, points (typically 1–3), the LTV offered, closing timeline, and prepayment penalties (you want none).
 
-**What lenders look for:**
+**How Myla's refi played out.** Hers was the pure BRRRR version. Because she'd bought in cash, the new loan at 75–80% of the ~$240K appraisal went almost entirely into her pocket, and she kept the house and its bookings. I don't remember the exact loan figure. What I do remember is what the wire did. It repaid her aunt, and it put the majority of Myla's own cash back in her hands.
 
-- **12 months of STR income history.** This is the big one: consistent bookings, seasonal patterns, stability.
-- **DSCR (Debt Service Coverage Ratio):** the plain-English version — does the property earn comfortably more than its loan payment? Lenders usually want the income around 20% higher than the payment (they call that a 1.2).
-- **Appraisal:** the property must appraise high enough to justify the cash-out. Most cash-out quotes on STR income land at 70–75% LTV; some lenders stretch to 80, but don't build the plan on it.
-- **Credit score:** 680+ works; 740+ gets better terms. A year of on-time payments usually helps yours.
-
-**Months 11–12: Shop lenders and lock terms**
-
-Not every lender does STR refis. Some specialize in them: DSCR lenders (income-based, not W2-based), portfolio lenders (local and regional banks with flexibility), STR-specialist mortgage shops, and credit unions.
-
-Get three quotes and compare:
-
-- Interest rate (rates move; what matters is how your three quotes compare)
-- Points (typically 1–3)
-- LTV offered (70%, 75%, occasionally 80)
-- Closing timeline (30–45 days is typical)
-- Prepayment penalties (you want none)
-
-**How Myla's refi played out**
-
-Hers was the pure BRRRR version. Because she'd bought in cash, the new loan at 75–80% of the ~$240K appraisal went almost entirely into her pocket, and she kept the house and its bookings.
-
-I don't remember the exact loan figure. What I do remember is what the wire did. It repaid her aunt, and it put the majority of Myla's own cash back in her hands.
-
-**Strategic deployment**
-
-This is where most operators fail. They take the refi proceeds and inflate their lifestyle: new car, vacation, kitchen remodel at home. Wrong move.
+**Strategic deployment.** This is where most operators fail. They take the refi proceeds and inflate their lifestyle: new car, vacation, kitchen remodel at home. Wrong move.
 
 The cabin that ate four months of Myla's life ended up funding her next deal.
 
@@ -193,11 +113,11 @@ Deploy it strategically, not emotionally. Every dollar you pull out should fund 
 ### Chapter Summary
 
 - The wealth is in the sequence: each property funds and accelerates the next.
-- The stacking math compounds: ~$34K of new wealth in Year 1, ~$60K in Year 2, ~$85K–$95K in Year 3.
+- The stacking math compounds: ~$34K of new wealth in Year 1, ~$60K in Year 2, ~$85K–$95K in Year 3. The fully worked model is in the Bonus Pack.
 - Optimize in order: reviews, then pricing, then amenities, then listing, then platforms.
 - Nothing outranks your rating. 4.8+ is the holdable standard, 4.7 is a warning light, and reviews are your moat; treat every complaint as a task.
 - Pricing discipline alone adds 10–20% to annual revenue without spending a dollar on the property.
-- The Refi Playbook runs months 10–14: document everything, shop three lenders, and show income comfortably above the payment. Expect 70–75% LTV on STR income, not a clean 80.
+- The Refi Playbook runs months 10–14: a year of income history, three lender quotes, and income comfortably above the new payment. Expect 70–75% LTV on STR income, not a clean 80.
 - If the refi doesn't come, save the cash flow and buy a year later. The plan slows; it doesn't break. Never make deal two dependent on deal one's appraisal.
 - Myla's refi was the pure BRRRR: cash purchase, new loan at 75–80% of the appraisal, most of her capital back. And she still owns the asset.
 - The refi isn't free money. It's leverage. Deploy it into the next deal, not your lifestyle.
