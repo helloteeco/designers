@@ -120,7 +120,7 @@ Why it works for remote Airbnb investing:
 - Rental income isn't required to qualify, even if you plan to Airbnb it when you're away.
 - Personal use is required, not optional. Most second-home loans expect you to actually use the property (generally 14 days a year), and you should plan to. Your guests can far outnumber your visits, but telling a lender you'll use a home you never intend to visit is occupancy fraud. Use the house. It's your vacation home, and that's the whole point of the loan.
 
-Two more pieces of homework before you sign. Tell your loan officer you intend to rent the home when you're not there, and read the second-home rider, the mortgage page that spells out what you can do with the property. Some riders restrict rentals in year one or prohibit management agreements. If yours conflicts with your plan (including this book's advice to start with a property manager), price the DSCR loan in Path 3 instead. Lender and agency guidelines on second-home use change; confirm current requirements with your lender in writing.
+Two more pieces of homework before you sign. Tell your loan officer you intend to rent the home when you're not there, and read the second-home rider, the mortgage page that spells out what you can do with the property. Some riders restrict rentals in year one or prohibit management agreements. If yours conflicts with your plan (say, a rider that prohibits management agreements when you intend to use one), price the DSCR loan in Path 3 instead. Lender and agency guidelines on second-home use change; confirm current requirements with your lender in writing.
 
 This path gives you the best rates and the lowest down payment while remaining fully legal for short-term rental use.
 
