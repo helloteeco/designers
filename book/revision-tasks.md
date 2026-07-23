@@ -20,13 +20,13 @@
 - **AI-tells scrub (feedback §8)** on every chapter as it's revised.
 - **Bathroom rule everywhere it appears:** subtract 150 sqft per bathroom from total sqft BEFORE the 1-guest-per-100-sqft rule (Ch 3 + Ch 10 must match).
 
-## ⚠️ Conflicts I will NOT silently resolve (need your one-line rulings)
+## ✅ Conflicts — RULED by Jeff (July 23, 2026; these are now canon)
 
-1. **Joshua Tree price.** Feedback §6 says "155k JT" — everywhere else (book, canon, your own corrections) says **$355K**. I treat 155k as a voice-to-text garble and keep $355K. Confirm.
-2. **Lookout Lodge owner.** Book + Ryu's signed advance pages: **Ryu's home**. Feedback setup-trip note calls it "Jeff's WV Airbnb." I keep it Ryu's (the setup trip can still include assembling it). Confirm.
-3. **Myla's numbers.** Feedback says "the 103k cabin did ~70k in year one." Book (and her advance pages, not yet signed) says $150K across first two years / $10,195 best month. Is "~$70K year one" the same house's year-one number (fine, can coexist) — or a correction to her totals?
-4. **Stephanie's description.** Steph's SIGNED July 20 edit: "Stephanie is an entrepreneur." Feedback: "Stephanie now works at Teeco full-time; Kevin is a deputy, retiring soon." The signed version wins unless you and Steph want the update (Kevin's job title is also a privacy step up — their current signed doc says only "high income at his W2"). Rule?
-5. **Myla's 4.95.** Keep as the time-anchored historical fact ("her first 70+ stays") alongside the new 4.7+ standard — or replace with 4.7 everywhere? My recommendation: keep the anchored fact, teach the 4.7+ standard.
+1. **Joshua Tree = $355K.** Feedback's "155k" was a voice-to-text garble.
+2. **Lookout Lodge is Ryu's home.** Ryu did NOT assemble it himself — he hired a team to do it remotely; Jeff's crew (the Myla setup trip) came in near the end to help with photos and small stuff. The setup-trip story must say "helped finish," never "assembled his home."
+3. **Myla's cabin:** $70K+ in year one (no exact figure — never print a fake-precise one), $150K+ over two years. Flagship stat stays "$150K over its first two years"; use "cleared $70K in year one" where a year-one figure is needed — including as the REPLACEMENT for the phantom "$100K purchase / $78K" line in Ch 4.
+4. **Stephanie is described exactly as her signed feedback says:** "Stephanie is an entrepreneur." No Teeco-full-time mention, no job title for Kevin beyond "high income at his W2."
+5. **Myla's rating: the 4.95 claim comes OUT.** Her Airbnb isn't 4.95 (ratings dipped as they scaled). New treatment everywhere: 4.7+ is the holdable standard for a great Airbnb; many students hold 4.9+; Myla's review-obsession story stays but without the 4.95 number. (Her advance-pages doc must be updated to match before she signs.)
 
 ## Open decisions (defaults I'll use unless you say otherwise)
 
