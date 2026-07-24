@@ -132,7 +132,19 @@ Here's what it looked like when I pulled the data in mid-2026. Treat these as sn
 
 One warning from my own edit of this book. The first draft of this section carried numbers I hadn't rechecked, and when I finally pulled the current data, the supply figures had moved by hundreds of listings. Markets move. Pull the data yourself, the week you're deciding, and trust nothing older than a season.
 
-So is the window shut? The easy era is. From 2021 through 2024, the years when three of the case studies in this book bought their homes, you could get a lot wrong in these markets and still win. Today your competition includes professional operators running the same screens you just learned. The method still works, for one stubborn reason. Most buyers still skip the order of operations. They fall in love with a house first and check the market after, if at all. Do the first step first and you can be the tenth-smartest buyer in the market and still come out fine. But demand extra margin now. Underwrite on trailing-twelve-month comps only, meaning what similar listings actually earned over the past twelve months, and treat every revenue-tool projection with suspicion — the estimators are weaker than their confident interfaces suggest, mine included. One honest caution, though: if you haircut every number and hug the most pessimistic percentile, you will never buy anything. The fix isn't more pessimism; it's better data. The best source is a person — a friend, host, or property manager in the market who can tell you "a 4/3 near you did $120K in four or five months." If you don't have that contact yet, use the manual method, free and surprisingly accurate: open a comparable listing on Airbnb and count how many nights are booked over the next few weeks (watch for owner-blocked or long-term-blocked stretches, which look like bookings but aren't). Then estimate its ADR by taking a full month of its revenue — say roughly $10K in October — and dividing by 30. Repeat across a few months and a few good-looking houses and you'll know the market's real ADR pattern better than any tool. Chapter 8 builds a full underwriting rule out of all of this.
+So is the window shut? The easy era is. From 2021 through 2024, the years when three of the case studies in this book bought their homes, you could get a lot wrong in these markets and still win. Today your competition includes professional operators running the same screens you just learned.
+
+The method still works, for one stubborn reason. Most buyers still skip the order of operations. They fall in love with a house first and check the market after, if at all. Do the first step first and you can be the tenth-smartest buyer in the market and still come out fine.
+
+But demand extra margin now. Underwrite on trailing-twelve-month comps only, meaning what similar listings actually earned over the past twelve months, and treat every revenue-tool projection with suspicion — the estimators are weaker than their confident interfaces suggest, mine included. One honest caution, though: if you haircut every number and hug the most pessimistic percentile, you will never buy anything. The fix isn't more pessimism. It's better data.
+
+The best data is a person: a friend, host, or property manager in the market who can tell you "a 4/3 near you did $120K in four or five months." No contact like that yet? Use the manual method, free and surprisingly accurate:
+
+- Open a comparable listing on Airbnb and count how many nights are booked over the next few weeks. (Watch for owner-blocked or long-term-blocked stretches, which look like bookings but aren't.)
+- Estimate its ADR: take a full month of its revenue, say roughly $10K in October, and divide by 30.
+- Repeat across a few months and a few good-looking houses, and you'll know the market's real ADR pattern better than any tool.
+
+Chapter 8 builds a full underwriting rule out of all of this.
 
 ### The Saturation Curve
 
