@@ -1,0 +1,3063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cellwise — Learn spreadsheets by actually using one</title>
+<meta name="description" content="A free game that takes you from spreadsheet beginner to intermediate. Help Fern &amp; Bean clean up their books — for real, in a real sheet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='14' fill='%233454D1'/%3E%3Cpath d='M30 34h40M30 50h40M30 66h40M42 26v48' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   CELLWISE — design tokens
+   Inter (UI) + IBM Plex Mono (cells/refs), indigo #3454D1,
+   soft neutral grays. Keep it calm; let the sheet be the hero.
+   ============================================================ */
+:root{
+  --ink:#1E2433;
+  --ink-2:#4A5265;
+  --ink-3:#8A91A3;
+  --accent:#3454D1;
+  --accent-deep:#2A44AB;
+  --accent-soft:#EAEEFB;
+  --accent-softer:#F4F6FD;
+  --gold:#F4B400;
+  --green:#1F9D6B;
+  --green-soft:#E6F6EF;
+  --red:#D64545;
+  --red-soft:#FBEAEA;
+  --amber:#C7841C;
+  --bg:#F6F7F9;
+  --panel:#FFFFFF;
+  --line:#E4E7EE;
+  --line-strong:#D4D8E2;
+  --head-bg:#F2F3F7;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --radius:12px;
+  --shadow:0 1px 2px rgba(20,24,40,.05),0 8px 24px rgba(20,24,40,.06);
+  --shadow-lg:0 4px 8px rgba(20,24,40,.06),0 24px 64px rgba(20,24,40,.14);
+  --cell-w:96px;
+  --cell-h:30px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit;font-size:inherit;color:inherit}
+:is(button,input,a,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+a{color:var(--accent)}
+.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- shared bits ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-weight:600;border-radius:10px;padding:10px 18px;line-height:1.2;
+  transition:background .15s,transform .06s,box-shadow .15s;
+  border:1px solid transparent;white-space:nowrap;
+}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 1px 2px rgba(42,68,171,.4)}
+.btn-primary:hover{background:var(--accent-deep)}
+.btn-ghost{background:var(--panel);border-color:var(--line-strong);color:var(--ink)}
+.btn-ghost:hover{background:var(--accent-softer);border-color:var(--accent)}
+.btn-quiet{color:var(--ink-2);padding:8px 12px;border-radius:8px}
+.btn-quiet:hover{background:var(--accent-softer);color:var(--accent)}
+.btn-big{padding:14px 26px;font-size:17px;border-radius:12px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.kbd{
+  font-family:var(--mono);font-size:.82em;background:var(--panel);
+  border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;
+  padding:1px 6px;color:var(--ink-2);white-space:nowrap;
+}
+.mono{font-family:var(--mono)}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-deep);
+}
+.tag-gold{background:#FBF1D5;color:#8A6410}
+.tag-green{background:var(--green-soft);color:var(--green)}
+.tag-gray{background:#EEF0F4;color:var(--ink-2)}
+
+/* ---------- screens ---------- */
+.screen{display:none;min-height:100vh}
+.screen.active{display:block}
+#confetti-canvas{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:200}
+
+/* ---------- cover / landing ---------- */
+#screen-cover{background:linear-gradient(180deg,#FBFBFD 0%,var(--bg) 100%)}
+.cover-wrap{max-width:1020px;margin:0 auto;padding:28px 24px 64px}
+.cover-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:56px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+.logo-mark{width:30px;height:30px;border-radius:8px;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.logo-mark svg{width:18px;height:18px}
+.cover-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;margin-bottom:64px}
+.cover-hero h1{font-size:clamp(32px,4.6vw,52px);line-height:1.08;letter-spacing:-.03em;font-weight:800;margin:14px 0 18px}
+.cover-hero h1 em{font-style:normal;color:var(--accent)}
+.cover-sub{font-size:17px;color:var(--ink-2);max-width:46ch;margin-bottom:26px}
+.cover-ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.cover-note{font-size:13px;color:var(--ink-3)}
+.hero-sheet{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);
+  overflow:hidden;font-family:var(--mono);font-size:12.5px;
+}
+.hero-sheet .hs-bar{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--line);background:#FBFBFD}
+.hero-sheet .hs-dot{width:9px;height:9px;border-radius:50%;background:var(--line-strong)}
+.hero-sheet table{border-collapse:collapse;width:100%}
+.hero-sheet th,.hero-sheet td{border:1px solid #EDEFF4;padding:5px 9px;text-align:left;font-weight:400;white-space:nowrap}
+.hero-sheet th{background:var(--head-bg);color:var(--ink-3);font-size:10.5px;text-align:center}
+.hero-sheet .hl{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+.hero-sheet .formula-cell{color:var(--accent);font-weight:600}
+.email-strip{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px 22px;box-shadow:var(--shadow);max-width:560px;
+}
+.email-strip h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.email-strip p{font-size:13.5px;color:var(--ink-2);margin-bottom:12px}
+.email-row{display:flex;gap:8px;flex-wrap:wrap}
+.email-input{
+  flex:1;min-width:210px;border:1px solid var(--line-strong);border-radius:10px;
+  padding:10px 14px;background:#fff;font-size:14.5px;
+}
+.email-input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.email-fine{font-size:12px;color:var(--ink-3);margin-top:10px!important;margin-bottom:0!important}
+.email-done{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--green);font-size:14.5px}
+.email-err{color:var(--red);font-size:12.5px;margin-top:8px;display:none}
+.cover-chapters{margin-top:8px}
+.cover-chapters h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;margin-bottom:16px}
+.cover-ch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.cover-ch{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.cover-ch .n{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.cover-ch h4{font-size:15.5px;margin:4px 0 6px}
+.cover-ch p{font-size:13px;color:var(--ink-2)}
+.cover-foot{margin-top:56px;font-size:13px;color:var(--ink-3);display:flex;gap:18px;flex-wrap:wrap}
+
+/* ---------- chapter select ---------- */
+.chapters-wrap{max-width:880px;margin:0 auto;padding:28px 24px 64px}
+.ch-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px;gap:12px;flex-wrap:wrap}
+.ch-head{margin-bottom:26px}
+.ch-head h1{font-size:30px;letter-spacing:-.02em;margin-bottom:6px}
+.ch-head p{color:var(--ink-2)}
+.chapter-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px;margin-bottom:16px;box-shadow:var(--shadow);
+  display:flex;gap:20px;align-items:center;flex-wrap:wrap;
+}
+.chapter-card.locked{opacity:.62}
+.chapter-num{
+  width:46px;height:46px;border-radius:12px;background:var(--accent-soft);color:var(--accent-deep);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex:none;
+}
+.chapter-card.done .chapter-num{background:var(--green-soft);color:var(--green)}
+.chapter-info{flex:1;min-width:230px}
+.chapter-info h3{font-size:17px;margin-bottom:3px}
+.chapter-info p{font-size:13.5px;color:var(--ink-2)}
+.level-dots{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.level-dot{
+  width:26px;height:26px;border-radius:8px;border:1px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:var(--ink-3);
+  background:#fff;transition:transform .1s;padding:0;
+}
+.level-dot:hover{transform:translateY(-1px);border-color:var(--accent);color:var(--accent)}
+.level-dot.done{background:var(--green-soft);border-color:#BFE6D4;color:var(--green)}
+.level-dot[disabled]{opacity:.5}
+.side-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:26px}
+.side-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);
+}
+.side-card h3{font-size:16px;margin:10px 0 6px}
+.side-card p{font-size:13.5px;color:var(--ink-2);margin-bottom:14px}
+.side-card .stat{font-family:var(--mono);font-size:13px;color:var(--ink-2)}
+.ch-foot{margin-top:34px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-3);flex-wrap:wrap;gap:10px}
+.linklike{color:var(--ink-3);text-decoration:underline;background:none;font-size:13px}
+.linklike:hover{color:var(--red)}
+
+/* ---------- game screen ---------- */
+#screen-game{display:none;flex-direction:column;height:100vh;overflow:hidden}
+#screen-game.active{display:flex}
+.game-top{
+  display:flex;align-items:center;gap:14px;padding:10px 16px;
+  background:var(--panel);border-bottom:1px solid var(--line);flex:none;
+}
+.game-top .title{font-weight:700;font-size:15px}
+.game-top .crumbs{font-size:12.5px;color:var(--ink-3)}
+.top-spacer{flex:1}
+.profile-chip{
+  display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);
+  border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:#FBFBFD;
+}
+.profile-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+.profile-chip.on .dot{background:var(--green)}
+.game-body{display:flex;flex:1;min-height:0}
+.mission{
+  width:320px;flex:none;background:var(--panel);border-right:1px solid var(--line);
+  padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;
+}
+.mission-story{font-size:13.5px;color:var(--ink-2);background:var(--accent-softer);border:1px solid var(--accent-soft);border-radius:10px;padding:12px 14px}
+.mission-story .who{font-weight:700;color:var(--accent-deep);font-size:12px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px}
+.mission-goal{font-size:14.5px;font-weight:600;line-height:1.45}
+.mission-goal .kbd{font-weight:600}
+.mission-steps{display:flex;flex-direction:column;gap:8px}
+.mstep{display:flex;gap:10px;font-size:13.5px;color:var(--ink-3);align-items:flex-start}
+.mstep .box{
+  width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);flex:none;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;background:#fff;color:#fff;font-size:12px;
+}
+.mstep.now{color:var(--ink);font-weight:600}
+.mstep.now .box{border-color:var(--accent)}
+.mstep.done{color:var(--ink-3)}
+.mstep.done .box{background:var(--green);border-color:var(--green)}
+.mstep.done .txt{text-decoration:line-through}
+.mstep .txt .kbd{font-weight:600}
+@keyframes tickpop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.mstep.done .box{animation:tickpop .3s ease}
+.hint-box{margin-top:auto}
+.hint-reveal{font-size:13px;color:var(--ink-2);background:#FFFDF2;border:1px solid #F1E3AE;border-radius:10px;padding:10px 12px;margin-top:8px}
+.hint-reveal .mono{font-size:12.5px}
+.mission hr{border:none;border-top:1px solid var(--line);margin:2px 0}
+
+/* endless widgets in mission panel */
+.endless-hud{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.streak-big{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.streak-big small{font-size:12px;color:var(--ink-3);font-weight:600;display:block;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+@keyframes streakpop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+.streak-big.pop .n{display:inline-block;animation:streakpop .35s ease}
+.lives{display:flex;gap:5px}
+.life{width:18px;height:18px;transition:opacity .3s,transform .3s}
+.life.lost{opacity:.18;transform:scale(.8)}
+.timer-wrap{margin-top:4px}
+.timer-label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-bottom:5px}
+.timer-label .t{font-family:var(--mono);font-weight:600}
+.timer-bar{height:7px;background:#EDEFF4;border-radius:99px;overflow:hidden}
+.timer-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .15s linear}
+.timer-wrap.warn .timer-fill{background:var(--gold)}
+.timer-wrap.danger .timer-fill{background:var(--red)}
+@keyframes pulse{50%{opacity:.55}}
+.timer-wrap.danger .t{color:var(--red);animation:pulse .8s infinite}
+.pool-note{font-size:12px;color:var(--ink-3)}
+
+/* ---------- sheet chrome ---------- */
+.sheet-side{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.fx-row{
+  display:flex;align-items:stretch;gap:0;background:var(--panel);
+  border-bottom:1px solid var(--line);flex:none;
+}
+.name-box{
+  width:92px;flex:none;font-family:var(--mono);font-size:13px;display:flex;align-items:center;
+  justify-content:center;border-right:1px solid var(--line);color:var(--ink-2);font-weight:600;
+}
+.fx-label{
+  width:40px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-family:Georgia,serif;font-style:italic;color:var(--ink-3);font-size:15px;border-right:1px solid var(--line);
+}
+.fx-input{
+  flex:1;border:none;padding:9px 12px;font-family:var(--mono);font-size:13.5px;background:transparent;color:var(--ink);
+}
+.fx-input:focus{outline:none;background:var(--accent-softer)}
+.fx-wrap{flex:1;position:relative;display:flex}
+.ac-list{
+  position:absolute;top:100%;left:8px;z-index:60;min-width:330px;max-width:430px;
+  background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--shadow-lg);
+  padding:5px;display:none;max-height:280px;overflow-y:auto;
+}
+.ac-list.open{display:block}
+.ac-item{display:flex;flex-direction:column;gap:1px;padding:7px 10px;border-radius:7px;cursor:pointer}
+.ac-item.sel{background:var(--accent-soft)}
+.ac-item .fn{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent-deep)}
+.ac-item .fn .sig{color:var(--ink-3);font-weight:400}
+.ac-item .desc{font-size:12px;color:var(--ink-2)}
+.ac-tab-hint{font-size:11px;color:var(--ink-3);padding:6px 10px 3px;border-top:1px solid var(--line);margin-top:4px}
+.grid-scroll{flex:1;overflow:auto;position:relative;padding-bottom:40px}
+#grid-wrap{position:relative;display:inline-block;outline:none;margin:0}
+table.grid{border-collapse:separate;border-spacing:0;font-family:var(--mono);font-size:13px;user-select:none;-webkit-user-select:none}
+table.grid th{
+  background:var(--head-bg);color:var(--ink-3);font-weight:500;font-size:11.5px;
+  border:1px solid var(--line);border-width:0 1px 1px 0;position:sticky;z-index:5;
+  text-align:center;
+}
+table.grid thead th{top:0;height:26px;min-width:var(--cell-w)}
+table.grid th.rowh{left:0;width:46px;min-width:46px}
+table.grid th.corner{left:0;top:0;z-index:6}
+table.grid th.hl{background:#E2E7F8;color:var(--accent-deep);font-weight:700}
+table.grid td{
+  background:#fff;border:1px solid var(--line);border-width:0 1px 1px 0;
+  width:var(--cell-w);min-width:var(--cell-w);max-width:var(--cell-w);height:var(--cell-h);
+  padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:cell;
+  position:relative;
+}
+table.grid td.num{text-align:right}
+table.grid td.insel{background:var(--accent-softer)}
+table.grid td.active{box-shadow:inset 0 0 0 2px var(--accent);background:#fff}
+table.grid td.insel.active{background:#fff}
+table.grid td.editing{box-shadow:inset 0 0 0 2px var(--accent);background:#fff;color:var(--ink-3)}
+table.grid td.err{color:var(--red)}
+table.grid td.formula-view{color:var(--accent-deep)}
+@keyframes marching{to{background-position:100% 0,0 100%,0 0,100% 100%}}
+table.grid td.marquee{
+  background-image:linear-gradient(90deg,var(--accent) 50%,transparent 50%),linear-gradient(90deg,var(--accent) 50%,transparent 50%),linear-gradient(0deg,var(--accent) 50%,transparent 50%),linear-gradient(0deg,var(--accent) 50%,transparent 50%);
+  background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;
+  background-size:8px 2px,8px 2px,2px 8px,2px 8px;
+  background-position:0 0,100% 100%,0 100%,100% 0;
+  animation:marching .5s linear infinite;
+}
+table.grid td.fillpreview{box-shadow:inset 0 0 0 1.5px var(--ink-3);background:var(--accent-softer)}
+table.grid td.flash-good{animation:flashgood .55s ease}
+@keyframes flashgood{0%{background:#CFF2E2}100%{background:#fff}}
+table.grid td.flash-bad{animation:flashbad .5s ease}
+@keyframes flashbad{0%,60%{background:var(--red-soft)}100%{background:#fff}}
+#fill-handle{
+  position:absolute;width:9px;height:9px;background:var(--accent);border:1.5px solid #fff;
+  border-radius:2px;cursor:crosshair;z-index:10;display:none;
+}
+#grid-wrap.shake{animation:gridshake .3s ease}
+@keyframes gridshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.sheet-title-strip{padding:10px 16px 4px;font-size:12.5px;color:var(--ink-3);flex:none;display:flex;gap:8px;align-items:center}
+.sheet-title-strip b{color:var(--ink-2);font-weight:600}
+
+/* floating score popups */
+.score-pop{
+  position:fixed;z-index:250;font-family:var(--mono);font-weight:600;color:var(--green);
+  font-size:15px;pointer-events:none;animation:scorepop .9s ease forwards;text-shadow:0 1px 0 #fff;
+}
+@keyframes scorepop{0%{opacity:0;transform:translateY(6px) scale(.8)}20%{opacity:1;transform:translateY(0) scale(1.15)}100%{opacity:0;transform:translateY(-34px) scale(1)}}
+
+/* toast */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);
+  background:var(--ink);color:#fff;font-size:13.5px;font-weight:500;padding:10px 18px;border-radius:10px;
+  transition:transform .25s ease,opacity .25s;opacity:0;z-index:300;pointer-events:none;max-width:90vw;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ---------- overlays ---------- */
+.overlay{
+  position:fixed;inset:0;background:rgba(24,28,42,.44);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+}
+.overlay.open{display:flex}
+.dialog{
+  background:var(--panel);border-radius:18px;box-shadow:var(--shadow-lg);
+  max-width:560px;width:100%;padding:34px 36px;position:relative;
+  animation:dialogin .28s cubic-bezier(.2,.9,.3,1.2);max-height:92vh;overflow-y:auto;
+}
+@keyframes dialogin{from{transform:translateY(14px) scale(.97);opacity:0}}
+.dialog.wide{max-width:680px}
+.dialog h2{font-size:24px;letter-spacing:-.02em;margin-bottom:8px}
+.dialog .sub{color:var(--ink-2);font-size:14.5px;margin-bottom:20px}
+.dialog-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;align-items:center}
+.dialog .closer{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;color:var(--ink-3);font-size:17px;display:flex;align-items:center;justify-content:center}
+.dialog .closer:hover{background:var(--bg);color:var(--ink)}
+.badge-ring{
+  width:74px;height:74px;border-radius:50%;background:var(--accent-soft);
+  display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:34px;
+}
+.stat-row{display:flex;gap:12px;margin:18px 0;flex-wrap:wrap}
+.stat-box{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.stat-box .v{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.stat-box .l{font-size:12px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.skill-breakdown{margin:8px 0 4px}
+.skill-breakdown h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:8px}
+.skill-line{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 2px;border-bottom:1px dashed var(--line)}
+.skill-line .miss{color:var(--red);font-weight:600}
+.skill-line .clean{color:var(--green);font-weight:600}
+
+/* CTA + email cards inside dialogs / screens */
+.cta-card{
+  border:1px solid var(--accent-soft);background:linear-gradient(135deg,var(--accent-softer),#fff 60%);
+  border-radius:14px;padding:20px 22px;margin-top:20px;
+}
+.cta-card h3{font-size:16.5px;margin-bottom:6px}
+.cta-card p{font-size:13.5px;color:var(--ink-2);margin-bottom:14px}
+.email-card{
+  border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:18px 20px;margin-top:14px;
+}
+.email-card h3{font-size:15px;margin-bottom:4px}
+.email-card p{font-size:13px;color:var(--ink-2);margin-bottom:12px}
+
+/* cheat sheet */
+.cheat-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
+.cheat-sec h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-deep);margin:10px 0 8px}
+.cheat-line{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.cheat-line .d{color:var(--ink-2)}
+.cheat-line .mono{font-size:12.5px;white-space:nowrap}
+.cheat-locked{position:relative}
+.cheat-locked .cheat-cols{filter:blur(5px);pointer-events:none;user-select:none}
+.cheat-lock-card{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+}
+.cheat-lock-inner{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:24px 26px;max-width:400px;text-align:center}
+.cheat-lock-inner h3{margin-bottom:6px}
+.cheat-lock-inner p{font-size:13.5px;color:var(--ink-2);margin-bottom:14px}
+
+/* certificate */
+.cert-preview{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:14px;box-shadow:var(--shadow)}
+.cert-preview canvas{display:block;width:100%;height:auto}
+
+/* level-complete mini overlay (non-modal, sits over sheet) */
+.win-pop{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:50;
+  background:rgba(246,247,249,.6);backdrop-filter:blur(2px);
+}
+.win-pop.open{display:flex}
+.win-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);
+  padding:26px 30px;text-align:center;max-width:430px;animation:dialogin .3s cubic-bezier(.2,.9,.3,1.25);
+}
+.win-card .big{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:8px 0 4px}
+.win-card p{color:var(--ink-2);font-size:14px;margin-bottom:16px}
+.win-emoji{font-size:34px}
+
+/* mobile */
+.touch-note{display:none;background:#FFF8E6;border-bottom:1px solid #F1E3AE;color:#7A5B10;font-size:12.5px;padding:7px 14px;text-align:center}
+@media (max-width:900px){
+  .cover-hero{grid-template-columns:1fr}
+  .cover-ch-grid{grid-template-columns:1fr}
+  .side-cards{grid-template-columns:1fr}
+  .game-body{flex-direction:column}
+  .mission{width:auto;border-right:none;border-bottom:1px solid var(--line);max-height:38vh}
+  .hint-box{margin-top:0}
+  .touch-note{display:block}
+  .cheat-cols{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}
+}
+@media print{
+  body *{visibility:hidden}
+  #print-zone,#print-zone *{visibility:visible}
+  #print-zone{position:absolute;left:0;top:0;width:100%}
+}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas" width="0" height="0" aria-hidden="true"></canvas>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- ============================ COVER / LANDING ============================ -->
+<section class="screen active" id="screen-cover">
+  <div class="cover-wrap">
+    <nav class="cover-nav">
+      <span class="logo"><span class="logo-mark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18 32h64M18 52h64M18 72h64M40 20v64" stroke="white" stroke-width="9" stroke-linecap="round" fill="none"/></svg></span>Cellwise</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-quiet btn" id="nav-cheat">Cheat sheet</button>
+        <button class="btn btn-ghost" id="nav-continue" style="display:none">Continue</button>
+      </div>
+    </nav>
+
+    <div class="cover-hero">
+      <div>
+        <span class="tag">Free · no signup to play · works in your browser</span>
+        <h1>Learn spreadsheets by <em>actually using one.</em></h1>
+        <p class="cover-sub">Fern &amp; Bean, a small coffee shop, has messy books. You're the one with the spreadsheet open. Fifteen short levels take you from "which cell is B3?" to formulas that think for you — then Streak Mode puts your speed to the test.</p>
+        <div class="cover-ctas">
+          <button class="btn btn-primary btn-big" id="cta-play">Start playing →</button>
+          <button class="btn btn-ghost btn-big" id="cta-streak">⚡ Streak Mode</button>
+        </div>
+        <p class="cover-note" id="cover-progress-note">Your progress saves automatically on this device.</p>
+      </div>
+      <div class="hero-sheet" aria-hidden="true">
+        <div class="hs-bar"><span class="hs-dot"></span><span class="hs-dot"></span><span class="hs-dot"></span></div>
+        <table>
+          <tr><th></th><th>A</th><th>B</th></tr>
+          <tr><th>1</th><td>Day</td><td>Sales</td></tr>
+          <tr><th>2</th><td>Mon</td><td>318</td></tr>
+          <tr><th>3</th><td>Tue</td><td>367</td></tr>
+          <tr><th>4</th><td>Wed</td><td class="hl">412</td></tr>
+          <tr><th>5</th><td>Thu</td><td>295</td></tr>
+          <tr><th>6</th><td><b>Total</b></td><td class="formula-cell">=SUM(B2:B5)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="email-strip" id="cover-email">
+      <h3>Get the shortcut cheat sheet + new chapters first</h3>
+      <p>Drop your email and we'll unlock the printable Cellwise cheat sheet, save your spot for new levels, and let you know when the Advanced Edition (VLOOKUP, pivot tables) opens up.</p>
+      <form class="email-row" data-email-form data-source="cover">
+        <label class="visually-hidden" for="cover-email-input">Email address</label>
+        <input class="email-input" id="cover-email-input" type="email" placeholder="you@example.com" autocomplete="email" required>
+        <button class="btn btn-primary" type="submit">Count me in</button>
+      </form>
+      <p class="email-err" data-email-err>That email doesn't look right — mind checking it?</p>
+      <p class="email-fine">No spam, no daily "value bombs." Just game updates. Unsubscribe anytime.</p>
+    </div>
+
+    <div class="cover-chapters" style="margin-top:56px">
+      <h2>The road from beginner to intermediate</h2>
+      <div class="cover-ch-grid">
+        <div class="cover-ch"><span class="n">Chapter 1 · 7 levels</span><h4>Getting Around</h4><p>Cells, ranges, cut, copy, paste — and your first SUM and AVERAGE. The muscle memory everything else sits on.</p></div>
+        <div class="cover-ch"><span class="n">Chapter 2 · 5 levels</span><h4>Formulas That Think</h4><p>COUNT, MAX, MIN, COUNTIF and IF — formulas that answer questions instead of just adding things up.</p></div>
+        <div class="cover-ch"><span class="n">Chapter 3 · 3 levels</span><h4>Working Smarter</h4><p>The $ sign, drag-to-fill, and a final report that puts the whole toolkit together. The cap before VLOOKUP country.</p></div>
+      </div>
+    </div>
+
+    <div class="cover-foot">
+      <span>Built for keyboards — grab a computer for the full experience.</span>
+      <span>·</span>
+      <a href="#" id="foot-advanced" target="_blank" rel="noopener">Advanced Edition</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CHAPTER SELECT ============================ -->
+<section class="screen" id="screen-chapters">
+  <div class="chapters-wrap">
+    <div class="ch-top">
+      <span class="logo"><span class="logo-mark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18 32h64M18 52h64M18 72h64M40 20v64" stroke="white" stroke-width="9" stroke-linecap="round" fill="none"/></svg></span>Cellwise</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="profile-chip" id="chip-chapters"><span class="dot"></span><span class="txt">Saved on this device</span></span>
+        <button class="btn-quiet btn" id="ch-cheat">Cheat sheet</button>
+      </div>
+    </div>
+    <div class="ch-head">
+      <h1>Pick up where you left off</h1>
+      <p id="ch-subline">Fern &amp; Bean's books aren't going to clean themselves.</p>
+    </div>
+    <div id="chapter-list"></div>
+    <div class="side-cards">
+      <div class="side-card" id="endless-card">
+        <span class="tag tag-gold">⚡ Streak Mode</span>
+        <h3>How long can you last?</h3>
+        <p id="endless-desc">Random tasks from every skill you've learned, back to back, against a clock that keeps getting meaner. Three misses and the run's over.</p>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btn-endless">Start a run</button>
+          <span class="stat" id="best-streak-label"></span>
+        </div>
+      </div>
+      <div class="side-card" id="advanced-card">
+        <span class="tag">Next step</span>
+        <h3>Cellwise Advanced Edition</h3>
+        <p>VLOOKUP, INDEX-MATCH, pivot-table thinking, nested formulas — the moves that make you the fastest person in the room.</p>
+        <a class="btn btn-ghost" data-advanced-link href="#" target="_blank" rel="noopener">See what's inside →</a>
+      </div>
+    </div>
+    <div class="ch-foot">
+      <button class="btn-quiet btn" id="back-cover">← Back to start</button>
+      <button class="linklike" id="reset-progress">Reset all progress</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ GAME ============================ -->
+<section class="screen" id="screen-game">
+  <div class="touch-note">Cellwise really wants a keyboard — some tasks need one. It'll still mostly work by tapping.</div>
+  <div class="game-top">
+    <button class="btn btn-quiet" id="game-back">← Chapters</button>
+    <div>
+      <div class="title" id="game-title">Level</div>
+      <div class="crumbs" id="game-crumbs">Chapter 1</div>
+    </div>
+    <div class="top-spacer"></div>
+    <span class="profile-chip" id="chip-game"><span class="dot"></span><span class="txt">Saved on this device</span></span>
+  </div>
+  <div class="game-body">
+    <aside class="mission" id="mission-panel" aria-live="polite"></aside>
+    <div class="sheet-side">
+      <div class="sheet-title-strip"><b id="sheet-name">Fern &amp; Bean — Weekly Sales</b><span id="sheet-sub"></span></div>
+      <div class="fx-row">
+        <div class="name-box" id="name-box" aria-label="Selected cell">A1</div>
+        <div class="fx-label" aria-hidden="true">fx</div>
+        <div class="fx-wrap">
+          <input class="fx-input" id="fx-input" spellcheck="false" autocomplete="off" aria-label="Formula bar" placeholder="">
+          <div class="ac-list" id="ac-list" role="listbox" aria-label="Function suggestions"></div>
+        </div>
+      </div>
+      <div class="grid-scroll" id="grid-scroll">
+        <div id="grid-wrap" tabindex="0" role="grid" aria-label="Spreadsheet grid">
+          <table class="grid" id="grid-table"></table>
+          <div id="fill-handle" title="Drag to fill"></div>
+        </div>
+        <div class="win-pop" id="win-pop">
+          <div class="win-card" id="win-card"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- generic modal -->
+<div class="overlay" id="overlay">
+  <div class="dialog" id="dialog" role="dialog" aria-modal="true"></div>
+</div>
+
+<div id="print-zone" aria-hidden="true" style="display:none"></div>
+<script>
+/* ============================================================
+   CELLWISE — a free spreadsheet-skills game.
+   Single-file, no backend. Progress lives in localStorage.
+
+   ┌─────────────────────────────────────────────────────────┐
+   │ CONFIG — the knobs you (Jeff) will actually want to     │
+   │ change. Everything else can stay as-is.                 │
+   └─────────────────────────────────────────────────────────┘ */
+const CONFIG = {
+  // Where the "Advanced Edition" CTA buttons point. Swap for the real sales page.
+  ADVANCED_EDITION_URL: 'https://teeco.co/cellwise-advanced',
+
+  // Email capture endpoint. Leave '' to run in "local mode": emails are only
+  // stored in the player's localStorage and everything still works (cheat
+  // sheet unlocks, UI shows subscribed state) — you just don't receive them.
+  //
+  // To actually collect emails with zero backend work, create a free form at
+  // formspree.io and paste its endpoint here (e.g. 'https://formspree.io/f/abcd1234').
+  // We POST JSON: { email, source, game:'cellwise', bestStreak, levelsDone }
+  // `source` tells you where they signed up: cover | cheatsheet | chapter1 |
+  // finale | endless — useful for seeing which hook converts.
+  EMAIL_ENDPOINT: '',
+
+  // Public URL of the game, used in share/copy-link text and on the
+  // certificate/cheat sheet. Swap for wherever this actually deploys
+  // (with the included next.config.mjs redirect, that's <your-domain>/cellwise).
+  GAME_URL: 'https://teeco.co/cellwise',
+
+  // Streak Mode tuning.
+  ENDLESS: {
+    LIVES: 3,
+    WARMUP_TASKS: 3,     // first N tasks untimed, so nobody dies while reading
+    START_SECONDS: 25,
+    DROP_PER_TASK: 0.8,  // each success shaves this off the next task's clock
+    FLOOR_SECONDS: 8,
+  },
+};
+
+/* ---------- tiny DOM + misc helpers ---------- */
+const $  = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+const el = (tag, cls, html) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  return n;
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- persistence ----------
+   One key, one JSON blob, versioned. Everything the game remembers:
+   { levels:{levelId:true}, best:0, profile:{email,source,at}|null, seenIntro:{} } */
+const STORE_KEY = 'cellwise.v1';
+const store = {
+  data: null,
+  load() {
+    try { this.data = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch (e) { this.data = {}; }
+    this.data.levels  = this.data.levels  || {};
+    this.data.best    = this.data.best    || 0;
+    this.data.profile = this.data.profile || null;
+    return this.data;
+  },
+  save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(this.data)); }
+    catch (e) { /* private mode etc. — game still works, just won't persist */ }
+  },
+  reset() {
+    this.data = { levels: {}, best: 0, profile: this.data.profile };
+    this.save();
+  },
+};
+
+/* ---------- A1-style reference helpers ----------
+   colToName(0) -> 'A';  nameToCol('C') -> 2
+   parseRef('$B$3') -> {col:1,row:2,absCol:true,absRow:true}
+   refToA1({col,row,...}) -> '$B$3' (respects abs flags) */
+function colToName(c) {
+  let s = '';
+  c = c + 1;
+  while (c > 0) { const m = (c - 1) % 26; s = String.fromCharCode(65 + m) + s; c = (c - m - 1) / 26; }
+  return s;
+}
+function nameToCol(name) {
+  let c = 0;
+  for (const ch of name.toUpperCase()) c = c * 26 + (ch.charCodeAt(0) - 64);
+  return c - 1;
+}
+const REF_RE = /^(\$?)([A-Za-z]+)(\$?)(\d+)$/;
+function parseRef(s) {
+  const m = REF_RE.exec(s.trim());
+  if (!m) return null;
+  return { col: nameToCol(m[2]), row: parseInt(m[4], 10) - 1, absCol: m[1] === '$', absRow: m[3] === '$' };
+}
+function refToA1(r) {
+  return (r.absCol ? '$' : '') + colToName(r.col) + (r.absRow ? '$' : '') + (r.row + 1);
+}
+function a1(col, row) { return colToName(col) + (row + 1); }
+/* 'A1:B3' -> {c1,r1,c2,r2} normalized so c1<=c2, r1<=r2. Also accepts single 'A1'. */
+function parseRange(s) {
+  const parts = String(s).split(':');
+  const a = parseRef(parts[0]);
+  const b = parts[1] ? parseRef(parts[1]) : a;
+  if (!a || !b) return null;
+  return {
+    c1: Math.min(a.col, b.col), r1: Math.min(a.row, b.row),
+    c2: Math.max(a.col, b.col), r2: Math.max(a.row, b.row),
+  };
+}
+function rangeToA1(rg) {
+  const a = a1(rg.c1, rg.r1), b = a1(rg.c2, rg.r2);
+  return a === b ? a : a + ':' + b;
+}
+function sameRange(x, y) { return x && y && x.c1 === y.c1 && x.r1 === y.r1 && x.c2 === y.c2 && x.r2 === y.r2; }
+function rangeCells(rg) {
+  const out = [];
+  for (let r = rg.r1; r <= rg.r2; r++) for (let c = rg.c1; c <= rg.c2; c++) out.push({ col: c, row: r });
+  return out;
+}
+function inRange(col, row, rg) { return col >= rg.c1 && col <= rg.c2 && row >= rg.r1 && row <= rg.r2; }
+
+/* ---------- seeded-ish RNG (plain Math-free so tests can stub) ----------
+   Simple mulberry32; endless mode reseeds from performance.now(). */
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+let rng = mulberry32(Math.floor(performance.now() * 1000) & 0x7fffffff);
+const rand = () => rng();
+const randInt = (lo, hi) => lo + Math.floor(rand() * (hi - lo + 1)); // inclusive
+const pick = arr => arr[Math.floor(rand() * arr.length)];
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+/* ---------- toast ---------- */
+let toastTimer = null;
+function toast(msg, ms) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2200);
+}
+
+/* ---------- number formatting for cells ---------- */
+function fmtNum(v) {
+  if (typeof v !== 'number' || !isFinite(v)) return String(v);
+  // trim float noise: 0.30000000000000004 -> 0.3
+  const rounded = Math.round(v * 1e9) / 1e9;
+  if (Number.isInteger(rounded)) return String(rounded);
+  return String(parseFloat(rounded.toFixed(6)));
+}
+/* ============================================================
+   FORMULA ENGINE
+   ============================================================
+   The old prototype matched =SUM(range) / =AVERAGE(range) with a
+   regex. That dead-ends fast (no =B2*C2, no IF(...), no $refs), so
+   this is a tiny real expression engine in three parts:
+
+     1. tokenize(src)  — string -> flat token list
+     2. parse(tokens)  — tokens -> AST (recursive descent)
+     3. evalAst(ast)   — AST -> value, given a cell-lookup context
+
+   Plus two AST utilities the sheet needs:
+     - serialize(ast)      — AST -> canonical formula text
+     - translateFormula()  — shift relative refs for copy/paste & fill
+                             ($-locked parts don't move — that's the
+                             whole point of the $ chapter)
+
+   TO ADD A FUNCTION (e.g. VLOOKUP in the Advanced Edition):
+     1. Add an entry to FUNCTIONS below (name, sig, desc) — that alone
+        puts it in the autocomplete dropdown and the cheat sheet.
+     2. Add a case to callFunction() with the evaluation logic.
+   Nothing else needs to change: the parser already handles any
+   NAME(arg, arg, ...) shape, ranges, strings, numbers and math.
+
+   Values flowing through the evaluator are:
+     number | string | boolean | null (empty cell) | {err:'#NAME?'}
+   Errors propagate outward: any sub-expression error becomes the
+   formula's result, like a real sheet.
+   ============================================================ */
+
+const FUNCTIONS = [
+  { name: 'SUM',     sig: '(range)',            desc: 'Adds up every number in a range.' },
+  { name: 'AVERAGE', sig: '(range)',            desc: 'The mean of the numbers in a range.' },
+  { name: 'COUNT',   sig: '(range)',            desc: 'How many cells in a range contain numbers.' },
+  { name: 'COUNTIF', sig: '(range, criteria)',  desc: 'Counts cells that pass a test, like ">500" or "Latte".' },
+  { name: 'MAX',     sig: '(range)',            desc: 'The largest number in a range.' },
+  { name: 'MIN',     sig: '(range)',            desc: 'The smallest number in a range.' },
+  { name: 'IF',      sig: '(test, yes, no)',    desc: 'One answer if the test passes, another if it fails.' },
+];
+const FUNCTION_NAMES = FUNCTIONS.map(f => f.name);
+
+/* ---------- 1. tokenizer ---------- */
+const TOKEN_RE = {
+  ws: /^\s+/,
+  num: /^\d+(?:\.\d+)?|^\.\d+/,
+  str: /^"([^"]*)"/,
+  ref: /^\$?[A-Za-z]{1,3}\$?\d+(?![A-Za-z0-9_])/, // B2, $B2, B$2, $B$2 — not part of a longer word
+  name: /^[A-Za-z_][A-Za-z0-9_.]*/,
+  op: /^(<=|>=|<>|[+\-*/(),:=<>])/,
+};
+function tokenize(src) {
+  const tokens = [];
+  let s = src;
+  while (s.length) {
+    let m;
+    if ((m = TOKEN_RE.ws.exec(s)))       { s = s.slice(m[0].length); continue; }
+    if ((m = TOKEN_RE.num.exec(s)))      { tokens.push({ t: 'num', v: parseFloat(m[0]) }); s = s.slice(m[0].length); continue; }
+    if ((m = TOKEN_RE.str.exec(s)))      { tokens.push({ t: 'str', v: m[1] }); s = s.slice(m[0].length); continue; }
+    if ((m = TOKEN_RE.ref.exec(s)))      { tokens.push({ t: 'ref', v: m[0] }); s = s.slice(m[0].length); continue; }
+    if ((m = TOKEN_RE.name.exec(s)))     { tokens.push({ t: 'name', v: m[0].toUpperCase() }); s = s.slice(m[0].length); continue; }
+    if ((m = TOKEN_RE.op.exec(s)))       { tokens.push({ t: 'op', v: m[0] }); s = s.slice(m[0].length); continue; }
+    throw new FormulaError('#ERROR!');   // unrecognized character
+  }
+  return tokens;
+}
+class FormulaError extends Error {
+  constructor(code) { super(code); this.code = code; }
+}
+
+/* ---------- 2. parser (recursive descent) ----------
+   Grammar, loosest first:
+     expr       := additive (compareOp additive)?
+     additive   := term (('+'|'-') term)*
+     term       := factor (('*'|'/') factor)*
+     factor     := '-' factor | primary
+     primary    := number | string | funcCall | ref[:ref] | '(' expr ')'   */
+function parse(src) {
+  const tk = tokenize(src);
+  let i = 0;
+  const peek = () => tk[i];
+  const next = () => tk[i++];
+  const eatOp = v => { if (tk[i] && tk[i].t === 'op' && tk[i].v === v) { i++; return true; } return false; };
+
+  function expr() {
+    let l = additive();
+    const p = peek();
+    if (p && p.t === 'op' && ['=', '<>', '<', '>', '<=', '>='].includes(p.v)) {
+      const op = next().v;
+      const r = additive();
+      return { t: 'bin', op, l, r };
+    }
+    return l;
+  }
+  function additive() {
+    let l = term();
+    for (;;) {
+      const p = peek();
+      if (p && p.t === 'op' && (p.v === '+' || p.v === '-')) { const op = next().v; l = { t: 'bin', op, l, r: term() }; }
+      else return l;
+    }
+  }
+  function term() {
+    let l = factor();
+    for (;;) {
+      const p = peek();
+      if (p && p.t === 'op' && (p.v === '*' || p.v === '/')) { const op = next().v; l = { t: 'bin', op, l, r: factor() }; }
+      else return l;
+    }
+  }
+  function factor() {
+    if (eatOp('-')) return { t: 'neg', x: factor() };
+    if (eatOp('+')) return factor();
+    return primary();
+  }
+  function primary() {
+    const p = next();
+    if (!p) throw new FormulaError('#ERROR!');
+    if (p.t === 'num') return { t: 'num', v: p.v };
+    if (p.t === 'str') return { t: 'str', v: p.v };
+    if (p.t === 'ref') {
+      const a = parseRef(p.v);
+      if (eatOp(':')) {               // range like B2:B8
+        const q = next();
+        if (!q || q.t !== 'ref') throw new FormulaError('#ERROR!');
+        return { t: 'range', a, b: parseRef(q.v) };
+      }
+      return { t: 'ref', ...a };
+    }
+    if (p.t === 'name') {             // function call — any NAME(...) shape
+      if (!eatOp('(')) throw new FormulaError('#NAME?');
+      const args = [];
+      if (!eatOp(')')) {
+        do { args.push(expr()); } while (eatOp(','));
+        if (!eatOp(')')) throw new FormulaError('#ERROR!');
+      }
+      return { t: 'call', name: p.v, args };
+    }
+    if (p.t === 'op' && p.v === '(') {
+      const e = expr();
+      if (!eatOp(')')) throw new FormulaError('#ERROR!');
+      return e;
+    }
+    throw new FormulaError('#ERROR!');
+  }
+
+  const ast = expr();
+  if (i < tk.length) throw new FormulaError('#ERROR!'); // trailing junk
+  return ast;
+}
+
+/* ---------- 3. evaluator ----------
+   ctx = { getCell(col,row) -> number|string|null } — the sheet provides it.
+   Anything that goes wrong throws FormulaError; evaluateFormula() below
+   catches and returns the error code as the display value. */
+function isErr(v) { return v && typeof v === 'object' && v.err; }
+function toNumber(v) {
+  if (v === null || v === '') return 0;             // empty cells count as 0 in math
+  if (typeof v === 'number') return v;
+  if (typeof v === 'boolean') return v ? 1 : 0;
+  if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
+  throw new FormulaError('#VALUE!');
+}
+function flattenArgs(args, ctx) {
+  // Ranges spread into their cell values; scalars pass through.
+  const out = [];
+  for (const a of args) {
+    if (a.t === 'range') {
+      const rg = { c1: Math.min(a.a.col, a.b.col), r1: Math.min(a.a.row, a.b.row), c2: Math.max(a.a.col, a.b.col), r2: Math.max(a.a.row, a.b.row) };
+      for (let r = rg.r1; r <= rg.r2; r++) for (let c = rg.c1; c <= rg.c2; c++) out.push(ctx.getCell(c, r));
+    } else {
+      out.push(evalAst(a, ctx));
+    }
+  }
+  return out;
+}
+function numbersOf(vals) { return vals.filter(v => typeof v === 'number'); }
+
+/* COUNTIF criteria: 42, "42", "Latte", ">500", "<=10", "<>0" … */
+function makeCriteria(crit) {
+  if (typeof crit === 'number') return v => typeof v === 'number' ? v === crit : String(v).trim() === String(crit);
+  const s = String(crit == null ? '' : crit).trim();
+  const m = /^(<=|>=|<>|=|<|>)(.*)$/.exec(s);
+  if (m) {
+    const op = m[1], rhsRaw = m[2].trim();
+    const rhsNum = rhsRaw !== '' && !isNaN(Number(rhsRaw)) ? Number(rhsRaw) : null;
+    return v => {
+      if (rhsNum !== null) {
+        if (typeof v !== 'number') {
+          // "=5" should match a "5" string; comparisons only apply to numbers
+          if (op === '=') return String(v).trim() === rhsRaw;
+          if (op === '<>') return String(v).trim() !== rhsRaw && v !== null;
+          return false;
+        }
+        switch (op) {
+          case '>': return v > rhsNum;   case '<': return v < rhsNum;
+          case '>=': return v >= rhsNum; case '<=': return v <= rhsNum;
+          case '=': return v === rhsNum; case '<>': return v !== rhsNum;
+        }
+      }
+      const sv = v == null ? '' : String(v).toLowerCase(), rl = rhsRaw.toLowerCase();
+      if (op === '=') return sv === rl;
+      if (op === '<>') return sv !== rl && v !== null;
+      return false; // >/< on text: out of scope for this game
+    };
+  }
+  // plain text criteria — case-insensitive equality
+  return v => v !== null && String(v).toLowerCase() === s.toLowerCase();
+}
+
+function callFunction(name, argNodes, ctx) {
+  switch (name) {
+    case 'SUM':
+      return numbersOf(flattenArgs(argNodes, ctx)).reduce((a, b) => a + b, 0);
+    case 'AVERAGE': {
+      const ns = numbersOf(flattenArgs(argNodes, ctx));
+      if (!ns.length) throw new FormulaError('#DIV/0!');
+      return ns.reduce((a, b) => a + b, 0) / ns.length;
+    }
+    case 'COUNT':
+      return numbersOf(flattenArgs(argNodes, ctx)).length;
+    case 'MAX': {
+      const ns = numbersOf(flattenArgs(argNodes, ctx));
+      return ns.length ? Math.max(...ns) : 0;
+    }
+    case 'MIN': {
+      const ns = numbersOf(flattenArgs(argNodes, ctx));
+      return ns.length ? Math.min(...ns) : 0;
+    }
+    case 'COUNTIF': {
+      if (argNodes.length !== 2 || argNodes[0].t !== 'range') throw new FormulaError('#VALUE!');
+      const vals = flattenArgs([argNodes[0]], ctx);
+      const crit = evalAst(argNodes[1], ctx);
+      const test = makeCriteria(crit);
+      return vals.filter(v => v !== null && v !== '' && test(v)).length;
+    }
+    case 'IF': {
+      if (argNodes.length < 2 || argNodes.length > 3) throw new FormulaError('#VALUE!');
+      const cond = evalAst(argNodes[0], ctx);
+      let truthy;
+      if (typeof cond === 'boolean') truthy = cond;
+      else if (typeof cond === 'number') truthy = cond !== 0;
+      else if (cond === null) truthy = false;
+      else throw new FormulaError('#VALUE!'); // bare text isn't a test
+      if (truthy) return evalAst(argNodes[1], ctx);
+      return argNodes.length === 3 ? evalAst(argNodes[2], ctx) : false;
+    }
+    /* ← Advanced Edition functions (VLOOKUP, INDEX, MATCH…) slot in here. */
+    default:
+      throw new FormulaError('#NAME?');
+  }
+}
+
+function evalAst(node, ctx) {
+  switch (node.t) {
+    case 'num': return node.v;
+    case 'str': return node.v;
+    case 'ref': return ctx.getCell(node.col, node.row);
+    case 'range': throw new FormulaError('#VALUE!'); // bare range outside a function
+    case 'neg': return -toNumber(evalAst(node.x, ctx));
+    case 'err': throw new FormulaError(node.v);
+    case 'call': return callFunction(node.name, node.args, ctx);
+    case 'bin': {
+      const { op } = node;
+      if (['=', '<>', '<', '>', '<=', '>='].includes(op)) {
+        const l = evalAst(node.l, ctx), r = evalAst(node.r, ctx);
+        // numbers compare numerically; anything else compares as
+        // case-insensitive text (good enough for a teaching game)
+        const bothNum = (typeof l === 'number' || l === null) && (typeof r === 'number' || r === null);
+        if (bothNum) {
+          const ln = l === null ? 0 : l, rn = r === null ? 0 : r;
+          switch (op) {
+            case '=': return ln === rn;   case '<>': return ln !== rn;
+            case '<': return ln < rn;     case '>': return ln > rn;
+            case '<=': return ln <= rn;   case '>=': return ln >= rn;
+          }
+        }
+        const ls = String(l == null ? '' : l).toLowerCase(), rs = String(r == null ? '' : r).toLowerCase();
+        switch (op) {
+          case '=': return ls === rs;   case '<>': return ls !== rs;
+          case '<': return ls < rs;     case '>': return ls > rs;
+          case '<=': return ls <= rs;   case '>=': return ls >= rs;
+        }
+      }
+      const l = toNumber(evalAst(node.l, ctx)), r = toNumber(evalAst(node.r, ctx));
+      switch (op) {
+        case '+': return l + r;
+        case '-': return l - r;
+        case '*': return l * r;
+        case '/': if (r === 0) throw new FormulaError('#DIV/0!'); return l / r;
+      }
+    }
+  }
+  throw new FormulaError('#ERROR!');
+}
+
+/* Public entry: formula text (without '=') + ctx -> display value or error string. */
+function evaluateFormula(src, ctx) {
+  try {
+    const v = evalAst(parse(src), ctx);
+    if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+    return v;
+  } catch (e) {
+    return { err: e.code || '#ERROR!' };
+  }
+}
+
+/* ---------- serializer + translation (copy/paste & fill) ---------- */
+function serialize(node) {
+  switch (node.t) {
+    case 'num': return fmtNum(node.v);
+    case 'str': return '"' + node.v + '"';
+    case 'ref': return refToA1(node);
+    case 'range': return refToA1(node.a) + ':' + refToA1(node.b);
+    case 'neg': return '-' + serialize(node.x);
+    case 'err': return node.v;
+    case 'call': return node.name + '(' + node.args.map(serialize).join(',') + ')';
+    case 'bin': return serialize(node.l) + node.op + serialize(node.r);
+  }
+  return '';
+}
+
+/* Shift every RELATIVE ref by (dCol,dRow); $-locked axes stay put.
+   A ref pushed off the top/left edge becomes #REF!, like a real sheet.
+   `src` has no leading '='; returns the translated text or null if the
+   source doesn't parse (then callers just copy it verbatim). */
+function translateFormula(src, dCol, dRow, maxCol, maxRow) {
+  let ast;
+  try { ast = parse(src); } catch (e) { return null; }
+  let broke = false;
+  const shift = ref => {
+    const out = { ...ref };
+    if (!ref.absCol) out.col += dCol;
+    if (!ref.absRow) out.row += dRow;
+    if (out.col < 0 || out.row < 0 || (maxCol != null && out.col > maxCol) || (maxRow != null && out.row > maxRow)) broke = true;
+    return out;
+  };
+  const walk = node => {
+    switch (node.t) {
+      case 'ref': return { t: 'ref', ...shift(node) };
+      case 'range': return { t: 'range', a: shift(node.a), b: shift(node.b) };
+      case 'neg': return { t: 'neg', x: walk(node.x) };
+      case 'call': return { t: 'call', name: node.name, args: node.args.map(walk) };
+      case 'bin': return { t: 'bin', op: node.op, l: walk(node.l), r: walk(node.r) };
+      default: return node;
+    }
+  };
+  const moved = walk(ast);
+  if (broke) return '#REF!';
+  return serialize(moved);
+}
+/* ============================================================
+   GRID ENGINE — the spreadsheet itself.
+   Owns: cell data, computed values, selection, editing (via the
+   fx bar, like the prototype), clipboard (Ctrl/Cmd C/X/V), the
+   fill handle + Ctrl+D, and the formula autocomplete dropdown.
+   Emits every meaningful change through Grid.onChange so the
+   level engine / endless mode can react without reaching in.
+   ============================================================ */
+const Grid = (() => {
+  const state = {
+    cols: 7, rows: 11,
+    gen: 0,                // bumped on every load(); lets in-flight handlers notice a sheet swap
+    cells: new Map(),      // "c,r" -> raw committed input (string or number)
+    computed: new Map(),   // "c,r" -> display value (number|string|{err})
+    anchor: { col: 0, row: 0 },
+    focus: { col: 0, row: 0 },
+    selecting: false,
+    editing: null,         // { col, row, original } while the fx bar is live
+    clipboard: null,       // { mode:'copy'|'cut', rg, data:[[input]] }
+    fill: null,            // { src, target } during a fill-handle drag
+    locked: false,         // true between levels / on overlays: ignore input
+    changeHandlers: [],
+  };
+  const key = (c, r) => c + ',' + r;
+
+  /* ---------- data ---------- */
+  function load(spec) {
+    state.gen++;
+    state.cols = spec.cols || 7;
+    state.rows = spec.rows || 11;
+    state.cells = new Map();
+    const data = spec.data || {};
+    for (const ref in data) {
+      const p = parseRef(ref);
+      if (p) state.cells.set(key(p.col, p.row), data[ref]);
+    }
+    state.anchor = { col: 0, row: 0 };
+    state.focus = { col: 0, row: 0 };
+    state.clipboard = null;
+    state.editing = null;
+    recompute();
+    renderGrid();
+    renderSelection();
+    syncFx();
+  }
+  function rawInput(c, r) {
+    const v = state.cells.get(key(c, r));
+    return v === undefined ? null : v;
+  }
+  function isFormula(v) { return typeof v === 'string' && v.startsWith('='); }
+  /* literal committed text -> stored value: numeric strings become numbers */
+  function normalizeLiteral(text) {
+    if (typeof text === 'number') return text;
+    const t = String(text);
+    if (/^-?(\d+\.?\d*|\.\d+)$/.test(t.trim())) return parseFloat(t);
+    return t;
+  }
+  function setCell(c, r, input) {
+    if (input === null || input === undefined || input === '') state.cells.delete(key(c, r));
+    else state.cells.set(key(c, r), isFormula(input) ? input : normalizeLiteral(input));
+  }
+
+  /* ---------- recompute (with cycle guard) ----------
+     Every formula cell is evaluated lazily + memoized. A cell seen
+     twice in one evaluation chain is a circular ref -> #REF!. */
+  function recompute() {
+    state.computed = new Map();
+    const visiting = new Set();
+    const valueOf = (c, r) => {
+      const k = key(c, r);
+      if (state.computed.has(k)) {
+        const v = state.computed.get(k);
+        if (isErr(v)) throw new FormulaError(v.err);
+        return v;
+      }
+      const raw = state.cells.get(k);
+      if (raw === undefined) return null;
+      if (!isFormula(raw)) return raw;
+      if (visiting.has(k)) throw new FormulaError('#REF!');
+      visiting.add(k);
+      const v = evaluateFormula(raw.slice(1), { getCell: valueOf });
+      visiting.delete(k);
+      state.computed.set(k, v);
+      if (isErr(v)) throw new FormulaError(v.err);
+      return v;
+    };
+    for (const k of state.cells.keys()) {
+      const [c, r] = k.split(',').map(Number);
+      try { valueOf(c, r); } catch (e) { /* error already memoized upstream */ }
+    }
+  }
+  function cellValue(c, r) {
+    const raw = state.cells.get(key(c, r));
+    if (raw === undefined) return null;
+    if (!isFormula(raw)) return raw;
+    const v = state.computed.get(key(c, r));
+    return v === undefined ? null : v;
+  }
+
+  /* ---------- change bus ---------- */
+  function emit(type, detail) {
+    for (const fn of state.changeHandlers) fn({ type, ...detail });
+  }
+  function onChange(fn) { state.changeHandlers.push(fn); }
+  function offAll() { state.changeHandlers.length = 0; }
+
+  /* ---------- selection ---------- */
+  function selRange() {
+    return {
+      c1: Math.min(state.anchor.col, state.focus.col), r1: Math.min(state.anchor.row, state.focus.row),
+      c2: Math.max(state.anchor.col, state.focus.col), r2: Math.max(state.anchor.row, state.focus.row),
+    };
+  }
+  function setSelection(c, r, extend) {
+    if (state.locked) return;
+    c = clamp(c, 0, state.cols - 1); r = clamp(r, 0, state.rows - 1);
+    if (extend) state.focus = { col: c, row: r };
+    else { state.anchor = { col: c, row: r }; state.focus = { col: c, row: r }; }
+    renderSelection();
+    syncFx();
+    emit('selection', { range: selRange() });
+  }
+
+  /* ---------- DOM rendering ---------- */
+  const gridWrap = $('#grid-wrap');
+  const table = $('#grid-table');
+  const nameBox = $('#name-box');
+  const fxInput = $('#fx-input');
+  const fillHandle = $('#fill-handle');
+  const tdCache = new Map(); // "c,r" -> td element (valid until next renderGrid)
+
+  function renderGrid() {
+    tdCache.clear();
+    let html = '<thead><tr><th class="corner rowh"></th>';
+    for (let c = 0; c < state.cols; c++) html += `<th data-col="${c}">${colToName(c)}</th>`;
+    html += '</tr></thead><tbody>';
+    for (let r = 0; r < state.rows; r++) {
+      html += `<tr><th class="rowh" data-row="${r}">${r + 1}</th>`;
+      for (let c = 0; c < state.cols; c++) html += `<td data-c="${c}" data-r="${r}" data-ref="${a1(c, r)}"></td>`;
+      html += '</tr>';
+    }
+    html += '</tbody>';
+    table.innerHTML = html;
+    $$('td', table).forEach(td => tdCache.set(key(+td.dataset.c, +td.dataset.r), td));
+    paintValues();
+  }
+  function paintValues() {
+    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
+      const td = tdCache.get(key(c, r));
+      const raw = rawInput(c, r);
+      td.classList.remove('num', 'err', 'formula-view');
+      if (raw === null) { td.textContent = ''; continue; }
+      if (isFormula(raw)) {
+        const v = cellValue(c, r);
+        if (isErr(v)) { td.textContent = v.err; td.classList.add('err'); }
+        else { td.textContent = fmtNum(v); td.classList.add('formula-view'); if (typeof v === 'number') td.classList.add('num'); }
+      } else {
+        td.textContent = String(raw);
+        if (typeof raw === 'number') td.classList.add('num');
+      }
+    }
+  }
+  function renderSelection() {
+    const rg = selRange();
+    const clip = state.clipboard;
+    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
+      const td = tdCache.get(key(c, r));
+      td.classList.toggle('insel', inRange(c, r, rg));
+      td.classList.toggle('active', c === state.anchor.col && r === state.anchor.row);
+      td.classList.toggle('marquee', !!clip && inRange(c, r, clip.rg));
+      td.classList.toggle('fillpreview', !!state.fill && inRange(c, r, state.fill.target) && !inRange(c, r, state.fill.src));
+      td.classList.toggle('editing', !!state.editing && c === state.editing.col && r === state.editing.row);
+    }
+    $$('thead th[data-col]', table).forEach(th => th.classList.toggle('hl', +th.dataset.col >= rg.c1 && +th.dataset.col <= rg.c2));
+    $$('th.rowh[data-row]', table).forEach(th => th.classList.toggle('hl', +th.dataset.row >= rg.r1 && +th.dataset.row <= rg.r2));
+    nameBox.textContent = state.editing ? a1(state.editing.col, state.editing.row) : rangeToA1(rg);
+    positionFillHandle();
+  }
+  function positionFillHandle() {
+    if (state.editing || state.locked) { fillHandle.style.display = 'none'; return; }
+    const rg = selRange();
+    const td = tdCache.get(key(rg.c2, rg.r2));
+    if (!td) { fillHandle.style.display = 'none'; return; }
+    fillHandle.style.display = 'block';
+    fillHandle.style.left = (td.offsetLeft + td.offsetWidth - 5) + 'px';
+    fillHandle.style.top = (td.offsetTop + td.offsetHeight - 5) + 'px';
+  }
+  function scrollCellIntoView(c, r) {
+    const td = tdCache.get(key(c, r));
+    if (td && td.scrollIntoView) td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  function flashCells(rg, cls) {
+    for (const { col, row } of rangeCells(rg)) {
+      const td = tdCache.get(key(col, row));
+      if (!td) continue;
+      td.classList.remove(cls); void td.offsetWidth; td.classList.add(cls);
+      setTimeout(() => td.classList.remove(cls), 600);
+    }
+  }
+  function shakeGrid() {
+    if (REDUCED_MOTION) return;
+    gridWrap.classList.remove('shake'); void gridWrap.offsetWidth; gridWrap.classList.add('shake');
+  }
+
+  /* ---------- fx bar sync (when NOT editing, it mirrors the active cell) ---------- */
+  function syncFx() {
+    if (state.editing) return;
+    const raw = rawInput(state.anchor.col, state.anchor.row);
+    fxInput.value = raw === null ? '' : String(raw);
+  }
+
+  /* ---------- editing ----------
+     True to the prototype: typing on the grid opens the fx bar
+     pre-filled with the keystroke; the cell mirrors what you type. */
+  function startEdit(prefill, fromFx) {
+    if (state.locked) return;
+    const { col, row } = state.anchor;
+    state.editing = { col, row, original: rawInput(col, row) };
+    const existing = state.editing.original === null ? '' : String(state.editing.original);
+    fxInput.value = prefill !== undefined && prefill !== null ? prefill : existing;
+    if (!fromFx) fxInput.focus();
+    fxInput.setSelectionRange(fxInput.value.length, fxInput.value.length);
+    mirrorEditingCell();
+    renderSelection();
+    updateAutocomplete();
+  }
+  function mirrorEditingCell() {
+    if (!state.editing) return;
+    const td = tdCache.get(key(state.editing.col, state.editing.row));
+    if (td) { td.textContent = fxInput.value; td.classList.remove('num', 'err', 'formula-view'); }
+  }
+  function commitEdit(move) {
+    if (!state.editing) return;
+    const { col, row } = state.editing;
+    const text = fxInput.value;
+    state.editing = null;
+    closeAutocomplete();
+    setCell(col, row, text === '' ? null : text);
+    recompute();
+    paintValues();
+    renderSelection(); // drop the .editing highlight before handlers run
+    // Let the game engines react FIRST. If the handler swapped in a new
+    // sheet (next endless task) or locked the grid (level complete), the
+    // post-commit cursor move / refocus below must not run — it would
+    // fight the new screen for selection and focus.
+    const gen = state.gen;
+    emit('commit', { col, row, input: text });
+    if (state.gen !== gen || state.locked) return;
+    if (move === 'down') setSelection(col, row + 1);
+    else if (move === 'right') setSelection(col + 1, row);
+    else setSelection(col, row);
+    gridWrap.focus({ preventScroll: true });
+    syncFx();
+  }
+  function cancelEdit() {
+    if (!state.editing) return;
+    state.editing = null;
+    closeAutocomplete();
+    paintValues();
+    renderSelection();
+    syncFx();
+    gridWrap.focus({ preventScroll: true });
+  }
+
+  /* ---------- clipboard (internal — never touches the OS clipboard,
+     so nothing breaks in weird iframe/permission contexts) ---------- */
+  function doCopy(mode) {
+    const rg = selRange();
+    const data = [];
+    for (let r = rg.r1; r <= rg.r2; r++) {
+      const rowArr = [];
+      for (let c = rg.c1; c <= rg.c2; c++) rowArr.push(rawInput(c, r));
+      data.push(rowArr);
+    }
+    state.clipboard = { mode, rg, data };
+    renderSelection();
+    toast(mode === 'cut' ? 'Cut — now click where it goes and paste' : 'Copied — paste with ' + (IS_MAC ? '⌘V' : 'Ctrl+V'));
+    emit(mode, { range: rg });
+  }
+  function doPaste() {
+    const clip = state.clipboard;
+    if (!clip) { toast('Nothing to paste yet — copy or cut something first'); return; }
+    const dst = selRange();
+    const dCol = dst.c1 - clip.rg.c1, dRow = dst.r1 - clip.rg.r1;
+    if (clip.mode === 'cut') {
+      for (const { col, row } of rangeCells(clip.rg)) setCell(col, row, null);
+    }
+    for (let r = 0; r < clip.data.length; r++) for (let c = 0; c < clip.data[r].length; c++) {
+      const tc = dst.c1 + c, tr = dst.r1 + r;
+      if (tc >= state.cols || tr >= state.rows) continue;
+      let v = clip.data[r][c];
+      if (isFormula(v)) {
+        const moved = translateFormula(v.slice(1), dCol, dRow, state.cols - 1, state.rows - 1);
+        v = moved === null ? v : (moved === '#REF!' ? '=#REF!' : '=' + moved);
+      }
+      setCell(tc, tr, v);
+    }
+    const pastedRange = {
+      c1: dst.c1, r1: dst.r1,
+      c2: Math.min(dst.c1 + clip.data[0].length - 1, state.cols - 1),
+      r2: Math.min(dst.r1 + clip.data.length - 1, state.rows - 1),
+    };
+    const mode = clip.mode;
+    if (mode === 'cut') state.clipboard = null; // cut is one-shot, like real sheets
+    recompute();
+    paintValues();
+    state.anchor = { col: pastedRange.c1, row: pastedRange.r1 };
+    state.focus = { col: pastedRange.c2, row: pastedRange.r2 };
+    renderSelection();
+    syncFx();
+    emit('paste', { mode, range: pastedRange });
+  }
+  function clearClipboard() {
+    if (state.clipboard) { state.clipboard = null; renderSelection(); }
+  }
+
+  /* ---------- delete ---------- */
+  function clearSelection() {
+    const rg = selRange();
+    for (const { col, row } of rangeCells(rg)) setCell(col, row, null);
+    recompute();
+    paintValues();
+    syncFx();
+    emit('clear', { range: rg });
+  }
+
+  /* ---------- fill (drag handle or Ctrl+D) ----------
+     Fill repeats the source block into the extension; formulas get
+     their relative refs shifted per destination — the mechanic
+     Chapter 3 exists to teach. */
+  function applyFill(src, target) {
+    const srcRows = src.r2 - src.r1 + 1, srcCols = src.c2 - src.c1 + 1;
+    for (const { col, row } of rangeCells(target)) {
+      if (inRange(col, row, src)) continue;
+      const sc = src.c1 + (((col - src.c1) % srcCols) + srcCols) % srcCols;
+      const sr = src.r1 + (((row - src.r1) % srcRows) + srcRows) % srcRows;
+      let v = rawInput(sc, sr);
+      if (isFormula(v)) {
+        const moved = translateFormula(v.slice(1), col - sc, row - sr, state.cols - 1, state.rows - 1);
+        v = moved === null ? v : (moved === '#REF!' ? '=#REF!' : '=' + moved);
+      }
+      setCell(col, row, v);
+    }
+    recompute();
+    paintValues();
+    state.anchor = { col: target.c1, row: target.r1 };
+    state.focus = { col: target.c2, row: target.r2 };
+    renderSelection();
+    syncFx();
+    emit('fill', { src, range: target });
+  }
+  function fillDown() {
+    const rg = selRange();
+    if (rg.r2 === rg.r1) {
+      if (rg.r1 === 0) return;
+      // single row: pull from the row above (classic Ctrl+D)
+      applyFill({ c1: rg.c1, r1: rg.r1 - 1, c2: rg.c2, r2: rg.r1 - 1 }, { c1: rg.c1, r1: rg.r1 - 1, c2: rg.c2, r2: rg.r2 });
+    } else {
+      applyFill({ c1: rg.c1, r1: rg.r1, c2: rg.c2, r2: rg.r1 }, rg);
+    }
+  }
+
+  /* ---------- autocomplete (extends the prototype's pattern) ---------- */
+  const acList = $('#ac-list');
+  let acItems = [], acSel = 0, acToken = null;
+  function updateAutocomplete() {
+    const v = fxInput.value;
+    if (!state.editing || !v.startsWith('=')) return closeAutocomplete();
+    const caret = fxInput.selectionStart == null ? v.length : fxInput.selectionStart;
+    const before = v.slice(0, caret);
+    // the letters being typed right now, e.g. "=su" -> "su", "=SUM(co" -> "co"
+    const m = /(^=|[^A-Za-z0-9_$.])([A-Za-z]+)$/.exec(before);
+    if (!m) return closeAutocomplete();
+    const token = m[2];
+    const matches = FUNCTIONS.filter(f => f.name.startsWith(token.toUpperCase()));
+    if (!matches.length) return closeAutocomplete();
+    acToken = { start: caret - token.length, end: caret };
+    acItems = matches;
+    acSel = clamp(acSel, 0, matches.length - 1);
+    acList.innerHTML = matches.map((f, i) =>
+      `<div class="ac-item${i === acSel ? ' sel' : ''}" role="option" aria-selected="${i === acSel}" data-i="${i}">
+         <span class="fn">${f.name}<span class="sig">${f.sig}</span></span>
+         <span class="desc">${f.desc}</span>
+       </div>`).join('') +
+      `<div class="ac-tab-hint"><span class="kbd">Tab</span> to accept · <span class="kbd">↑</span><span class="kbd">↓</span> to browse</div>`;
+    acList.classList.add('open');
+  }
+  function closeAutocomplete() { acList.classList.remove('open'); acItems = []; acToken = null; acSel = 0; }
+  function acceptAutocomplete(i) {
+    if (!acItems.length || !acToken) return;
+    const fn = acItems[i == null ? acSel : i];
+    const v = fxInput.value;
+    fxInput.value = v.slice(0, acToken.start) + fn.name + '(' + v.slice(acToken.end);
+    const pos = acToken.start + fn.name.length + 1;
+    fxInput.setSelectionRange(pos, pos);
+    closeAutocomplete();
+    mirrorEditingCell();
+  }
+  acList.addEventListener('mousedown', e => {
+    const item = e.target.closest('.ac-item');
+    if (!item) return;
+    e.preventDefault(); // keep focus in the fx input
+    acceptAutocomplete(+item.dataset.i);
+  });
+
+  /* ---------- events ---------- */
+  const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || '');
+  const mod = e => (IS_MAC ? e.metaKey : e.ctrlKey);
+
+  table.addEventListener('mousedown', e => {
+    if (state.locked) return;
+    const td = e.target.closest('td');
+    if (!td) return;
+    e.preventDefault();
+    if (state.editing) commitEdit(null);
+    gridWrap.focus({ preventScroll: true });
+    setSelection(+td.dataset.c, +td.dataset.r, e.shiftKey);
+    if (!e.shiftKey && !state.locked) state.selecting = true;
+  });
+  table.addEventListener('mouseover', e => {
+    if (!state.selecting) return;
+    const td = e.target.closest('td');
+    if (td) setSelection(+td.dataset.c, +td.dataset.r, true);
+  });
+  document.addEventListener('mouseup', () => {
+    if (state.selecting) { state.selecting = false; emit('selection-final', { range: selRange() }); }
+    if (state.fill) endFillDrag();
+  });
+  table.addEventListener('dblclick', e => {
+    if (state.locked) return;
+    const td = e.target.closest('td');
+    if (td) { setSelection(+td.dataset.c, +td.dataset.r); startEdit(); }
+  });
+
+  /* fill-handle drag */
+  fillHandle.addEventListener('mousedown', e => {
+    if (state.locked) return;
+    e.preventDefault(); e.stopPropagation();
+    state.fill = { src: selRange(), target: selRange() };
+    gridWrap.focus({ preventScroll: true });
+  });
+  document.addEventListener('mousemove', e => {
+    if (!state.fill) return;
+    const td = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.tagName === 'TD' && n.dataset.ref);
+    if (!td) return;
+    const c = +td.dataset.c, r = +td.dataset.r, src = state.fill.src;
+    // extend in the dominant direction only (down/up vs right/left)
+    const dR = r > src.r2 ? r - src.r2 : (r < src.r1 ? r - src.r1 : 0);
+    const dC = c > src.c2 ? c - src.c2 : (c < src.c1 ? c - src.c1 : 0);
+    let target = { ...src };
+    if (Math.abs(dR) >= Math.abs(dC)) {
+      if (dR > 0) target.r2 = src.r2 + dR; else if (dR < 0) target.r1 = src.r1 + dR;
+    } else {
+      if (dC > 0) target.c2 = src.c2 + dC; else if (dC < 0) target.c1 = src.c1 + dC;
+    }
+    state.fill.target = target;
+    renderSelection();
+  });
+  function endFillDrag() {
+    const f = state.fill;
+    state.fill = null;
+    if (f && !sameRange(f.src, f.target)) applyFill(f.src, f.target);
+    else renderSelection();
+  }
+
+  gridWrap.addEventListener('keydown', e => {
+    if (state.locked) return;
+    if (state.editing) return; // fx input owns keys while editing
+    const { col, row } = e.shiftKey ? state.focus : state.anchor;
+    const move = (dc, dr) => {
+      e.preventDefault();
+      setSelection((e.shiftKey ? state.focus.col : state.anchor.col) + dc,
+                   (e.shiftKey ? state.focus.row : state.anchor.row) + dr, e.shiftKey);
+      const f = e.shiftKey ? state.focus : state.anchor;
+      scrollCellIntoView(f.col, f.row);
+    };
+    switch (e.key) {
+      case 'ArrowUp': return move(0, -1);
+      case 'ArrowDown': return move(0, 1);
+      case 'ArrowLeft': return move(-1, 0);
+      case 'ArrowRight': return move(1, 0);
+      case 'Tab': e.preventDefault(); return setSelection(state.anchor.col + (e.shiftKey ? -1 : 1), state.anchor.row);
+      case 'Enter': e.preventDefault(); return startEdit();
+      case 'F2': e.preventDefault(); return startEdit();
+      case 'Delete':
+      case 'Backspace': e.preventDefault(); return clearSelection();
+      case 'Escape': e.preventDefault(); return clearClipboard();
+    }
+    if (mod(e)) {
+      const k = e.key.toLowerCase();
+      if (k === 'c') { e.preventDefault(); return doCopy('copy'); }
+      if (k === 'x') { e.preventDefault(); return doCopy('cut'); }
+      if (k === 'v') { e.preventDefault(); return doPaste(); }
+      if (k === 'd') { e.preventDefault(); return fillDown(); }
+      return;
+    }
+    // any printable character starts an edit pre-filled with that keystroke
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      startEdit(e.key);
+    }
+  });
+
+  fxInput.addEventListener('focus', () => {
+    if (state.locked) { fxInput.blur(); return; }
+    if (!state.editing) startEdit(undefined, true);
+  });
+  fxInput.addEventListener('input', () => {
+    mirrorEditingCell();
+    updateAutocomplete();
+  });
+  fxInput.addEventListener('keydown', e => {
+    const acOpen = acList.classList.contains('open');
+    if (acOpen) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); acSel = (acSel + 1) % acItems.length; return updateAutocomplete(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); acSel = (acSel - 1 + acItems.length) % acItems.length; return updateAutocomplete(); }
+      if (e.key === 'Tab' || e.key === 'Enter') { e.preventDefault(); return acceptAutocomplete(); }
+      if (e.key === 'Escape') { e.preventDefault(); return closeAutocomplete(); }
+    }
+    if (e.key === 'Enter') { e.preventDefault(); commitEdit('down'); }
+    else if (e.key === 'Tab') { e.preventDefault(); commitEdit('right'); }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+  });
+  fxInput.addEventListener('click', () => updateAutocomplete());
+  fxInput.addEventListener('blur', () => {
+    // click-away commits, like a real sheet — unless focus went into the dropdown
+    setTimeout(() => {
+      if (state.editing && document.activeElement !== fxInput) commitEdit(null);
+    }, 0);
+  });
+
+  /* ---------- public API ---------- */
+  return {
+    load, onChange, offAll,
+    setSelection,
+    selRange,
+    focus: () => gridWrap.focus({ preventScroll: true }),
+    input: (ref) => { const p = parseRef(ref); return rawInput(p.col, p.row); },
+    value: (ref) => { const p = parseRef(ref); return cellValue(p.col, p.row); },
+    setInput: (ref, v) => { const p = parseRef(ref); setCell(p.col, p.row, v); recompute(); paintValues(); syncFx(); },
+    anchor: () => ({ ...state.anchor }),
+    isEditing: () => !!state.editing,
+    cancelEdit,
+    lock: v => { state.locked = v; positionFillHandle(); },
+    flash: (rangeA1, cls) => flashCells(parseRange(rangeA1), cls),
+    shake: shakeGrid,
+    dims: () => ({ cols: state.cols, rows: state.rows }),
+    tdOf: ref => { const p = parseRef(ref); return tdCache.get(key(p.col, p.row)); },
+    _state: state, // for the level checker + tests (read-only by convention)
+  };
+})();
+/* ============================================================
+   LEVEL DATA — every scripted level lives here, as data.
+   Adding a level = adding an object to LEVELS. No logic in here.
+
+   Step types the checker understands (see Checks in the engine):
+     select : {target:'B4' | 'B2:B8'}            selection must match exactly
+     value  : {cell:'B5', value:390}             committed value must equal
+     move   : {from:'D7', to:'B7'}               from ends empty, to gets from's old value
+     copyto : {from:'B2', to:'C2'}               both keep the original value (ranges ok, same shape)
+     formula: {cell:'B9', expectFormula:'SUM(B2:B8)', mustContain:['SUM(']}
+              cell must hold a formula whose value matches expectFormula
+              (evaluated live against the sheet) and whose text contains
+              every mustContain token. mustNotContain also supported.
+     fill   : {src:'D2', into:'D3:D8'}           each target = src translated (drag handle or Ctrl+D)
+
+   goal/hint strings are HTML (they use <span class="kbd"> for keys).
+   par = "good time" in seconds, used for the speed bonus.
+   ============================================================ */
+
+/* helper: rows starting at A1 -> {A1:...} data object (null = empty cell) */
+function sheetRows(rows) {
+  const data = {};
+  rows.forEach((row, r) => row.forEach((v, c) => { if (v !== null && v !== undefined && v !== '') data[a1(c, r)] = v; }));
+  return data;
+}
+
+const WEEK = [
+  ['Day', 'Sales', 'Customers'],
+  ['Mon', 318, 42], ['Tue', 275, 38], ['Wed', 412, 51], ['Thu', 390, 47],
+  ['Fri', 481, 63], ['Sat', 522, 68], ['Sun', 301, 39],
+];
+
+const CHAPTERS = [
+  {
+    n: 1, title: 'Getting Around', slug: 'Cells, ranges, cut, copy, paste — plus SUM and AVERAGE.',
+    doneBlurb: "That's the muscle memory 90% of office spreadsheet work runs on. Chapter 2 is where formulas start answering questions.",
+    skills: ['navigate', 'value', 'range', 'move', 'copy', 'sum', 'average'],
+  },
+  {
+    n: 2, title: 'Formulas That Think', slug: 'COUNT, MAX, MIN, COUNTIF and IF — formulas that answer questions.',
+    doneBlurb: "You just crossed the line most people never cross: from adding numbers to interrogating them. One chapter left before the Advanced stuff.",
+    skills: ['count', 'max', 'min', 'countif', 'if'],
+  },
+  {
+    n: 3, title: 'Working Smarter', slug: 'The $ sign, drag-to-fill, and one capstone report.',
+    doneBlurb: "Relative vs. absolute references is the exact concept that separates people who use spreadsheets from people spreadsheets use.",
+    skills: ['fill', 'absref'],
+  },
+];
+
+const LEVELS = [
+  /* ══════════════ CHAPTER 1 — GETTING AROUND ══════════════ */
+  {
+    id: 'c1l1', ch: 1, title: 'Welcome to Fern & Bean',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 6',
+    intro: "Hey — Maya. I own this place. My books are a disaster and my nephew says you're \"good with computers.\" Let's start stupidly small: just show me you can get around.",
+    cols: 5, rows: 10, par: 45,
+    data: sheetRows(WEEK),
+    steps: [
+      { type: 'select', target: 'B4', goal: 'Click cell <span class="kbd">B4</span> — Wednesday\'s sales.', hint: 'Column B, row 4. Click it, or walk there with the arrow keys.' },
+      { type: 'select', target: 'C7', goal: 'Now get to <span class="kbd">C7</span> using the <span class="kbd">←↑↓→</span> arrow keys (clicking works too, but arrows are faster).', hint: 'From B4: three rows down, one column right. Saturday was packed.' },
+      { type: 'select', target: 'A1', goal: 'Head home: select <span class="kbd">A1</span>.', hint: 'Top-left corner. Where every spreadsheet journey begins.' },
+    ],
+  },
+  {
+    id: 'c1l2', ch: 1, title: 'The fat-finger fix',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 6 · needs corrections',
+    intro: "I typed these in at 11pm. Thursday says we made $3,900 — I wish. And Tuesday's customer count never got entered.",
+    cols: 5, rows: 10, par: 45,
+    data: sheetRows([
+      ['Day', 'Sales', 'Customers'],
+      ['Mon', 318, 42], ['Tue', 275, null], ['Wed', 412, 51], ['Thu', 3900, 47],
+      ['Fri', 481, 63], ['Sat', 522, 68], ['Sun', 301, 39],
+    ]),
+    steps: [
+      { type: 'value', cell: 'B5', value: 390, goal: 'Fix Thursday: select <span class="kbd">B5</span>, type <span class="kbd">390</span>, then press <span class="kbd">Enter</span>.', hint: 'Just start typing while B5 is selected — the formula bar opens for you. Enter commits it.' },
+      { type: 'value', cell: 'C3', value: 38, goal: 'Tuesday had 38 customers. Put <span class="kbd">38</span> into <span class="kbd">C3</span>.', hint: 'Select C3, type 38, press Enter.' },
+    ],
+  },
+  {
+    id: 'c1l3', ch: 1, title: 'Grab a range',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 6',
+    intro: "Half of spreadsheet skill is just pointing at the right rectangle of cells. Show me you can point.",
+    cols: 5, rows: 10, par: 55,
+    data: sheetRows(WEEK),
+    steps: [
+      { type: 'select', target: 'B2:B8', goal: 'Select the whole sales column: click <span class="kbd">B2</span> and drag down to <span class="kbd">B8</span>.', hint: 'Press the mouse on B2, keep it held, slide to B8, let go. Or arrow to B2 and use Shift+↓.' },
+      { type: 'select', target: 'A5:C5', goal: 'Select Thursday\'s whole row of data: <span class="kbd">A5</span> through <span class="kbd">C5</span>. Try clicking A5, then <span class="kbd">Shift</span>-clicking C5.', hint: 'Click A5. Hold Shift. Click C5. The two clicks become the corners.' },
+      { type: 'select', target: 'B2:C8', goal: 'Big finish: select every number on the sheet — <span class="kbd">B2:C8</span>.', hint: 'Click B2, drag to C8. Or click B2 then Shift-click C8.' },
+    ],
+  },
+  {
+    id: 'c1l4', ch: 1, title: 'Things in the wrong place',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 6 · two strays',
+    intro: "Saturday's sales somehow ended up in the Notes column, and Wednesday's customer count is camped out in E4. Move them home — don't retype them.",
+    cols: 6, rows: 10, par: 60,
+    data: sheetRows([
+      ['Day', 'Sales', 'Customers', 'Notes'],
+      ['Mon', 318, 42], ['Tue', 275, 38], ['Wed', 412, null, null, 51], ['Thu', 390, 47],
+      ['Fri', 481, 63], ['Sat', null, 68, 522], ['Sun', 301, 39],
+    ]),
+    steps: [
+      { type: 'move', from: 'D7', to: 'B7', goal: 'Cut <span class="kbd">D7</span> (<span class="kbd">Ctrl/⌘ X</span>), click <span class="kbd">B7</span>, paste (<span class="kbd">Ctrl/⌘ V</span>).', hint: 'Select D7, press Ctrl+X (⌘X on Mac) — see the dashed outline? Now click B7 and press Ctrl+V.' },
+      { type: 'move', from: 'E4', to: 'C4', goal: 'Same trick: move the stray <span class="kbd">E4</span> into <span class="kbd">C4</span>.', hint: 'Cut E4, select C4, paste. Cut moves; copy duplicates.' },
+    ],
+  },
+  {
+    id: 'c1l5', ch: 1, title: 'Copy that',
+    sheetName: 'Fern & Bean — Price List', sub: 'This week vs next week',
+    intro: "Corporate question from a one-store coffee shop: are prices changing next week? No. So next week's column is… this week's column. Don't retype a single number.",
+    cols: 4, rows: 9, par: 55,
+    data: sheetRows([
+      ['Item', 'This week', 'Next week'],
+      ['Latte', 4.5], ['Cappuccino', 4.75], ['Cold Brew', 3.9], ['Muffin', 3.25], ['Croissant', 3.75],
+    ]),
+    steps: [
+      { type: 'copyto', from: 'B2', to: 'C2', goal: 'Copy <span class="kbd">B2</span> (<span class="kbd">Ctrl/⌘ C</span>), select <span class="kbd">C2</span>, paste. The original stays put — that\'s the difference from cut.', hint: 'Select B2, Ctrl+C, click C2, Ctrl+V.' },
+      { type: 'copyto', from: 'B3:B6', to: 'C3:C6', goal: 'Now the power move: select the range <span class="kbd">B3:B6</span>, copy it, click <span class="kbd">C3</span>, paste. Four cells, one paste.', hint: 'Drag B3 to B6, Ctrl+C, click just C3 (the top of the destination), Ctrl+V.' },
+    ],
+  },
+  {
+    id: 'c1l6', ch: 1, title: 'Your first formula',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 6',
+    intro: "Here's the moment the sheet starts working for you. I want the week's total, and I never want to add it by hand again. Formulas start with =.",
+    cols: 5, rows: 11, par: 70,
+    data: sheetRows([...WEEK, ['Total']]),
+    steps: [
+      { type: 'formula', cell: 'B9', expectFormula: 'SUM(B2:B8)', mustContain: ['SUM('], goal: 'In <span class="kbd">B9</span>, type <span class="kbd">=SUM(B2:B8)</span> and press Enter. Watch the suggestions as you type — <span class="kbd">Tab</span> accepts one.', hint: 'Type =su … the dropdown offers SUM. Press Tab, then type B2:B8, close the paren, Enter.' },
+      { type: 'formula', cell: 'C9', expectFormula: 'SUM(C2:C8)', mustContain: ['SUM('], goal: 'Total the customers too: a SUM over <span class="kbd">C2:C8</span>, in <span class="kbd">C9</span>.', hint: 'Sneaky shortcut: copy B9 and paste it into C9 — the reference slides over on its own. Or just type =SUM(C2:C8).' },
+    ],
+  },
+  {
+    id: 'c1l7', ch: 1, title: 'Playing the averages',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Totals done · averages next',
+    intro: "A total tells me the week. An average tells me a *day*. That's the number I quote when the landlord asks how business is.",
+    cols: 5, rows: 12, par: 60,
+    data: sheetRows([...WEEK, ['Total', '=SUM(B2:B8)', '=SUM(C2:C8)'], ['Daily avg']]),
+    steps: [
+      { type: 'formula', cell: 'B10', expectFormula: 'AVERAGE(B2:B8)', mustContain: ['AVERAGE('], goal: 'In <span class="kbd">B10</span>, use <span class="kbd">AVERAGE</span> on <span class="kbd">B2:B8</span>. Careful not to include the total row!', hint: '=AVERAGE(B2:B8) — type =av and let Tab do the spelling.' },
+      { type: 'formula', cell: 'C10', expectFormula: 'AVERAGE(C2:C8)', mustContain: ['AVERAGE('], goal: 'Average customers per day in <span class="kbd">C10</span>.', hint: '=AVERAGE(C2:C8) — or copy B10 across.' },
+    ],
+  },
+
+  /* ══════════════ CHAPTER 2 — FORMULAS THAT THINK ══════════════ */
+  {
+    id: 'c2l1', ch: 2, title: 'Count what counts',
+    sheetName: 'Fern & Bean — Stockroom Count', sub: 'Tuesday inventory',
+    intro: "New week, new mess: inventory. We counted most things Tuesday night. COUNT tells me how many items actually have a number — i.e., how far we got before someone opened the wine.",
+    cols: 4, rows: 13, par: 55,
+    data: sheetRows([
+      ['Item', 'Counted (units)'],
+      ['Espresso beans', 12], ['Decaf beans', 8], ['Oat milk', null], ['Whole milk', 9],
+      ['Cups (sleeve)', 140], ['Lids (sleeve)', null], ['Sugar (bags)', 6], ['Vanilla syrup', 4], ['Matcha (tins)', 3],
+      [], ['Items counted'],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'B12', expectFormula: 'COUNT(B2:B10)', mustContain: ['COUNT('], goal: 'In <span class="kbd">B12</span>, use <span class="kbd">COUNT</span> on <span class="kbd">B2:B10</span> to see how many items got counted.', hint: '=COUNT(B2:B10). It only counts cells with numbers — blanks and text are ignored.' },
+      { type: 'value', cell: 'B4', value: 5, goal: 'We found the oat milk: 5 cartons. Enter <span class="kbd">5</span> in <span class="kbd">B4</span> and watch your COUNT tick up by itself.', hint: 'Select B4, type 5, Enter. B12 recalculates on its own — that\'s the whole point of formulas.' },
+    ],
+  },
+  {
+    id: 'c2l2', ch: 2, title: 'Peaks and valleys',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 13',
+    intro: "Better week! I want bragging rights and a worry: our best day and our worst day. MAX and MIN, no scrolling and squinting.",
+    cols: 4, rows: 14, par: 55,
+    data: sheetRows([
+      ['Day', 'Sales'],
+      ['Mon', 512], ['Tue', 448], ['Wed', 395], ['Thu', 460], ['Fri', 606], ['Sat', 671], ['Sun', 350],
+      [], [], [], ['Best day'], ['Slowest day'],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'B12', expectFormula: 'MAX(B2:B8)', mustContain: ['MAX('], goal: 'In <span class="kbd">B12</span>: the biggest number in <span class="kbd">B2:B8</span>, via <span class="kbd">MAX</span>.', hint: '=MAX(B2:B8)' },
+      { type: 'formula', cell: 'B13', expectFormula: 'MIN(B2:B8)', mustContain: ['MIN('], goal: 'And in <span class="kbd">B13</span>, the slowest day with <span class="kbd">MIN</span>.', hint: '=MIN(B2:B8)' },
+    ],
+  },
+  {
+    id: 'c2l3', ch: 2, title: 'Counting with conditions',
+    sheetName: 'Fern & Bean — Weekly Sales', sub: 'Week of Oct 13 · with weather log',
+    intro: "Here's a real question: how many *big* days did we have — over $500? And my theory is rain kills business. COUNTIF counts only the cells that pass a test.",
+    cols: 4, rows: 14, par: 70,
+    data: sheetRows([
+      ['Day', 'Sales', 'Weather'],
+      ['Mon', 512, 'Sun'], ['Tue', 448, 'Rain'], ['Wed', 395, 'Rain'], ['Thu', 460, 'Cloudy'],
+      ['Fri', 606, 'Sun'], ['Sat', 671, 'Sun'], ['Sun', 350, 'Rain'],
+      [], [], [], ['Days over $500'], ['Rainy days'],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'B12', expectFormula: 'COUNTIF(B2:B8,">500")', mustContain: ['COUNTIF('], goal: 'In <span class="kbd">B12</span>: <span class="kbd">=COUNTIF(B2:B8,"&gt;500")</span> — the test goes in quotes.', hint: 'Exactly: =COUNTIF(B2:B8,">500") — range, comma, test-in-quotes.' },
+      { type: 'formula', cell: 'B13', expectFormula: 'COUNTIF(C2:C8,"Rain")', mustContain: ['COUNTIF('], goal: 'Tests can be words too. Count the rainy days: <span class="kbd">=COUNTIF(C2:C8,"Rain")</span> in <span class="kbd">B13</span>.', hint: '=COUNTIF(C2:C8,"Rain") — it counts cells equal to "Rain".' },
+    ],
+  },
+  {
+    id: 'c2l4', ch: 2, title: 'The reorder question',
+    sheetName: 'Fern & Bean — Stockroom', sub: 'Reorder rules',
+    intro: "Every item has a reorder point. Below it: order more. At or above: we're fine. I don't want to eyeball this — I want the sheet to *say the words*.",
+    cols: 5, rows: 10, par: 80,
+    data: sheetRows([
+      ['Item', 'On hand', 'Reorder at', 'Status'],
+      ['Espresso beans', 4, 6], ['Oat milk', 12, 8], ['Cups (sleeves)', 3, 5], ['Sugar (bags)', 9, 4],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'D2', expectFormula: 'IF(B2<C2,"Reorder","OK")', mustContain: ['IF('], goal: 'In <span class="kbd">D2</span>: <span class="kbd">=IF(B2&lt;C2,"Reorder","OK")</span> — a test, the answer if yes, the answer if no.', hint: '=IF(B2<C2,"Reorder","OK") — three parts, separated by commas, words in quotes.' },
+      { type: 'formula', cell: 'D3', expectFormula: 'IF(B3<C3,"Reorder","OK")', mustContain: ['IF('], goal: 'Give <span class="kbd">D3</span> the same treatment for oat milk.', hint: 'Type it — or copy D2 and paste into D3. The row numbers shift by themselves.' },
+    ],
+  },
+  {
+    id: 'c2l5', ch: 2, title: 'Two shops, one winner',
+    sheetName: 'Fern & Bean — Main St vs. Kiosk', sub: 'Head-to-head week',
+    intro: "We opened a kiosk at the farmers market. My sister runs it. She claims she \"beat the main store\" this week. Settle this with math, please.",
+    cols: 4, rows: 12, par: 90,
+    data: sheetRows([
+      ['Day', 'Main St', 'Kiosk'],
+      ['Mon', 512, 380], ['Tue', 448, 410], ['Wed', 395, 402], ['Thu', 460, 395],
+      ['Fri', 606, 588], ['Sat', 671, 705], ['Sun', 350, 361],
+      ['Total'], ['Winner'],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'B9', expectFormula: 'SUM(B2:B8)', mustContain: ['SUM('], goal: 'Total Main St in <span class="kbd">B9</span>.', hint: '=SUM(B2:B8)' },
+      { type: 'formula', cell: 'C9', expectFormula: 'SUM(C2:C8)', mustContain: ['SUM('], goal: 'Total the kiosk in <span class="kbd">C9</span>.', hint: '=SUM(C2:C8) — or copy B9 across.' },
+      { type: 'formula', cell: 'B10', expectFormula: 'IF(B9>C9,"Main St","Kiosk")', mustContain: ['IF('], goal: 'Now the verdict in <span class="kbd">B10</span>: <span class="kbd">=IF(B9&gt;C9,"Main St","Kiosk")</span>. Formulas can read other formulas.', hint: '=IF(B9>C9,"Main St","Kiosk") — the IF compares the two totals you just built.' },
+    ],
+  },
+
+  /* ══════════════ CHAPTER 3 — WORKING SMARTER ══════════════ */
+  {
+    id: 'c3l1', ch: 3, title: 'Write once, fill down',
+    sheetName: 'Fern & Bean — Revenue by Item', sub: 'October',
+    intro: "Qty times price, for every item. Beginners type seven formulas. You're going to type one — then grab the little square in the selection's corner and drag it down. (Ctrl+D works too.)",
+    cols: 5, rows: 10, par: 75,
+    data: sheetRows([
+      ['Item', 'Qty', 'Price', 'Revenue'],
+      ['Latte', 210, 4.5], ['Cappuccino', 160, 4.75], ['Cold Brew', 340, 3.9], ['Drip', 420, 2.5],
+      ['Muffin', 120, 3.25], ['Croissant', 95, 3.75], ['Scone', 80, 3],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'D2', expectFormula: 'B2*C2', mustContain: ['B2', 'C2', '*'], goal: 'In <span class="kbd">D2</span>, multiply: <span class="kbd">=B2*C2</span>.', hint: '=B2*C2 — the asterisk is “times”.' },
+      { type: 'fill', src: 'D2', into: 'D3:D8', goal: 'Select <span class="kbd">D2</span>, then drag the small blue square (bottom-right corner) down to <span class="kbd">D8</span>. Or select <span class="kbd">D2:D8</span> and press <span class="kbd">Ctrl/⌘ D</span>.', hint: 'Look for the tiny square on D2\'s corner. Grab it, pull down to row 8, release. Every row gets its own version of the formula.' },
+    ],
+  },
+  {
+    id: 'c3l2', ch: 3, title: 'The $ sign (or: why fills break)',
+    sheetName: 'Fern & Bean — Menu with Tax', sub: 'Tax rate in F1',
+    intro: "Adding tax to the menu. There's one tax rate, sitting in F1. You're about to watch a fill go wrong on purpose — it's the fastest way to understand the $ sign, I promise.",
+    cols: 6, rows: 10, par: 110,
+    data: sheetRows([
+      ['Item', 'Price', 'With tax', null, 'Tax ×', 1.0775],
+      ['Latte', 4.5], ['Cappuccino', 4.75], ['Cold Brew', 3.9], ['Drip', 2.5],
+      ['Muffin', 3.25], ['Croissant', 3.75], ['Scone', 3],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'C2', expectFormula: 'B2*F1', mustContain: ['B2', 'F1', '*'], mustNotContain: ['$'], goal: 'First, the naive version. In <span class="kbd">C2</span>: <span class="kbd">=B2*F1</span> (no $ yet — trust the process).', hint: '=B2*F1 — multiply the price by the rate cell.' },
+      { type: 'fill', src: 'C2', into: 'C3:C8', goal: 'Fill <span class="kbd">C2</span> down to <span class="kbd">C8</span> (drag the corner square, or select C2:C8 and hit <span class="kbd">Ctrl/⌘ D</span>) — then look at the wreckage.', hint: 'Drag C2\'s corner square down to row 8. The zeros you\'re about to see are the lesson.' },
+      { type: 'formula', cell: 'C2', expectFormula: 'B2*$F$1', mustContain: ['B2', '$F$1'], goal: 'See it? Row 3 became <span class="kbd">=B3*F2</span> — and F2 is <em>empty</em>. The fill slid BOTH references. Fix <span class="kbd">C2</span> to <span class="kbd">=B2*$F$1</span> — the $ pins the rate in place.', hint: '=B2*$F$1 — dollar signs lock the column (F) and the row (1). B2 stays loose on purpose: we WANT that side to slide.' },
+      { type: 'fill', src: 'C2', into: 'C3:C8', goal: 'Fill it down again. This time <span class="kbd">B2</span> slides row by row, but <span class="kbd">$F$1</span> holds still.', hint: 'Same move: drag C2\'s corner down to C8. Check C5 — it should read =B5*$F$1.' },
+    ],
+  },
+  {
+    id: 'c3l3', ch: 3, title: 'The Friday Report',
+    sheetName: 'Fern & Bean — Week Review', sub: 'Daily goal in F1',
+    intro: "Capstone. Friday afternoon, investor call Monday, and I want one sheet that answers everything: how each day did against goal, the week's total, how many days beat goal — and a verdict in plain English. All you.",
+    cols: 6, rows: 12, par: 150,
+    data: sheetRows([
+      ['Day', 'Sales', null, 'vs goal', 'Goal →', 800],
+      ['Mon', 748], ['Tue', 812], ['Wed', 690], ['Thu', 835],
+      ['Fri', 918], ['Sat', 1004], ['Sun', 655],
+      ['Total'], ['Days over goal'], ['Verdict'],
+    ]),
+    steps: [
+      { type: 'formula', cell: 'D2', expectFormula: 'B2-$F$1', mustContain: ['B2', '$F$1'], goal: 'In <span class="kbd">D2</span>: Monday vs. goal — <span class="kbd">=B2-$F$1</span>. Lock the goal; leave the day loose.', hint: '=B2-$F$1 — negative means we missed goal that day.' },
+      { type: 'fill', src: 'D2', into: 'D3:D8', goal: 'Fill <span class="kbd">D2</span> down through <span class="kbd">D8</span>.', hint: 'Drag the corner square from D2 to D8, or select D2:D8 and press Ctrl/⌘ D.' },
+      { type: 'formula', cell: 'B9', expectFormula: 'SUM(B2:B8)', mustContain: ['SUM('], goal: 'Week total in <span class="kbd">B9</span>.', hint: '=SUM(B2:B8)' },
+      { type: 'formula', cell: 'B10', expectFormula: 'COUNTIF(B2:B8,">800")', mustContain: ['COUNTIF('], goal: 'In <span class="kbd">B10</span>, count the days that beat the $800 goal.', hint: '=COUNTIF(B2:B8,">800")' },
+      { type: 'formula', cell: 'B11', expectFormula: 'IF(B10>=4,"Invest in weekends","Push weekday traffic")', mustContain: ['IF('], goal: 'The verdict in <span class="kbd">B11</span>: <span class="kbd">=IF(B10&gt;=4,"Invest in weekends","Push weekday traffic")</span>.', hint: '=IF(B10>=4,"Invest in weekends","Push weekday traffic") — an IF reading a COUNTIF reading the raw week. Three layers, no sweat.' },
+    ],
+  },
+];
+
+const levelById = id => LEVELS.find(l => l.id === id);
+const levelsOfChapter = n => LEVELS.filter(l => l.ch === n);
+function chapterDone(n) { return levelsOfChapter(n).every(l => store.data.levels[l.id]); }
+function nextLevelAfter(level) {
+  const i = LEVELS.indexOf(level);
+  return i >= 0 && i < LEVELS.length - 1 ? LEVELS[i + 1] : null;
+}
+function levelUnlocked(level) {
+  const i = LEVELS.indexOf(level);
+  if (i === 0) return true;
+  return !!store.data.levels[LEVELS[i - 1].id];
+}
+/* ============================================================
+   CHECKS — declarative step validators, shared by the scripted
+   levels AND endless mode (one source of truth for "did they
+   actually do the thing?"). All state-based: we check the sheet
+   and selection, not the exact keystrokes, so any legitimate
+   route to the result counts (typing vs copying vs filling).
+   ============================================================ */
+const Checks = (() => {
+  const EPS = 1e-6;
+  const normText = s => String(s).toUpperCase().replace(/\s+/g, '');
+  function valuesEqual(a, b) {
+    if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) < EPS;
+    if (a === null || b === null) return a === b;
+    return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  }
+  const gridCtx = () => ({
+    getCell: (c, r) => {
+      const v = Grid.value(a1(c, r));
+      if (isErr(v)) throw new FormulaError(v.err);
+      return v;
+    },
+  });
+
+  /* capture what a move/copyto step expects BEFORE the user acts */
+  function snapshot(step) {
+    if (step.type === 'move') step._val = Grid.value(step.from);
+    if (step.type === 'copyto') {
+      step._vals = rangeCells(parseRange(step.from)).map(({ col, row }) => Grid.value(a1(col, row)));
+    }
+  }
+
+  function verify(step) {
+    switch (step.type) {
+      case 'select':
+        return sameRange(Grid.selRange(), parseRange(step.target));
+
+      case 'value':
+        return valuesEqual(Grid.value(step.cell), step.value);
+
+      case 'move': {
+        const gone = Grid.value(step.from) === null;
+        return gone && valuesEqual(Grid.value(step.to), step._val);
+      }
+      case 'copyto': {
+        const from = rangeCells(parseRange(step.from));
+        const to = rangeCells(parseRange(step.to));
+        return from.every(({ col, row }, i) => valuesEqual(Grid.value(a1(col, row)), step._vals[i])) &&
+               to.every(({ col, row }, i) => valuesEqual(Grid.value(a1(col, row)), step._vals[i]));
+      }
+      case 'formula': {
+        const raw = Grid.input(step.cell);
+        if (typeof raw !== 'string' || !raw.startsWith('=')) return false;
+        const norm = normText(raw);
+        if (!/[A-Z]{1,3}[0-9]/.test(norm)) return false;                    // must reference cells, not literals
+        for (const t of (step.mustContain || [])) if (!norm.includes(normText(t))) return false;
+        for (const t of (step.mustNotContain || [])) if (norm.includes(normText(t))) return false;
+        const expected = evaluateFormula(step.expectFormula, gridCtx());
+        const actual = Grid.value(step.cell);
+        if (isErr(expected) || isErr(actual)) return false;
+        return valuesEqual(actual, expected);
+      }
+      case 'fill': {
+        const srcRef = parseRef(step.src);
+        const srcRaw = Grid.input(step.src);
+        if (srcRaw === null) return false;
+        for (const { col, row } of rangeCells(parseRange(step.into))) {
+          const raw = Grid.input(a1(col, row));
+          if (raw === null) return false;
+          if (typeof srcRaw === 'string' && srcRaw.startsWith('=')) {
+            const want = translateFormula(srcRaw.slice(1), col - srcRef.col, row - srcRef.row, Grid.dims().cols - 1, Grid.dims().rows - 1);
+            if (want === null || want === '#REF!') return false;
+            if (typeof raw !== 'string' || normText(raw) !== normText('=' + want)) return false;
+          } else if (!valuesEqual(raw, srcRaw)) return false;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* Was this change a botched attempt AT the step (vs unrelated noise)?
+     Used for mistake counting / losing lives. Only edit-type events into
+     the step's own target count — wandering around is never punished. */
+  function isAttempt(step, ev) {
+    if (!['commit', 'paste', 'fill', 'clear'].includes(ev.type)) return false;
+    const touched = ev.range || (ev.col !== undefined ? { c1: ev.col, r1: ev.row, c2: ev.col, r2: ev.row } : null);
+    if (!touched) return false;
+    const targets = {
+      value: () => parseRange(step.cell),
+      formula: () => parseRange(step.cell),
+      move: () => parseRange(step.to),
+      copyto: () => parseRange(step.to),
+      fill: () => parseRange(step.into),
+    }[step.type];
+    if (!targets) return false; // select steps can't be "failed"
+    const t = targets();
+    return !(touched.c2 < t.c1 || touched.c1 > t.c2 || touched.r2 < t.r1 || touched.r1 > t.r2);
+  }
+
+  /* the cell/range to celebrate when a step lands */
+  function targetOf(step) {
+    switch (step.type) {
+      case 'select': return step.target;
+      case 'value': case 'formula': return step.cell;
+      case 'move': return step.to;
+      case 'copyto': return step.to;
+      case 'fill': return step.into;
+    }
+    return null;
+  }
+
+  return { verify, isAttempt, snapshot, targetOf };
+})();
+
+/* ============================================================
+   LEVEL ENGINE — runs one scripted level: mission panel, step
+   progression, mistakes, hints, scoring, completion flow.
+   Scoring: 100/step + up to 300 speed bonus (vs the level's par)
+   + 100 clean-run bonus (zero botched attempts). Best per level
+   is saved; the total shows on the chapter screen.
+   ============================================================ */
+const Game = { mode: null }; // 'level' | 'endless' | null — routes Grid events
+
+const Levels = (() => {
+  const S = { level: null, idx: 0, mistakes: 0, hinted: false, t0: 0, pts: 0 };
+
+  function start(level) {
+    Game.mode = 'level';
+    S.level = level; S.idx = 0; S.mistakes = 0; S.hinted = false; S.pts = 0;
+    S.t0 = performance.now();
+    UI.show('screen-game');
+    $('#game-title').textContent = level.title;
+    $('#game-crumbs').textContent = `Chapter ${level.ch} · Level ${levelsOfChapter(level.ch).indexOf(level) + 1} of ${levelsOfChapter(level.ch).length}`;
+    $('#sheet-name').textContent = level.sheetName;
+    $('#sheet-sub').textContent = level.sub || '';
+    UI.hideWinPop();
+    Grid.lock(false);
+    Grid.load({ cols: level.cols, rows: level.rows, data: level.data });
+    level.steps.forEach(st => Checks.snapshot(st));
+    renderMission();
+    Grid.focus();
+  }
+
+  function step() { return S.level.steps[S.idx]; }
+
+  function renderMission() {
+    const lv = S.level;
+    const panel = $('#mission-panel');
+    const best = store.data.scores && store.data.scores[lv.id];
+    panel.innerHTML = `
+      <div class="mission-story"><span class="who">Maya — Fern &amp; Bean</span>${esc(lv.intro)}</div>
+      <div class="mission-goal" id="mission-goal" aria-live="polite">${S.idx < lv.steps.length ? lv.steps[S.idx].goal : ''}</div>
+      <hr>
+      <div class="mission-steps">
+        ${lv.steps.map((st, i) => `
+          <div class="mstep ${i < S.idx ? 'done' : i === S.idx ? 'now' : ''}">
+            <span class="box">${i < S.idx ? '✓' : ''}</span>
+            <span class="txt">${st.goal}</span>
+          </div>`).join('')}
+      </div>
+      <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-2)">
+        <span>Points: <b class="mono" id="live-pts">${S.pts}</b>${best ? ` <span style="color:var(--ink-3)">· best ${best}</span>` : ''}</span>
+        <span style="color:var(--ink-3)">Step ${Math.min(S.idx + 1, lv.steps.length)}/${lv.steps.length}</span>
+      </div>
+      <div class="hint-box">
+        <button class="btn btn-ghost" id="btn-hint" style="width:100%">Show me exactly what to do</button>
+        <div class="hint-reveal" id="hint-reveal" style="display:none"></div>
+      </div>`;
+    $('#btn-hint').addEventListener('click', () => {
+      const h = $('#hint-reveal');
+      h.style.display = 'block';
+      h.innerHTML = step() ? step().hint : '';
+      S.hinted = true;
+    });
+  }
+
+  function onGridEvent(ev) {
+    if (Game.mode !== 'level' || !S.level || S.idx >= S.level.steps.length) return;
+    const st = step();
+    if (Checks.verify(st)) {
+      const target = Checks.targetOf(st);
+      if (target && st.type !== 'select') Grid.flash(target, 'flash-good');
+      S.pts += 100;
+      UI.scorePopAt(target, '+100');
+      S.idx++;
+      if (S.idx >= S.level.steps.length) return complete();
+      renderMission();
+      $('#live-pts') && ($('#live-pts').textContent = S.pts);
+    } else if (Checks.isAttempt(st, ev)) {
+      S.mistakes++;
+      Grid.shake();
+      const target = Checks.targetOf(st);
+      if (target) Grid.flash(target, 'flash-bad');
+      toast('Not quite — the hint button has the exact answer if you want it.');
+    }
+  }
+
+  function complete() {
+    const lv = S.level;
+    const elapsed = (performance.now() - S.t0) / 1000;
+    const ratio = elapsed / lv.par;
+    const speed = ratio <= 0.6 ? 300 : ratio >= 2 ? 0 : Math.round(300 * (2 - ratio) / 1.4);
+    const clean = S.mistakes === 0 ? 100 : 0;
+    const total = lv.steps.length * 100 + speed + clean;
+    store.data.levels[lv.id] = true;
+    store.data.scores = store.data.scores || {};
+    const prevBest = store.data.scores[lv.id] || 0;
+    const isBest = total > prevBest;
+    if (isBest) store.data.scores[lv.id] = total;
+    store.save();
+
+    Grid.lock(true);
+    UI.confettiBurst(REDUCED_MOTION ? 0 : 90);
+    const chDone = chapterDone(lv.ch);
+    const next = nextLevelAfter(lv);
+    UI.showWinPop(`
+      <div class="win-emoji">${chDone ? '🏆' : '✅'}</div>
+      <div class="big">Level complete!</div>
+      <p>${lv.title} — done${S.mistakes === 0 ? ', zero misses' : ''}.</p>
+      <div class="stat-row" style="text-align:left">
+        <div class="stat-box"><div class="v mono">${total}</div><div class="l">points${isBest && prevBest ? ' · new best!' : ''}</div></div>
+        <div class="stat-box" style="font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;justify-content:center">
+          <span>Steps ${lv.steps.length}×100 = ${lv.steps.length * 100}</span>
+          <span>Speed +${speed} · Clean +${clean}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" id="win-next">${chDone ? 'Finish the chapter →' : next ? 'Next level →' : 'Continue →'}</button>
+        <button class="btn btn-quiet" id="win-replay">Replay</button>
+      </div>
+      <p style="margin:12px 0 0;font-size:12px;color:var(--ink-3)">press <span class="kbd">Enter</span></p>`);
+    $('#win-next').focus();
+    $('#win-next').addEventListener('click', advance);
+    $('#win-replay').addEventListener('click', () => { UI.hideWinPop(); start(lv); });
+
+    function advance() {
+      UI.hideWinPop();
+      if (chDone) UI.chapterComplete(lv.ch);
+      else if (next) start(next);
+      else UI.showChapters();
+    }
+  }
+
+  return { start, onGridEvent, current: () => S };
+})();
+/* ============================================================
+   STREAK MODE (endless) — kept fully separate from the scripted
+   level engine; the two share only the Checks validators.
+
+   Design notes / reasoning:
+   • Unlocks after Chapter 1 (not all chapters): players get the
+     replayable hook early, and the task pool is gated to skills
+     from chapters they've FINISHED — so Streak Mode doubles as
+     the reason to go finish Chapters 2 and 3.
+   • Survival: 3 lives. Timeouts and botched attempts at the
+     target cost a life. The first few tasks are untimed, then a
+     countdown starts and shrinks with every success (CONFIG).
+   • Scoring: warmup tasks are 150 flat; timed tasks are
+     100 + 10/second remaining, times a streak multiplier
+     (×1.5 at 5, ×2 at 10 … capped ×3). Best streak AND best
+     score persist in localStorage.
+   ============================================================ */
+const Endless = (() => {
+  const ITEMS = ['Latte', 'Cappuccino', 'Cold Brew', 'Drip', 'Espresso', 'Matcha', 'Muffin', 'Croissant', 'Scone', 'Bagel'];
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const SKILL_LABELS = {
+    navigate: 'Navigating', range: 'Selecting ranges', value: 'Entering values', move: 'Cut & paste',
+    copy: 'Copy & paste', sum: 'SUM', average: 'AVERAGE', count: 'COUNT', max: 'MAX', min: 'MIN',
+    countif: 'COUNTIF', if: 'IF', fill: 'Fill down', absref: '$ references',
+  };
+  const POOL_BY_CHAPTER = {
+    1: ['navigate', 'range', 'value', 'move', 'copy', 'sum', 'average'],
+    2: ['count', 'max', 'min', 'countif', 'if'],
+    3: ['fill', 'absref'],
+  };
+  function unlockedSkills() {
+    let out = [];
+    for (const ch of [1, 2, 3]) if (chapterDone(ch)) out = out.concat(POOL_BY_CHAPTER[ch]);
+    return out;
+  }
+
+  /* ---------- random mini-sheets ---------- */
+  function weekSheet() {
+    const rows = [['Day', 'Sales', 'Customers']];
+    for (const d of DAYS) rows.push([d, randInt(240, 980), randInt(30, 90)]);
+    return { cols: 5, rows: 11, data: sheetRows(rows), kind: 'week' };
+  }
+  function stockSheet() {
+    const rows = [['Item', 'On hand', 'Reorder at']];
+    for (const it of shuffle(ITEMS).slice(0, 6)) rows.push([it, randInt(2, 30), randInt(5, 15)]);
+    return { cols: 5, rows: 10, data: sheetRows(rows), kind: 'stock' };
+  }
+  function qtySheet() {
+    const rows = [['Item', 'Qty', 'Price', 'Revenue']];
+    for (const it of shuffle(ITEMS).slice(0, 5)) rows.push([it, randInt(40, 400), randInt(250, 550) / 100]);
+    return { cols: 5, rows: 8, data: sheetRows(rows), kind: 'qty' };
+  }
+
+  /* ---------- task makers ----------
+     Each returns { skill, prompt, step } + loads a fresh sheet.
+     Prompts always include the exact refs — under a clock, the
+     challenge is execution, not mind-reading. */
+  const MAKERS = {
+    navigate() {
+      const s = weekSheet();
+      const r = randInt(2, 8), c = randInt(1, 2);
+      const label = `${DAYS[r - 2]}'s ${c === 1 ? 'Sales' : 'Customers'}`;
+      return { sheet: s, skill: 'navigate', prompt: `Select ${label} — cell <b class="mono">${a1(c, r - 1)}</b>.`, step: { type: 'select', target: a1(c, r - 1) } };
+    },
+    range() {
+      const s = weekSheet();
+      if (rand() < 0.5) {
+        const c = randInt(1, 2);
+        const col = colToName(c);
+        return { sheet: s, skill: 'range', prompt: `Select the whole ${c === 1 ? 'Sales' : 'Customers'} column of numbers: <b class="mono">${col}2:${col}8</b>.`, step: { type: 'select', target: `${col}2:${col}8` } };
+      }
+      const r = randInt(2, 8);
+      return { sheet: s, skill: 'range', prompt: `Select ${DAYS[r - 2]}'s full row of data: <b class="mono">A${r}:C${r}</b>.`, step: { type: 'select', target: `A${r}:C${r}` } };
+    },
+    value() {
+      const s = weekSheet();
+      const r = randInt(2, 8);
+      const right = randInt(240, 980);
+      s.data[a1(1, r - 1)] = right + pick([100, 1000, -90, 555]);
+      return { sheet: s, skill: 'value', prompt: `${DAYS[r - 2]}'s sales are wrong — they should be <b class="mono">${right}</b>. Fix <b class="mono">B${r}</b>.`, step: { type: 'value', cell: `B${r}`, value: right } };
+    },
+    move() {
+      const s = weekSheet();
+      const r = randInt(2, 8);
+      const v = s.data[a1(1, r - 1)];
+      delete s.data[a1(1, r - 1)];
+      s.data[a1(4, r - 1)] = v;
+      return { sheet: s, skill: 'move', prompt: `${DAYS[r - 2]}'s sales got pasted into <b class="mono">E${r}</b> by mistake. Cut and paste the value back into <b class="mono">B${r}</b>.`, step: { type: 'move', from: `E${r}`, to: `B${r}` } };
+    },
+    copy() {
+      const s = qtySheet();
+      const r = randInt(2, 6);
+      return { sheet: s, skill: 'copy', prompt: `Copy the price in <b class="mono">C${r}</b> into <b class="mono">E${r}</b> (keep the original).`, step: { type: 'copyto', from: `C${r}`, to: `E${r}` } };
+    },
+    sum() {
+      const s = weekSheet();
+      s.data['A9'] = 'Total';
+      return { sheet: s, skill: 'sum', prompt: `Total the Sales column: a <b class="mono">SUM</b> over <b class="mono">B2:B8</b>, in <b class="mono">B9</b>.`, step: { type: 'formula', cell: 'B9', expectFormula: 'SUM(B2:B8)', mustContain: ['SUM('] } };
+    },
+    average() {
+      const s = weekSheet();
+      s.data['A9'] = 'Daily avg';
+      return { sheet: s, skill: 'average', prompt: `Average daily sales: <b class="mono">AVERAGE</b> over <b class="mono">B2:B8</b>, in <b class="mono">B9</b>.`, step: { type: 'formula', cell: 'B9', expectFormula: 'AVERAGE(B2:B8)', mustContain: ['AVERAGE('] } };
+    },
+    count() {
+      const s = stockSheet();
+      const blanks = shuffle([2, 3, 4, 5, 6, 7]).slice(0, randInt(1, 3));
+      for (const r of blanks) delete s.data[a1(1, r - 1)];
+      s.data['A9'] = 'Counted';
+      return { sheet: s, skill: 'count', prompt: `How many items have an On-hand number? <b class="mono">COUNT</b> over <b class="mono">B2:B7</b>, in <b class="mono">B9</b>.`, step: { type: 'formula', cell: 'B9', expectFormula: 'COUNT(B2:B7)', mustContain: ['COUNT('] } };
+    },
+    max() {
+      const s = weekSheet();
+      s.data['A9'] = 'Best day';
+      return { sheet: s, skill: 'max', prompt: `Best sales day of the week: <b class="mono">MAX</b> over <b class="mono">B2:B8</b>, in <b class="mono">B9</b>.`, step: { type: 'formula', cell: 'B9', expectFormula: 'MAX(B2:B8)', mustContain: ['MAX('] } };
+    },
+    min() {
+      const s = weekSheet();
+      s.data['A9'] = 'Slowest day';
+      return { sheet: s, skill: 'min', prompt: `Slowest sales day: <b class="mono">MIN</b> over <b class="mono">B2:B8</b>, in <b class="mono">B9</b>.`, step: { type: 'formula', cell: 'B9', expectFormula: 'MIN(B2:B8)', mustContain: ['MIN('] } };
+    },
+    countif() {
+      const s = weekSheet();
+      const th = pick([300, 400, 500, 600]);
+      s.data['A9'] = `Days > ${th}`;
+      return { sheet: s, skill: 'countif', prompt: `Count the days with sales over ${th}: <b class="mono">=COUNTIF(B2:B8,"&gt;${th}")</b> in <b class="mono">B9</b>.`, step: { type: 'formula', cell: 'B9', expectFormula: `COUNTIF(B2:B8,">${th}")`, mustContain: ['COUNTIF('] } };
+    },
+    if() {
+      const s = stockSheet();
+      const r = randInt(2, 7);
+      return { sheet: s, skill: 'if', prompt: `In <b class="mono">D${r}</b>: if On hand is below Reorder at, say "Order", otherwise "OK" — <b class="mono">=IF(B${r}&lt;C${r},"Order","OK")</b>.`, step: { type: 'formula', cell: `D${r}`, expectFormula: `IF(B${r}<C${r},"Order","OK")`, mustContain: ['IF('] } };
+    },
+    fill() {
+      const s = qtySheet();
+      s.data['D2'] = '=B2*C2';
+      return { sheet: s, skill: 'fill', prompt: `<b class="mono">D2</b> already computes revenue. Fill it down through <b class="mono">D6</b> — drag the corner square, or select D2:D6 and hit <span class="kbd">Ctrl/⌘ D</span>.`, step: { type: 'fill', src: 'D2', into: 'D3:D6' } };
+    },
+    absref() {
+      const s = qtySheet();
+      s.data['E1'] = 'Rate →';
+      s.data['F1'] = 1.0775;
+      return { sheet: s, skill: 'absref', prompt: `In <b class="mono">E2</b>: price with tax — <b class="mono">=C2*$F$1</b>. Don't forget the locks.`, step: { type: 'formula', cell: 'E2', expectFormula: 'C2*$F$1', mustContain: ['C2', '$F$1'] } };
+    },
+  };
+
+  /* ---------- run state ---------- */
+  const E = CONFIG.ENDLESS;
+  const S = {
+    running: false, streak: 0, lives: 0, score: 0,
+    task: null, lastSkill: null, pool: [],
+    limit: null, t0: 0, remain: 0, timerId: null,
+    perSkill: {}, // skill -> {ok, miss}
+  };
+  const mult = () => Math.min(3, 1 + 0.5 * Math.floor(S.streak / 5));
+
+  function start() {
+    Game.mode = 'endless';
+    S.running = true; S.streak = 0; S.lives = E.LIVES; S.score = 0;
+    S.perSkill = {}; S.lastSkill = null; S.limit = null;
+    S.pool = unlockedSkills();
+    rng = mulberry32(Math.floor(performance.now() * 997) & 0x7fffffff);
+    UI.show('screen-game');
+    $('#game-title').textContent = 'Streak Mode';
+    $('#game-crumbs').textContent = 'survive as long as you can';
+    UI.hideWinPop();
+    nextTask(true);
+  }
+
+  function nextTask(first) {
+    if (!S.running) return;
+    let skill = pick(S.pool);
+    if (S.pool.length > 1) while (skill === S.lastSkill) skill = pick(S.pool);
+    S.lastSkill = skill;
+    S.task = MAKERS[skill]();
+    Checks.snapshot(S.task.step);
+    Grid.lock(false);
+    Grid.load(S.task.sheet);
+    $('#sheet-name').textContent = 'Fern & Bean — Streak Mode';
+    $('#sheet-sub').textContent = '';
+    Checks.snapshot(S.task.step); // re-snapshot AFTER load so move/copy capture real values
+    const warmup = S.streak < E.WARMUP_TASKS;
+    S.limit = warmup ? null : Math.max(E.FLOOR_SECONDS, E.START_SECONDS - E.DROP_PER_TASK * (S.streak - E.WARMUP_TASKS));
+    S.t0 = performance.now();
+    renderHUD();
+    startTimer();
+    Grid.focus();
+  }
+
+  /* ---------- HUD in the mission panel ---------- */
+  function renderHUD() {
+    const hearts = Array.from({ length: E.LIVES }, (_, i) =>
+      `<svg class="life ${i < E.LIVES - S.lives ? 'lost' : ''}" viewBox="0 0 24 24" fill="${i < E.LIVES - S.lives ? '#B9BFCC' : '#D64545'}"><path d="M12 21s-7.5-4.7-10-9.3C.4 8 2 4.5 5.5 4c2.1-.3 4 .8 5 2.4h3c1-1.6 2.9-2.7 5-2.4C22 4.5 23.6 8 22 11.7 19.5 16.3 12 21 12 21z" transform="scale(.9) translate(1.3,1.3)"/></svg>`).join('');
+    $('#mission-panel').innerHTML = `
+      <div class="endless-hud">
+        <div class="streak-big" id="streak-big"><small>Streak</small><span class="n">${S.streak}</span></div>
+        <div style="text-align:right">
+          <div class="lives" role="img" aria-label="${S.lives} of ${E.LIVES} lives left">${hearts}</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:6px">best ${Math.max(store.data.best, S.streak)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:13px;color:var(--ink-2)">Score <b class="mono" id="endless-score">${S.score}</b></span>
+        <span class="tag ${mult() > 1 ? 'tag-gold' : 'tag-gray'}" id="mult-chip">×${mult().toFixed(1).replace('.0', '')} multiplier</span>
+      </div>
+      <div class="timer-wrap" id="timer-wrap" ${S.limit ? '' : 'style="display:none"'}>
+        <div class="timer-label"><span>Clock</span><span class="t" id="timer-t"></span></div>
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+      </div>
+      ${S.limit ? '' : `<div class="pool-note">Warmup — no clock for the first ${E.WARMUP_TASKS} tasks. It arrives soon. ⏱️</div>`}
+      <hr>
+      <div class="mission-goal" id="mission-goal" aria-live="polite">${S.task.prompt}</div>
+      <hr>
+      <div class="pool-note" id="pool-note">Task pool: skills from ${['', 'Chapter 1', 'Chapters 1–2', 'Chapters 1–3'][[1, 2, 3].filter(chapterDone).length]}${chapterDone(3) ? ' (everything!)' : ' — finish more chapters to widen it'}</div>
+      <div class="hint-box"><button class="btn btn-quiet" id="btn-bail" style="width:100%">End run</button></div>`;
+    $('#btn-bail').addEventListener('click', () => endRun('bailed'));
+  }
+
+  /* ---------- timer ---------- */
+  function startTimer() {
+    stopTimer();
+    if (!S.limit) return;
+    S.timerId = setInterval(() => {
+      const gone = (performance.now() - S.t0) / 1000;
+      S.remain = S.limit - gone;
+      const frac = clamp(S.remain / S.limit, 0, 1);
+      const wrap = $('#timer-wrap'), fill = $('#timer-fill'), t = $('#timer-t');
+      if (!wrap) return;
+      fill.style.width = (frac * 100) + '%';
+      t.textContent = Math.max(0, S.remain).toFixed(1) + 's';
+      wrap.classList.toggle('warn', frac < 0.5 && frac >= 0.25);
+      wrap.classList.toggle('danger', frac < 0.25);
+      if (S.remain <= 0) { stopTimer(); miss('timeout'); }
+    }, 100);
+  }
+  function stopTimer() { if (S.timerId) { clearInterval(S.timerId); S.timerId = null; } }
+  document.addEventListener('visibilitychange', () => {
+    // pause the clock while the tab is hidden — no unfair deaths
+    if (Game.mode !== 'endless' || !S.running || !S.limit) return;
+    if (document.hidden) { stopTimer(); S.limit = Math.max(0.1, S.remain); }
+    else { S.t0 = performance.now(); startTimer(); }
+  });
+
+  /* ---------- outcomes ---------- */
+  function bump(skill, key) {
+    S.perSkill[skill] = S.perSkill[skill] || { ok: 0, miss: 0 };
+    S.perSkill[skill][key]++;
+  }
+  function onGridEvent(ev) {
+    if (Game.mode !== 'endless' || !S.running || !S.task) return;
+    if (Checks.verify(S.task.step)) {
+      stopTimer();
+      const warmup = S.limit === null;
+      const pts = Math.round((warmup ? 150 : 100 + Math.max(0, Math.ceil(S.remain)) * 10) * mult());
+      S.score += pts;
+      bump(S.task.skill, 'ok');
+      S.streak++;
+      const target = Checks.targetOf(S.task.step);
+      if (target && S.task.step.type !== 'select') Grid.flash(target, 'flash-good');
+      UI.scorePopAt(target, `+${pts}`);
+      if (S.streak % 5 === 0) {
+        UI.confettiBurst(REDUCED_MOTION ? 0 : 50);
+        toast(`🔥 ${S.streak} in a row — multiplier ×${mult().toFixed(1).replace('.0', '')}`);
+      }
+      const sb = $('#streak-big');
+      if (sb) { sb.classList.remove('pop'); void sb.offsetWidth; sb.classList.add('pop'); }
+      nextTask();
+    } else if (Checks.isAttempt(S.task.step, ev)) {
+      miss('wrong');
+    }
+  }
+  function miss(kind) {
+    if (!S.running) return;
+    bump(S.task.skill, 'miss');
+    S.lives--;
+    Grid.shake();
+    const target = Checks.targetOf(S.task.step);
+    if (target && kind === 'wrong') Grid.flash(target, 'flash-bad');
+    toast(kind === 'timeout' ? "⏱️ Time! That one's gone." : "✗ Not it — that costs a life.");
+    if (S.lives <= 0) return endRun(kind);
+    if (kind === 'timeout') nextTask();  // wrong answers: keep trying till the clock says otherwise
+    else renderHUD();
+  }
+
+  function endRun(reason) {
+    S.running = false;
+    stopTimer();
+    Grid.lock(true);
+    Game.mode = null;
+    const newBestStreak = S.streak > store.data.best;
+    const newBestScore = S.score > (store.data.bestScore || 0);
+    if (newBestStreak) store.data.best = S.streak;
+    if (newBestScore) store.data.bestScore = S.score;
+    store.save();
+    if ((newBestStreak || newBestScore) && S.streak >= 3) UI.confettiBurst(REDUCED_MOTION ? 0 : 140);
+    UI.endlessSummary({
+      streak: S.streak, score: S.score, reason,
+      best: store.data.best, bestScore: store.data.bestScore || 0,
+      newBestStreak, newBestScore, perSkill: S.perSkill, labels: SKILL_LABELS,
+    });
+  }
+
+  return { start, onGridEvent, unlockedSkills, running: () => S.running, bail: () => endRun('bailed'), _state: S, _makers: MAKERS };
+})();
+/* ============================================================
+   UI — screens, dialogs, confetti, email capture, cheat sheet,
+   certificate, share, and boot. Everything that isn't the sheet.
+   ============================================================ */
+const UI = (() => {
+
+  /* ---------- router ---------- */
+  function show(id) {
+    $$('.screen').forEach(s => s.classList.remove('active'));
+    $('#' + id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- confetti (short, cheap, skippable) ----------
+     Bursts are ≤ ~1.2s of particles falling under gravity. No loop
+     runs when there are no particles; reduced-motion gets none. */
+  const canvas = $('#confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  const COLORS = ['#3454D1', '#7B9EFF', '#F4B400', '#2BB39A', '#E76A9B', '#2A44AB'];
+  let particles = [], rafId = null;
+  function sizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', sizeCanvas);
+  function confettiBurst(n, at) {
+    if (!n || REDUCED_MOTION) return;
+    if (!canvas.width) sizeCanvas();
+    const points = at ? [at] : (n > 100
+      ? [{ x: canvas.width * 0.2, y: canvas.height * 0.4 }, { x: canvas.width * 0.8, y: canvas.height * 0.4 }]
+      : [{ x: canvas.width * 0.5, y: canvas.height * 0.38 }]);
+    for (let i = 0; i < n && particles.length < 420; i++) {
+      const p = points[i % points.length];
+      const ang = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5.5;
+      particles.push({
+        x: p.x, y: p.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 2.4,
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+        w: 5 + Math.random() * 5, h: 3 + Math.random() * 4,
+        color: COLORS[i % COLORS.length], life: 55 + Math.random() * 30, age: 0,
+      });
+    }
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles = particles.filter(p => p.age < p.life);
+    for (const p of particles) {
+      p.age++; p.x += p.vx; p.y += p.vy; p.vy += 0.13; p.vx *= 0.99; p.rot += p.vr;
+      ctx.save();
+      ctx.globalAlpha = clamp(1.4 - p.age / p.life, 0, 1);
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (particles.length) rafId = requestAnimationFrame(tick);
+    else { rafId = null; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  }
+
+  /* ---------- floating "+120" ---------- */
+  function scorePopAt(rangeA1, text) {
+    let x = window.innerWidth / 2, y = window.innerHeight / 2;
+    try {
+      const first = rangeCells(parseRange(rangeA1))[0];
+      const td = Grid.tdOf(a1(first.col, first.row));
+      if (td) { const r = td.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top - 4; }
+    } catch (e) { /* center fallback */ }
+    const d = el('div', 'score-pop', esc(text));
+    d.style.left = (x - 20) + 'px'; d.style.top = (y - 22) + 'px';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 950);
+  }
+
+  /* ---------- win pop (over the sheet) ---------- */
+  function showWinPop(html) { $('#win-card').innerHTML = html; $('#win-pop').classList.add('open'); }
+  function hideWinPop() { $('#win-pop').classList.remove('open'); }
+
+  /* ---------- generic dialog ---------- */
+  let dialogDismissible = true;
+  function openDialog(html, opts) {
+    opts = opts || {};
+    dialogDismissible = opts.dismissible !== false;
+    const dlg = $('#dialog');
+    dlg.className = 'dialog' + (opts.wide ? ' wide' : '');
+    dlg.innerHTML = (dialogDismissible ? '<button class="closer" aria-label="Close">✕</button>' : '') + html;
+    $('#overlay').classList.add('open');
+    const closer = $('.closer', dlg);
+    if (closer) closer.addEventListener('click', closeDialog);
+    bindEmailForms(dlg);
+    bindAdvancedLinks(dlg);
+    const focusEl = $('[data-autofocus]', dlg) || closer;
+    if (focusEl) focusEl.focus();
+  }
+  function closeDialog() { $('#overlay').classList.remove('open'); }
+  $('#overlay').addEventListener('mousedown', e => { if (e.target === e.currentTarget && dialogDismissible) closeDialog(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('#overlay').classList.contains('open') && dialogDismissible) closeDialog();
+  });
+
+  /* ---------- email capture (THE lead-magnet mechanic) ----------
+     Gameplay is never gated. Email unlocks the extras: cheat sheet,
+     certificate, "new chapters first". Works fully offline/local when
+     CONFIG.EMAIL_ENDPOINT is '' — see CONFIG at the top of the file. */
+  function profile() { return store.data.profile; }
+  function captureEmail(email, source) {
+    store.data.profile = { email, source, at: new Date().toISOString() };
+    store.save();
+    if (CONFIG.EMAIL_ENDPOINT) {
+      try {
+        fetch(CONFIG.EMAIL_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            email, source, game: 'cellwise',
+            bestStreak: store.data.best || 0,
+            levelsDone: Object.keys(store.data.levels).length,
+          }),
+        }).catch(() => {});
+      } catch (e) { /* never let capture break the game */ }
+    }
+    confettiBurst(REDUCED_MOTION ? 0 : 40);
+    toast('You\'re in ✓ — cheat sheet unlocked');
+    renderEmailStates();
+  }
+  function bindEmailForms(root) {
+    $$('[data-email-form]', root || document).forEach(form => {
+      if (form._bound) return;
+      form._bound = true;
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const input = $('input[type="email"]', form);
+        const err = form.parentElement && $('[data-email-err]', form.parentElement);
+        const email = (input.value || '').trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+          if (err) err.style.display = 'block';
+          input.focus();
+          return;
+        }
+        if (err) err.style.display = 'none';
+        captureEmail(email, form.dataset.source || 'unknown');
+      });
+    });
+  }
+  function emailCardHTML(source, title, blurb) {
+    if (profile()) return '';
+    return `
+      <div class="email-card">
+        <h3>${title || 'Want the cheat sheet + new chapters first?'}</h3>
+        <p>${blurb || 'One email, no spam — we\'ll unlock the printable cheat sheet now and ping you when new levels or the Advanced Edition drop.'}</p>
+        <form class="email-row" data-email-form data-source="${source}">
+          <input class="email-input" type="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address">
+          <button class="btn btn-primary" type="submit">Unlock it</button>
+        </form>
+        <p class="email-err" data-email-err>That email doesn't look right — mind checking it?</p>
+      </div>`;
+  }
+  function renderEmailStates() {
+    const p = profile();
+    // header chips
+    for (const id of ['chip-chapters', 'chip-game']) {
+      const chip = $('#' + id);
+      if (!chip) continue;
+      chip.classList.toggle('on', !!p);
+      $('.txt', chip).textContent = p ? p.email : 'Saved on this device';
+    }
+    // cover strip
+    const strip = $('#cover-email');
+    if (p && strip) strip.innerHTML = `
+      <div class="email-done">✓&nbsp; You're on the list as <b>&nbsp;${esc(p.email)}</b></div>
+      <p class="email-fine">Cheat sheet unlocked. We'll email you when new chapters or the Advanced Edition go live.</p>`;
+  }
+
+  /* ---------- advanced-edition links ---------- */
+  function bindAdvancedLinks(root) {
+    $$('[data-advanced-link]', root || document).forEach(a => { a.href = CONFIG.ADVANCED_EDITION_URL; });
+  }
+  function advancedCTA(context) {
+    return `
+      <div class="cta-card">
+        <span class="tag">Ready for more?</span>
+        <h3>You've got the intermediate toolkit. The advanced stuff is where it gets fun.</h3>
+        <p>VLOOKUP, INDEX-MATCH, pivot-table thinking, nested formulas — the Cellwise <b>Advanced Edition</b> picks up exactly where ${context || 'this'} leaves off.</p>
+        <a class="btn btn-primary" data-advanced-link href="#" target="_blank" rel="noopener">Check out the Advanced Edition →</a>
+      </div>`;
+  }
+
+  /* ---------- cheat sheet ---------- */
+  const SHORTCUTS = [
+    ['←↑↓→', 'Move around the sheet'],
+    ['Shift + arrows', 'Grow a selection'],
+    ['Click + drag', 'Select a range'],
+    ['Shift + click', 'Select from A to B'],
+    ['Enter / F2', 'Edit the selected cell'],
+    ['Enter', 'Commit, move down'],
+    ['Tab', 'Commit, move right'],
+    ['Esc', 'Cancel an edit'],
+    ['Ctrl/⌘ C · X · V', 'Copy · cut · paste'],
+    ['Ctrl/⌘ D', 'Fill down'],
+    ['Delete', 'Clear cell or range'],
+    ['Drag corner square', 'Fill a formula along'],
+  ];
+  const FN_EXAMPLES = {
+    SUM: '=SUM(B2:B8)', AVERAGE: '=AVERAGE(B2:B8)', COUNT: '=COUNT(B2:B10)',
+    COUNTIF: '=COUNTIF(B2:B8,">500")', MAX: '=MAX(B2:B8)', MIN: '=MIN(B2:B8)',
+    IF: '=IF(B2<C2,"Order","OK")',
+  };
+  function cheatHTML() {
+    return `
+      <div class="cheat-cols">
+        <div class="cheat-sec">
+          <h4>Keyboard moves</h4>
+          ${SHORTCUTS.map(([k, d]) => `<div class="cheat-line"><span class="d">${d}</span><span class="mono">${k}</span></div>`).join('')}
+        </div>
+        <div class="cheat-sec">
+          <h4>The seven formulas</h4>
+          ${FUNCTIONS.map(f => `<div class="cheat-line"><span class="d">${f.name} — ${f.desc}</span><span class="mono">${esc(FN_EXAMPLES[f.name] || '')}</span></div>`).join('')}
+          <h4>The $ sign</h4>
+          <div class="cheat-line"><span class="d">Slides when filled</span><span class="mono">A1</span></div>
+          <div class="cheat-line"><span class="d">Fully locked</span><span class="mono">$A$1</span></div>
+          <div class="cheat-line"><span class="d">Row locked only</span><span class="mono">A$1</span></div>
+          <div class="cheat-line"><span class="d">Column locked only</span><span class="mono">$A1</span></div>
+          <div class="cheat-line"><span class="d" style="font-style:italic">Rule of thumb: lock whatever must NOT move when you fill.</span><span></span></div>
+        </div>
+      </div>`;
+  }
+  function openCheatSheet() {
+    if (!profile()) {
+      openDialog(`
+        <h2>The Cellwise Cheat Sheet</h2>
+        <p class="sub">Every shortcut and formula from the game, on one printable page.</p>
+        <div class="cheat-locked">
+          ${cheatHTML()}
+          <div class="cheat-lock-card"><div class="cheat-lock-inner">
+            <div style="font-size:26px">🔒</div>
+            <h3>Unlock with your email</h3>
+            <p>Free forever — plus you'll hear first about new chapters and the Advanced Edition. That's the whole deal.</p>
+            <form class="email-row" data-email-form data-source="cheatsheet" style="justify-content:center">
+              <input class="email-input" type="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address" data-autofocus>
+              <button class="btn btn-primary" type="submit">Unlock</button>
+            </form>
+            <p class="email-err" data-email-err>That email doesn't look right — mind checking it?</p>
+          </div></div>
+        </div>`, { wide: true });
+      // when capture succeeds, re-open unlocked
+      const dlg = $('#dialog');
+      const form = $('[data-email-form]', dlg);
+      if (form) form.addEventListener('submit', () => setTimeout(() => { if (profile()) openCheatSheet(); }, 50));
+      return;
+    }
+    openDialog(`
+      <h2>The Cellwise Cheat Sheet</h2>
+      <p class="sub">Yours. Print it, tape it next to your monitor, look busy.</p>
+      ${cheatHTML()}
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="cheat-print">Print / save as PDF</button>
+        <span style="font-size:12.5px;color:var(--ink-3)">Tip: “Save as PDF” lives in the print dialog.</span>
+      </div>`, { wide: true });
+    $('#cheat-print').addEventListener('click', () => {
+      $('#print-zone').innerHTML = `<div style="font-family:var(--sans);padding:24px">
+        <h1 style="font-size:22px;margin-bottom:2px">Cellwise — Spreadsheet Cheat Sheet</h1>
+        <p style="color:#555;font-size:13px;margin-bottom:14px">from the free game at ${esc(CONFIG.GAME_URL)}</p>${cheatHTML()}</div>`;
+      $('#print-zone').style.display = 'block';
+      window.print();
+      setTimeout(() => { $('#print-zone').style.display = 'none'; }, 500);
+    });
+  }
+
+  /* ---------- share ---------- */
+  function shareText(kind, data) {
+    if (kind === 'streak') return `I just ran a ${data.streak}-task streak (${data.score.toLocaleString()} pts) in Cellwise, a free spreadsheet game. Your move: ${CONFIG.GAME_URL}`;
+    return `I just went from spreadsheet beginner to intermediate playing Cellwise — free, in the browser: ${CONFIG.GAME_URL}`;
+  }
+  function copyShare(text) {
+    const done = () => toast('Copied — paste it anywhere 📋');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = el('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { toast(text); }
+    ta.remove();
+  }
+
+  /* ---------- chapter select ---------- */
+  const totalScore = () => Object.values(store.data.scores || {}).reduce((a, b) => a + b, 0);
+  function showChapters() {
+    Game.mode = null;
+    renderChapters();
+    show('screen-chapters');
+  }
+  function renderChapters() {
+    const list = $('#chapter-list');
+    list.innerHTML = CHAPTERS.map(ch => {
+      const lvls = levelsOfChapter(ch.n);
+      const doneCount = lvls.filter(l => store.data.levels[l.id]).length;
+      const unlocked = ch.n === 1 || chapterDone(ch.n - 1);
+      const done = doneCount === lvls.length;
+      const continueLevel = lvls.find(l => !store.data.levels[l.id]) || lvls[0];
+      return `
+        <div class="chapter-card ${done ? 'done' : ''} ${unlocked ? '' : 'locked'}">
+          <div class="chapter-num">${done ? '✓' : ch.n}</div>
+          <div class="chapter-info">
+            <h3>Chapter ${ch.n}: ${ch.title}</h3>
+            <p>${ch.slug}</p>
+            <div class="level-dots">
+              ${lvls.map((l, i) => `<button class="level-dot ${store.data.levels[l.id] ? 'done' : ''}" data-level="${l.id}" ${levelUnlocked(l) ? '' : 'disabled'} title="${esc(l.title)}" aria-label="Level ${i + 1}: ${esc(l.title)}${store.data.levels[l.id] ? ' (done)' : ''}">${store.data.levels[l.id] ? '✓' : i + 1}</button>`).join('')}
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:var(--ink-3);margin-bottom:8px">${doneCount}/${lvls.length} levels</div>
+            <button class="btn ${done ? 'btn-ghost' : 'btn-primary'}" data-chapter-play="${continueLevel.id}" ${unlocked ? '' : 'disabled'}>
+              ${!unlocked ? '🔒 Locked' : done ? 'Replay' : doneCount ? 'Continue' : 'Start'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+    $$('[data-level]', list).forEach(b => b.addEventListener('click', () => Levels.start(levelById(b.dataset.level))));
+    $$('[data-chapter-play]', list).forEach(b => b.addEventListener('click', () => Levels.start(levelById(b.dataset.chapterPlay))));
+
+    // endless card state
+    const canEndless = chapterDone(1);
+    $('#btn-endless').disabled = !canEndless;
+    $('#btn-endless').textContent = canEndless ? 'Start a run' : '🔒 Finish Chapter 1 first';
+    $('#best-streak-label').innerHTML = store.data.best
+      ? `best streak <b>${store.data.best}</b> · best score <b>${(store.data.bestScore || 0).toLocaleString()}</b>` : 'no runs yet';
+    const pts = totalScore();
+    $('#ch-subline').innerHTML = pts
+      ? `Career score: <b class="mono">${pts.toLocaleString()} pts</b> — replay any level to beat your best.`
+      : 'Fern &amp; Bean\'s books aren\'t going to clean themselves.';
+    renderEmailStates();
+    bindAdvancedLinks();
+  }
+
+  /* ---------- chapter complete + finale ---------- */
+  function chapterComplete(chN) {
+    const ch = CHAPTERS[chN - 1];
+    confettiBurst(REDUCED_MOTION ? 0 : 160);
+    if (chN === 3) return finale();
+    const next = CHAPTERS[chN]; // next chapter meta
+    openDialog(`
+      <div class="badge-ring">${chN === 1 ? '🥉' : '🥈'}</div>
+      <h2>Chapter ${chN} complete!</h2>
+      <p class="sub">${ch.doneBlurb}</p>
+      <div class="stat-row">
+        <div class="stat-box"><div class="v mono">${levelsOfChapter(chN).length}</div><div class="l">levels cleared</div></div>
+        <div class="stat-box"><div class="v mono">${totalScore().toLocaleString()}</div><div class="l">career points</div></div>
+        ${chN === 1 ? '<div class="stat-box"><div class="v">⚡</div><div class="l">Streak Mode unlocked</div></div>' : ''}
+      </div>
+      ${chN === 1 ? emailCardHTML('chapter1', 'Nice run. Want to keep the momentum?', 'Drop your email and we\'ll unlock the printable cheat sheet now, and tell you first when new chapters or the Advanced Edition land.') : ''}
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="chd-next" data-autofocus>Start Chapter ${next.n}: ${next.title} →</button>
+        ${chN === 1 ? '<button class="btn btn-ghost" id="chd-endless">Try Streak Mode ⚡</button>' : ''}
+        <button class="btn btn-quiet" id="chd-back">Chapters</button>
+      </div>`);
+    $('#chd-next').addEventListener('click', () => { closeDialog(); Levels.start(levelsOfChapter(next.n)[0]); });
+    const eb = $('#chd-endless');
+    if (eb) eb.addEventListener('click', () => { closeDialog(); Endless.start(); });
+    $('#chd-back').addEventListener('click', () => { closeDialog(); showChapters(); });
+  }
+
+  function finale() {
+    openDialog(`
+      <div class="badge-ring" style="background:#FBF1D5">🏆</div>
+      <h2>That's the whole free game. You're intermediate now.</h2>
+      <p class="sub">Fifteen levels ago you were finding B3. You just built a report with SUM, COUNTIF, IF, locked references and fill — that combination is genuinely past most office spreadsheet users.</p>
+      <div class="stat-row">
+        <div class="stat-box"><div class="v mono">15</div><div class="l">levels</div></div>
+        <div class="stat-box"><div class="v mono">${totalScore().toLocaleString()}</div><div class="l">career points</div></div>
+        <div class="stat-box"><div class="v mono">${store.data.best || 0}</div><div class="l">best streak</div></div>
+      </div>
+      ${advancedCTA('the free game')}
+      <div class="email-card" id="cert-zone">${certZoneHTML()}</div>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="fin-share">Share the game</button>
+        <button class="btn btn-ghost" id="fin-endless">⚡ Streak Mode</button>
+        <button class="btn btn-quiet" id="fin-back">Back to chapters</button>
+      </div>`, { wide: true });
+    $('#fin-share').addEventListener('click', () => copyShare(shareText('finale')));
+    $('#fin-endless').addEventListener('click', () => { closeDialog(); Endless.start(); });
+    $('#fin-back').addEventListener('click', () => { closeDialog(); showChapters(); });
+    wireCertZone();
+  }
+
+  /* ---------- certificate (email-gated bonus, drawn on canvas) ---------- */
+  function certZoneHTML() {
+    if (!profile()) return `
+      <h3>🎓 Get your completion certificate</h3>
+      <p>Put a name on it, download it, drop it in a Slack thread and enjoy the confusion. Unlocks with your email (same deal: new-chapter updates, no spam).</p>
+      <form class="email-row" data-email-form data-source="finale">
+        <input class="email-input" type="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address">
+        <button class="btn btn-primary" type="submit">Unlock certificate</button>
+      </form>
+      <p class="email-err" data-email-err>That email doesn't look right — mind checking it?</p>`;
+    return `
+      <h3>🎓 Your completion certificate</h3>
+      <p>Whose spreadsheet victory is this?</p>
+      <div class="email-row">
+        <input class="email-input" id="cert-name" placeholder="Your name" aria-label="Name for certificate" maxlength="40">
+        <button class="btn btn-primary" id="cert-make">Make it official</button>
+      </div>
+      <div class="cert-preview" id="cert-preview" style="display:none"><canvas id="cert-canvas" width="1100" height="780"></canvas></div>
+      <div class="dialog-actions" id="cert-dl-row" style="display:none;margin-top:12px">
+        <a class="btn btn-ghost" id="cert-dl" download="cellwise-certificate.png">Download PNG</a>
+      </div>`;
+  }
+  function wireCertZone() {
+    const zone = $('#cert-zone');
+    if (!zone) return;
+    const form = $('[data-email-form]', zone);
+    if (form) form.addEventListener('submit', () => setTimeout(() => { if (profile()) { zone.innerHTML = certZoneHTML(); wireCertZone(); } }, 50));
+    const make = $('#cert-make', zone);
+    if (make) make.addEventListener('click', () => {
+      const name = ($('#cert-name').value || '').trim() || 'A Spreadsheet Person';
+      drawCertificate(name);
+      $('#cert-preview').style.display = 'block';
+      $('#cert-dl-row').style.display = 'flex';
+      $('#cert-dl').href = $('#cert-canvas').toDataURL('image/png');
+      confettiBurst(REDUCED_MOTION ? 0 : 60);
+    });
+  }
+  function drawCertificate(name) {
+    const c = $('#cert-canvas'), g = c.getContext('2d');
+    const W = c.width, H = c.height;
+    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
+    g.strokeStyle = '#3454D1'; g.lineWidth = 10; g.strokeRect(25, 25, W - 50, H - 50);
+    g.strokeStyle = '#EAEEFB'; g.lineWidth = 2; g.strokeRect(45, 45, W - 90, H - 90);
+    g.fillStyle = '#3454D1';
+    g.beginPath(); g.roundRect ? g.roundRect(W / 2 - 26, 92, 52, 52, 12) : g.fillRect(W / 2 - 26, 92, 52, 52); g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(W / 2 - 13, 108); g.lineTo(W / 2 + 13, 108);
+    g.moveTo(W / 2 - 13, 118); g.lineTo(W / 2 + 13, 118);
+    g.moveTo(W / 2 - 13, 128); g.lineTo(W / 2 + 13, 128);
+    g.moveTo(W / 2 - 5, 100); g.lineTo(W / 2 - 5, 136);
+    g.stroke();
+    const center = (txt, y, font, color, spacing) => {
+      g.font = font; g.fillStyle = color; g.textAlign = 'center';
+      if (spacing) { g.save(); g.letterSpacing = spacing; }
+      g.fillText(txt, W / 2, y);
+      if (spacing) g.restore();
+    };
+    center('CELLWISE', 185, '700 26px Inter, sans-serif', '#3454D1', '6px');
+    center('CERTIFICATE OF COMPLETION', 232, '600 17px Inter, sans-serif', '#8A91A3', '4px');
+    center(name, 330, '800 58px Inter, sans-serif', '#1E2433');
+    g.strokeStyle = '#E4E7EE'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(W / 2 - 240, 360); g.lineTo(W / 2 + 240, 360); g.stroke();
+    center('completed all fifteen levels of Cellwise, demonstrating intermediate', 410, '400 19px Inter, sans-serif', '#4A5265');
+    center('spreadsheet skills: navigation, ranges, cut/copy/paste, SUM, AVERAGE,', 440, '400 19px Inter, sans-serif', '#4A5265');
+    center('COUNT, COUNTIF, MAX, MIN, IF, fill, and absolute ($) references.', 470, '400 19px Inter, sans-serif', '#4A5265');
+    const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    center(`${date}   ·   career score ${totalScore().toLocaleString()} pts`, 545, '500 17px "IBM Plex Mono", monospace', '#4A5265');
+    center('— Maya, Fern & Bean ☕ (extremely official)', 640, 'italic 400 17px Georgia, serif', '#8A91A3');
+    center('play it free: ' + CONFIG.GAME_URL.replace(/^https?:\/\//, ''), 700, '400 14px "IBM Plex Mono", monospace', '#B9BFCC');
+  }
+
+  /* ---------- endless end-of-run ---------- */
+  function endlessSummary(d) {
+    const skills = Object.entries(d.perSkill);
+    const missed = skills.filter(([, v]) => v.miss > 0).sort((a, b) => b[1].miss - a[1].miss);
+    const clean = skills.filter(([, v]) => v.miss === 0 && v.ok > 0);
+    openDialog(`
+      <div class="badge-ring">${d.streak >= 15 ? '🔥' : d.streak >= 5 ? '⚡' : '💥'}</div>
+      <h2>${d.reason === 'bailed' ? 'Run ended.' : 'Run over!'} Streak: ${d.streak}</h2>
+      <p class="sub">${d.newBestStreak ? 'New best streak — the bar has moved.' : `Best is ${d.best}. ${d.streak >= d.best * 0.7 && d.streak > 0 ? 'Close.' : 'It remembers, even if you don\'t.'}`}</p>
+      <div class="stat-row">
+        <div class="stat-box"><div class="v mono">${d.streak}</div><div class="l">streak${d.newBestStreak ? ' · best!' : ''}</div></div>
+        <div class="stat-box"><div class="v mono">${d.score.toLocaleString()}</div><div class="l">score${d.newBestScore ? ' · best!' : ''}</div></div>
+        <div class="stat-box"><div class="v mono">${d.best}</div><div class="l">best streak</div></div>
+      </div>
+      ${skills.length ? `
+      <div class="skill-breakdown">
+        <h4>What tripped you up</h4>
+        ${missed.length ? missed.map(([k, v]) => `<div class="skill-line"><span>${d.labels[k] || k}</span><span class="miss">${v.miss} miss${v.miss > 1 ? 'es' : ''} · ${v.ok} ok</span></div>`).join('') : '<div class="skill-line"><span>Nothing — every miss was the clock or a clean sweep</span><span class="clean">flawless</span></div>'}
+        ${clean.length ? `<div class="skill-line"><span>Clean: ${clean.map(([k]) => d.labels[k] || k).join(', ')}</span><span class="clean">✓</span></div>` : ''}
+      </div>` : ''}
+      ${!chapterDone(3) ? `<p style="font-size:13px;color:var(--ink-2);margin-top:10px">Your task pool only has skills from finished chapters — <b>finish more chapters to widen the pool</b> (and the score ceiling).</p>` : ''}
+      ${d.streak >= 5 ? advancedCTA('Streak Mode') : ''}
+      ${emailCardHTML('endless', 'Rematch alerts?', 'Get the cheat sheet now, plus a heads-up when new task types and the Advanced Edition land.')}
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="es-again" data-autofocus>Run it back ⚡</button>
+        <button class="btn btn-ghost" id="es-share">Share this run</button>
+        <button class="btn btn-quiet" id="es-back">Chapters</button>
+      </div>`, { wide: true });
+    $('#es-again').addEventListener('click', () => { closeDialog(); Endless.start(); });
+    $('#es-share').addEventListener('click', () => copyShare(shareText('streak', d)));
+    $('#es-back').addEventListener('click', () => { closeDialog(); showChapters(); });
+  }
+
+  /* ---------- reset ---------- */
+  function confirmReset() {
+    openDialog(`
+      <h2>Reset all progress?</h2>
+      <p class="sub">Levels, scores and best streak go back to zero. ${profile() ? 'Your email signup stays.' : ''}</p>
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="rs-no" data-autofocus>Keep my progress</button>
+        <button class="btn btn-ghost" id="rs-yes" style="color:var(--red);border-color:var(--red)">Yes, wipe it</button>
+      </div>`);
+    $('#rs-no').addEventListener('click', closeDialog);
+    $('#rs-yes').addEventListener('click', () => { store.reset(); closeDialog(); renderChapters(); renderCover(); toast('Fresh sheet. Literally.'); });
+  }
+
+  /* ---------- cover state ---------- */
+  function renderCover() {
+    const started = Object.keys(store.data.levels).length > 0;
+    $('#nav-continue').style.display = started ? '' : 'none';
+    $('#cta-play').textContent = started ? 'Continue playing →' : 'Start playing →';
+    const note = $('#cover-progress-note');
+    if (started) {
+      const done = Object.keys(store.data.levels).length;
+      note.innerHTML = `${done}/${LEVELS.length} levels done · ${totalScore().toLocaleString()} pts — saved on this device.`;
+    }
+    renderEmailStates();
+    bindAdvancedLinks();
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    store.load();
+    sizeCanvas();
+    Grid.onChange(ev => { Levels.onGridEvent(ev); Endless.onGridEvent(ev); });
+
+    $('#cta-play').addEventListener('click', () => {
+      const firstUndone = LEVELS.find(l => !store.data.levels[l.id]);
+      if (!Object.keys(store.data.levels).length) Levels.start(LEVELS[0]);   // first-timers: straight into the game
+      else if (firstUndone) showChapters();
+      else showChapters();
+    });
+    $('#nav-continue').addEventListener('click', showChapters);
+    $('#cta-streak').addEventListener('click', () => {
+      if (chapterDone(1)) Endless.start();
+      else { toast('Streak Mode unlocks after Chapter 1 — it\'s quick, go!'); showChapters(); }
+    });
+    $('#nav-cheat').addEventListener('click', openCheatSheet);
+    $('#ch-cheat').addEventListener('click', openCheatSheet);
+    $('#btn-endless').addEventListener('click', () => { if (chapterDone(1)) Endless.start(); });
+    $('#back-cover').addEventListener('click', () => { renderCover(); show('screen-cover'); });
+    $('#reset-progress').addEventListener('click', confirmReset);
+    $('#game-back').addEventListener('click', () => {
+      if (Game.mode === 'endless' && Endless.running()) return Endless.bail(); // ends the run, shows the summary
+      Game.mode = null;
+      showChapters();
+    });
+    $('#foot-advanced').href = CONFIG.ADVANCED_EDITION_URL;
+
+    bindEmailForms(document);
+    renderCover();
+    renderEmailStates();
+    show('screen-cover');
+  }
+
+  return {
+    show, showChapters, renderChapters, renderCover,
+    chapterComplete, finale, endlessSummary,
+    showWinPop, hideWinPop, confettiBurst, scorePopAt,
+    openCheatSheet, captureEmail, copyShare, shareText, boot,
+  };
+})();
+
+/* ---------- go ---------- */
+UI.boot();
+
+/* test/debug handle (harmless in prod; used by the Playwright suite) */
+window.CW = {
+  CONFIG, store, Grid, Levels, Endless, Checks, UI, Game,
+  LEVELS, CHAPTERS, levelById, chapterDone,
+  evaluateFormula, translateFormula, parse, serialize, tokenize,
+  parseRef, parseRange, a1, colToName,
+};
+</script>
+</body>
+</html>
