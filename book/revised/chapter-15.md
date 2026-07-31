@@ -80,7 +80,7 @@ As you scale, you can't do everything yourself. But what do you hand off first? 
 
 **Rung 4: Delegate everything else.** Once the system is proven on one or two properties, scale it. Your VA now manages calendar blocks, guest communication, turnover scheduling, inventory restocking, and vendor coordination across 5 or more properties. You focus on strategy, reviews, and spotting trends. Time freed: 10–15 hours a week, which is breathing room for new deals.
 
-A 2026 update that changes this whole ladder: an AI agent can now do most of what the VA rungs describe, because most of it is communication, and communication is what AI does. Treat it like a promising new hire — be patient while it learns your house, give it standards, audit its work. Two trust rules carry over from human hiring: payments stay human (the AI will hand those back anyway; they're too sensitive), and anything with money attached runs on a limited-balance card until trust is earned. The modern VA's best role is off-hours coverage and auditing the AI. And candidly, AI is improving fast enough that by the time you read this, you may not need a VA at all.
+A 2026 update that changes this whole ladder: an AI agent can now do most of what the VA rungs describe, because most of it is communication, and communication is what AI does. Treat it like a promising new hire: be patient while it learns your house, give it standards, audit its work. Two trust rules carry over from human hiring: payments stay human (the AI will hand those back anyway; they're too sensitive), and anything with money attached runs on a limited-balance card until trust is earned. The modern VA's best role is off-hours coverage and auditing the AI. And candidly, AI is improving fast enough that by the time you read this, you may not need a VA at all.
 
 ### Buy Back Your Time
 
@@ -133,9 +133,9 @@ Track these categories monthly:
 - Software and subscriptions
 - Insurance and taxes
 
-Keep the tooling simple: a mainstream accounting app, a real-estate-specific one, or even a spreadsheet works. Set monthly reconciliation reminders and digitize receipts with your phone. When you're scaling, hire a VA bookkeeper (a few dollars an hour on the big freelance marketplaces as of this writing) — or let a bookkeeping AI carry it, with the Chapter 13 caution about redacting sensitive details.
+Keep the tooling simple: a mainstream accounting app, a real-estate-specific one, or even a spreadsheet works. Set monthly reconciliation reminders and digitize receipts with your phone. When you're scaling, hire a VA bookkeeper (a few dollars an hour on the big freelance marketplaces as of this writing), or let a bookkeeping AI carry it, with the Chapter 13 caution about redacting sensitive details.
 
-And steal one habit from the book *Profit First* (Mike Michalowicz): allocate a fixed percentage of every payout to paying yourself, before reinvestment. It sounds indulgent and it's the opposite. The month a property can't make its owner-pay allocation is the month you find out it has a problem — time to reprice it, improve it, or exchange out of it. An Airbnb is a small business, and small businesses that never pay their owner have a way of quietly dying.
+And steal one habit from the book *Profit First* (Mike Michalowicz): allocate a fixed percentage of every payout to paying yourself, before reinvestment. It sounds indulgent and it's the opposite. The month a property can't make its owner-pay allocation is the month you find out it has a problem. Time to reprice it, improve it, or exchange out of it. An Airbnb is a small business, and small businesses that never pay their owner have a way of quietly dying.
 
 Clean books matter all year, and most at tax time. Always consult a licensed tax pro, but walk in informed, because most STR investors miss deductions. Anyone who owns the property gets the depreciation deductions. The question is whether the paper loss they create can offset your W-2 income this year, and that turns on two tests: guests staying an average of about a week or less, and you materially participating (roughly, you put in real hours running it yourself, more than anyone else does). Fail the participation test and the loss doesn't vanish, it just waits, suspended until the property has income or you sell. That test sits awkwardly in a book about delegation. The more you hand off, the harder it is to pass, so ask your CPA which side of the line your setup lands on, and about:
 
@@ -158,7 +158,7 @@ Delegate these first: guest communication (messaging platform plus AI or VA), ca
 
 **How to hire your first VA.** The specific agencies rotate, so search "STR-trained virtual assistant" alongside the big VA marketplaces (my current sources are in the Bonus Pack). Look for excellent written English, Airbnb experience, and tech-savviness. Expect to pay $800–$1,200 a month for part-time help (20 to 30 hours a week) from the Philippines or Argentina as of this writing; full-time runs around $1,200. That's roughly the revenue from one guest stay per month. It's also how the chapter-opening 11:40 p.m. reply happens. Many hosts hire overseas where a US midnight is midday, so overnight coverage is a time-zone choice rather than a night shift.
 
-**Systematize before you delegate.** Record your workflows with a screen recorder (any one works). Create simple SOPs for guest messages, the turnover checklist, and pricing checks — an AI agent will draft them from your recordings' transcripts if you ask. Use the team chat for tight communication. Have them shadow you for a week before they fly solo.
+**Systematize before you delegate.** Record your workflows with a screen recorder (any one works). Create simple SOPs for guest messages, the turnover checklist, and pricing checks. An AI agent will draft them from your recordings' transcripts if you ask. Use the team chat for tight communication. Have them shadow you for a week before they fly solo.
 
 **Know what you keep and what you hand off:**
 
@@ -187,7 +187,7 @@ Ask specific questions: "Does anyone have a reliable handyman in [town]?" "What'
 
 If your market has no group, start one. You become the connector, and connectors get first call on advice, referrals, and deals.
 
-And if rural-specific help is the thing you can't find — it usually is, since most STR content is written for beach condos — that gap is exactly why I built my community around rural operators. I'm @jeffchheuy on Instagram. People find their cleaners, their markets, and their first deals in rooms like that. This business is lonely without one; don't run it alone.
+And if rural-specific help is the thing you can't find (it usually is, since most STR content is written for beach condos), that gap is exactly why I built my community around rural operators. I'm @jeffchheuy on Instagram. People find their cleaners, their markets, and their first deals in rooms like that. This business is lonely without one; don't run it alone.
 
 ### The Reality of Remote Management
 
@@ -216,3 +216,5 @@ Do the work once. Run it forever.
 - At 2–3 properties, add help: an AI agent first (it's most of the job now), a VA for off-hours coverage and auditing ($800–$1,200 a month as of this writing). Systematize before you delegate, and never delegate the weekly review.
 - Pay yourself first, a fixed slice of every payout (credit: *Profit First*). The property that can't afford its owner is telling you something.
 - Do the work once. Run it forever.
+
+---

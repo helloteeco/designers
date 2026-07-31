@@ -1,6 +1,6 @@
 ## Chapter 4: The Airbnb You Should Buy Is Nowhere Near You
 
-Myla bought her Oak Hill, West Virginia cabin for $103K, and it grossed $150K in its first two years. She has run it remotely from day one — self-managing at the start, the way we teach everyone to, and later through the property-management company we ended up building ourselves (Chapter 14 will help you weigh how to run yours). Later in this chapter you'll see the whole operation.
+Myla bought her Oak Hill, West Virginia cabin for $103K, and it grossed $150K in its first two years. She has run it remotely from day one: self-managing at the start, the way we teach everyone to, and later through the property-management company we ended up building ourselves (Chapter 14 will help you weigh how to run yours). Later in this chapter you'll see the whole operation.
 
 Now ask ten new investors where they plan to buy their first Airbnb, and nine will name a town within an hour of their house. Not because the numbers work there. Because it feels safe. They want to drive by the property, wave at the cleaner, and handle problems with their own two hands.
 
@@ -91,7 +91,7 @@ What makes remote investing work today is a short list of tools and people:
 
 That short list is what replaces you being there. Build it before you buy, and the distance stops mattering.
 
-And when a setup does need hands, you have choices. One trip taught me this. Early on, I flew out with my brother-in-law — Myla's brother, whom I hired to come help — and together with a few local friends we set up about four homes in one stretch. Some of those local friends became our first cleaners and assembly crew. On that same trip, Ryu, one of my first students then, had hired a team to set his home up remotely; we pitched in near the end on photos and small finishing touches, and his Lookout Lodge was the first one done. That's the menu: fly out once and do it yourself with help you bring or hire, send one person to teach a local crew, or hire a company that does the whole thing. All three work. Chapter 6 shows you when to pick which.
+And when a setup does need hands, you have choices. One trip taught me this. Early on, I flew out with my brother-in-law (Myla's brother, whom I hired to come help), and together with a few local friends we set up about four homes in one stretch. Some of those local friends became our first cleaners and assembly crew. On that same trip, Ryu, one of my first students then, had hired a team to set his home up remotely; we pitched in near the end on photos and small finishing touches, and his Lookout Lodge was the first one done. That's the menu: fly out once and do it yourself with help you bring or hire, send one person to teach a local crew, or hire a company that does the whole thing. All three work. Chapter 6 shows you when to pick which.
 
 ### What This Looks Like When It Works
 
@@ -103,7 +103,7 @@ She bought the cabin cash, partnered with her aunt, put roughly $70K into the re
 
 Notice what Myla didn't do. She didn't move to West Virginia or drive out every weekend to fluff pillows, and she didn't hand it to some third-party property manager to "watch over things." She built systems (a cleaner who follows photo checklists, a VA who handles the routine questions, software that sends every message on time) and then she let the systems run.
 
-Here's the honest next chapter of that story, because it matters. Self-managing our first homes taught us the whole machine, and that knowledge became a business: we built our own property-management company. Rui Yu — Ryu, the student you keep meeting in this book — ran properties for us, built out the team, and is now my business partner. Today that in-house operation runs with a salaried property manager, three virtual assistants, an AI agent handling the routine, and a director of management, on its way to fifty-plus properties. So does Myla technically have a property manager now? Yes — and she owns the company. That's the arc we teach: self-manage first, learn every job, then hire and train people into the jobs you've mastered.
+Here's the honest next chapter of that story, because it matters. Self-managing our first homes taught us the whole machine, and that knowledge became a business: we built our own property-management company. Ryu, the student you keep meeting in this book, bought his own property first. Later we became business partners, and he took over managing our properties and built out the team. Today that in-house operation runs with a salaried property manager, three virtual assistants, an AI agent handling the routine, and a director of management, on its way to fifty-plus properties. So does Myla technically have a property manager now? Yes, and she owns the company. That's the arc we teach: self-manage first, learn every job, then hire and train people into the jobs you've mastered.
 
 Remote doesn't mean hands-off. Remote means systems-driven.
 
@@ -121,7 +121,7 @@ That line is the entire argument of this chapter. A goal of passive income means
 
 Buying local is comfortable, but it doesn't scale. If your first Airbnb ends up hundreds of miles away, that's the method working the way it should.
 
-**Before the next chapter, do one thing.** Run your hometown through the five filters in this chapter, in writing, the way a stranger would. Most people discover in ten minutes what they'd otherwise spend a year of weekend drives learning. Either way, you'll know — and Chapter 5 will show you what a market that *does* pass looks like.
+**Before the next chapter, do one thing.** Run your hometown through the five filters in this chapter, in writing, the way a stranger would. Most people discover in ten minutes what they'd otherwise spend a year of weekend drives learning. Either way, you'll know, and Chapter 5 will show you what a market that *does* pass looks like.
 
 ### Chapter Summary
 
@@ -131,5 +131,7 @@ Buying local is comfortable, but it doesn't scale. If your first Airbnb ends up 
 - Your hometown has to earn your capital like any other market, and it probably won't.
 - Buy it as an asset that produces income, not as a home you'd live in.
 - Remote doesn't mean hands-off. Remote means systems-driven.
-- One cleaner, one VA, and one messaging app ran Myla's cabin from states away — and self-managing first is what let us build a management company later.
+- One cleaner, one VA, and one messaging app ran Myla's cabin from states away, and self-managing first is what let us build a management company later.
 - You don't rise to the level of your goals; you fall to the level of your systems (James Clear). Build the systems.
+
+---

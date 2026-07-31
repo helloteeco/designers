@@ -68,4 +68,4 @@ Rates drifting while nobody's watching are the quiet failure. Open the PriceLabs
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

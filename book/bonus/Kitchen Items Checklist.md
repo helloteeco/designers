@@ -75,4 +75,4 @@ Small touches get photographed and shared constantly. They're the difference bet
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

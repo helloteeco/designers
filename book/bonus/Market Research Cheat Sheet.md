@@ -16,7 +16,7 @@ The three-phase market analysis from Chapter 5, on one page. You don't need to k
 
 One warning before you start. Markets move. Pull the data yourself, the week you're deciding, and trust nothing older than a season.
 
-## Phase 1 — High-Level Metrics (find the market)
+## Phase 1. High-Level Metrics (find the market)
 
 - [ ] **List five anchors.** On NPS.gov, look for parks within a 2–5 hour drive of major cities. That radius powers drive-to travel. National forests, big lakes, and state parks count too.
 - [ ] **Run the NPS Arbitrage on each.** Take the anchor's annual lodging spend and divide by $70K, what a well-run rural STR should gross in a year. That's roughly how many quality listings the demand can feed. Compare to active listings (AirDNA or similar). Far fewer listings than the demand can feed means undersupply. At or above it, you're playing musical chairs.
@@ -33,7 +33,7 @@ One warning before you start. Markets move. Pull the data yourself, the week you
 | ADR trend (12 months) | Rising despite more listings | Flat or falling despite more listings |
 | Occupancy trend | Stable or rising across similar listings | Declining |
 
-## Phase 2 — Neighborhood Analysis (pick the town)
+## Phase 2. Neighborhood Analysis (pick the town)
 
 - [ ] **Map towns 10–60 minutes from the anchor** on Google Maps. Anchor demand within 30 minutes is the goal; past an hour, you're no longer selling the anchor.
 - [ ] **Population under 30,000** is ideal. Check the census trend; you don't want a declining town.
@@ -46,7 +46,7 @@ One warning before you start. Markets move. Pull the data yourself, the week you
 
 **Red flags, walk away:** one-trick-pony towns (one season, dead nine months), overregulated counties, major chain hotels breaking ground, declining population, single-employer towns.
 
-## Phase 3 — Baselining Homes (prove the numbers)
+## Phase 3. Baselining Homes (prove the numbers)
 
 - [ ] **Search Zillow or Redfin by ZIP.** Target $250K–$350K for a 4 bed, 3 bath with 2,000-plus square feet. Take nothing smaller than 3 bed, 2 bath, 1,500 square feet. Avoid HOAs if possible. Look for good bones, even with dated finishes.
 - [ ] **Save 3–5 viable listings** and run each through a revenue estimator.
@@ -65,4 +65,4 @@ One warning before you start. Markets move. Pull the data yourself, the week you
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

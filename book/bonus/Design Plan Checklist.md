@@ -70,4 +70,4 @@ Cross-check the Kitchen Items Checklist, Bathroom Items Checklist, and Photo Sho
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

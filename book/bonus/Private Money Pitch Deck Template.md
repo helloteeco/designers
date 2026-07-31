@@ -20,7 +20,7 @@ Prove the demand:
 
 - Market-tool comps: what similar properties rent for
 - Historical occupancy
-- The ADR trend — rising, falling, or stable
+- The ADR trend, rising, falling, or stable
 - How revenue distributes across the months
 
 Use actual screenshots from your data tools. Show them the data is real, not your gut feeling.
@@ -76,6 +76,6 @@ Show them how they get paid back:
 
 For a warm contact, keep it simple and honest:
 
-> "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly — much better than letting it sit in savings."
+> "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly, much better than letting it sit in savings."
 
 Always get it in writing: a promissory note plus terms, and for larger loans, record a lien or deed of trust.

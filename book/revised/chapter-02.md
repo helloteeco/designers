@@ -26,12 +26,12 @@ I know because that's exactly what I do.
 
 Not all STR markets are created equal. To make smart decisions, you need to know where a market sits on the maturity curve. I sort every market into four tiers. Each one comes with a price band, which is just the range of sticker prices you'll typically see on target homes there.
 
-1. **Tier 1 — Saturated Tourist Cities.** Miami, Nashville, New Orleans, coastal California, and the big-money metros like LA, San Diego, San Francisco, and New York. Price per unit: $800K–$2M+. Cash-on-cash returns (annual cash flow divided by the cash you put in) of just 2–6%. Too much capital required, too much money already in the game.
-2. **Tier 2 — Discovered Rural.** Joshua Tree, Sedona, Moab, Gatlinburg, Asheville. Price: $350K–$800K. Returns: 15–25%. You're late to the party. The easy money is gone, properties are expensive, and regulations are tightening. My Yucca Valley house lives here. It worked, and I wouldn't buy it again.
-3. **Tier 3 — Emerging Rural.** West Virginia, and the small towns around parks like Mammoth Cave, Daniel Boone National Forest, and Cuyahoga Valley. Price: $150K–$350K. Returns: 35–65%+ (top-quartile operators, 2022–24). The sweet spot: you get in before the crowd, the economics work without perfect execution, and you have time to build systems before competition arrives.
-4. **Tier 4 — Undiscovered.** Small towns with tourism infrastructure but almost no STR presence yet. As of July 2026, the ones I actually buy run about $100K–$350K, most often $100K–$250K. Potential: 50–100%+ (same time-stamp caveat) if you nail timing and selection. The catch is the risk: the tourism thesis might not pan out. I buy Tier 4 less often than Tier 3, and only when the research makes me genuinely bullish — real visitation numbers (Google the park or attraction and pull its annual visitor count) measured against how few Airbnbs are already listed. When those two numbers are far apart, Tier 4 is a bet worth making. When they're close, it's a guess.
+1. **Tier 1: Saturated Tourist Cities.** Miami, Nashville, New Orleans, coastal California, and the big-money metros like LA, San Diego, San Francisco, and New York. Price per unit: $800K–$2M+. Cash-on-cash returns (annual cash flow divided by the cash you put in) of just 2–6%. Too much capital required, too much money already in the game.
+2. **Tier 2: Discovered Rural.** Joshua Tree, Sedona, Moab, Gatlinburg, Asheville. Price: $350K–$800K. Returns: 15–25%. You're late to the party. The easy money is gone, properties are expensive, and regulations are tightening. My Yucca Valley house lives here. It worked, and I wouldn't buy it again.
+3. **Tier 3: Emerging Rural.** West Virginia, and the small towns around parks like Mammoth Cave, Daniel Boone National Forest, and Cuyahoga Valley. Price: $150K–$350K. Returns: 35–65%+ (top-quartile operators, 2022–24). The sweet spot: you get in before the crowd, the economics work without perfect execution, and you have time to build systems before competition arrives.
+4. **Tier 4: Undiscovered.** Small towns with tourism infrastructure but almost no STR presence yet. As of July 2026, the ones I actually buy run about $100K–$350K, most often $100K–$250K. Potential: 50–100%+ (same time-stamp caveat) if you nail timing and selection. The catch is the risk: the tourism thesis might not pan out. I buy Tier 4 less often than Tier 3, and only when the research makes me genuinely bullish: real visitation numbers (Google the park or attraction and pull its annual visitor count) measured against how few Airbnbs are already listed. When those two numbers are far apart, Tier 4 is a bet worth making. When they're close, it's a guess.
 
-Two honest time-stamps on those return bands. First, they come from real homes, mostly in West Virginia and Nevada, bought between 2022 and 2024 and held two to four years — and I was a top-quartile operator when I earned them. Since then we've added forty to fifty more quality Airbnbs. Competition is tougher now, but most of those homes still perform, averaging about $7,000 a month as of July 2026. Second, money was cheaper in that window. At today's rates a well-executed first deal more often works out to 15–25% cash-on-cash, which still beats almost everything else available to a beginner, and Chapter 8's deliberately conservative underwrite (the pre-purchase math on what a property should really earn) lands near that range.
+Two honest time-stamps on those return bands. First, they come from real homes, mostly in West Virginia, bought between 2022 and 2024 and held two to four years, and I was a top-quartile operator when I earned them. Since then we've added forty to fifty more quality Airbnbs. Competition is tougher now, but most of those homes still perform, averaging about $7,000 a month as of July 2026. Second, money was cheaper in that window. At today's rates a well-executed first deal more often works out to 15–25% cash-on-cash, which still beats almost everything else available to a beginner, and Chapter 8's deliberately conservative underwrite (the pre-purchase math on what a property should really earn) lands near that range.
 
 Tier 3 is where I build. The economics are strong enough to survive mistakes, you usually have a year or more before major investor money shows up, and the regulatory environment is still friendly. One more thing about Tier 3 near national parks: property values there have a habit of jumping suddenly, especially in a real-estate boom, because supply is small and discovery happens all at once. I underwrite appreciation at 2–3% a year anyway; the 20–40% pop that can come with discovery is a bonus, not the plan.
 
@@ -53,13 +53,13 @@ Here's how it compared to one of my West Virginia cabins, side by side. These fi
 | First-year revenue | ~$80K | $72K |
 | Monthly payment | ~$1,850 (PITI: principal, interest, taxes, insurance) | $1,125 (interest-only seller note) |
 | Operating expenses | Similar | Similar, a touch less |
-| Down payment | Large — big-market sticker, big-market check | $20K |
+| Down payment | Large (big-market sticker, big-market check) | $20K |
 | Cash to get in | ~$100K all-in, split with a partner | Similar ballpark all-in ($20K down; renovation and furniture floated on 0% cards and private money, paid back from cash flow) |
 | STR rules | Tightening, and enforced | Light-touch, rural |
 
 Read the table from the top. Two cabins, nearly identical revenue, operating costs in the same neighborhood. Guests loved both. If revenue were the scoreboard, these deals tied.
 
-Now read the lines guests never see. Joshua Tree's payment runs about $725 a month heavier, roughly $8,700 a year that comes off the top whether anyone books or not. The house cost more than twice as much. Total cash to get in landed in the same ballpark for both — setup, design, and furniture scale with square footage, not with zip code — but the money bought completely different positions. In West Virginia, the down payment itself was a fraction of the California check, the sellers were open to carrying financing, and there were plenty more homes like it waiting to be bought with almost nobody bidding. And the asymmetry runs deeper than entry. A cheap house in a quiet market has less room to fall if prices sour, while if prices climb and the cash flow holds, the return on every invested dollar multiplies. In California I'd bought a seat at a table where the other players weren't counting their chips.
+Now read the lines guests never see. Joshua Tree's payment runs about $725 a month heavier, roughly $8,700 a year that comes off the top whether anyone books or not. The house cost more than twice as much. Total cash to get in landed in the same ballpark for both, because setup, design, and furniture scale with square footage, not zip code. But the money bought completely different positions. In West Virginia, the down payment itself was a fraction of the California check, the sellers were open to carrying financing, and there were plenty more homes like it waiting to be bought with almost nobody bidding. And the asymmetry runs deeper than entry. A cheap house in a quiet market has less room to fall if prices sour, while if prices climb and the cash flow holds, the return on every invested dollar multiplies. In California I'd bought a seat at a table where the other players weren't counting their chips.
 
 Revenue is what you hope for. The payment and the entry price are what you lock in on day one. An $1,125 payment against $72K in revenue can survive almost any slow season. Keep that payment in mind when we reach the U of the RURAL Method.
 
@@ -81,13 +81,13 @@ Here's why that happens, and why it matters for you specifically. The person who
 
 Use this checklist to decide whether a rural market is worth exploring. If you can check at least four of the seven boxes, you've found something worth investigating:
 
-- ☐ **Tourism demand without oversaturation.** Steady visitors (parks, lakes, events) but few great places to stay.
-- ☐ **Affordable prices ($150K–$350K as of this writing).** A low mortgage in a market whose nightly rates can support $70K a year in revenue.
-- ☐ **Not too close to big money.** Two to five hours from a major metro means fewer second-home buyers bidding against you.
-- ☐ **Year-round or long peak season.** Guests across multiple seasons, not one frantic month.
-- ☐ **Short-term-rental friendly.** STRs allowed or even welcomed. Minimal red tape.
-- ☐ **Strong data signal.** Good revenue and occupancy numbers on whatever market-data tool you use (occupancy is simply the share of nights that actually get booked).
-- ☐ **The "Would I Stay Here?" test.** Gut check: would you enjoy a weekend there?
+- **Tourism demand without oversaturation.** Steady visitors (parks, lakes, events) but few great places to stay.
+- **Affordable prices ($150K–$350K as of this writing).** A low mortgage in a market whose nightly rates can support $70K a year in revenue.
+- **Not too close to big money.** Two to five hours from a major metro means fewer second-home buyers bidding against you.
+- **Year-round or long peak season.** Guests across multiple seasons, not one frantic month.
+- **Short-term-rental friendly.** STRs allowed or even welcomed. Minimal red tape.
+- **Strong data signal.** Good revenue and occupancy numbers on whatever market-data tool you use (occupancy is simply the share of nights that actually get booked).
+- **The "Would I Stay Here?" test.** Gut check: would you enjoy a weekend there?
 
 A printable version of this checklist, along with the market-scoring template, is in the Bonus Pack at the back of this book.
 
@@ -137,7 +137,7 @@ You don't need to live near the property, flip houses, or chase hype. You need a
 
 Between that October drive and the Joshua Tree closing came a house hack, a rental, and a stack of flips. Six months later that property was cash flowing. A year after that, I was buying in West Virginia with better numbers, lower risk, and none of my first-timer mistakes.
 
-Today I own multiple properties I've never lived in, in towns I found on Google Maps, on the National Park Service website, and through word of mouth — friends mentioning places they'd toured that I would never have heard of on my own. The income they generate has nothing to do with how many hours I work.
+Today I own multiple properties I've never lived in, in towns I found on Google Maps, on the National Park Service website, and through word of mouth: friends mentioning places they'd toured that I would never have heard of on my own. The income they generate has nothing to do with how many hours I work.
 
 But that October moment wasn't the beginning of a plan. I didn't have it mapped out. I had a gut feeling that the path I was on wasn't leading anywhere I wanted to go, so I took action, made mistakes, and kept what worked.
 
@@ -145,15 +145,17 @@ You're starting from a better position than I did. You know the markets to targe
 
 What you don't have yet is the sequence: the exact order of moves that turns a town on Google Maps into a deposit in your account. That's the method in the next chapter. It has five letters, and it is the spine of everything else in this book.
 
-**Before you turn the page, do one thing.** Open Google Maps and find two or three national parks or big outdoor attractions — near you or not, since you're never going to live there anyway. Write down five nearby towns you've never heard of. That's it. That list is the raw material the R of the RURAL Method will turn into a real market, and it takes ten minutes.
+**Before you turn the page, do one thing.** Open Google Maps and find two or three national parks or big outdoor attractions, near you or not, since you're never going to live there anyway. Write down five nearby towns you've never heard of. That's it. That list is the raw material the R of the RURAL Method will turn into a real market, and it takes ten minutes.
 
 ### Chapter Summary
 
 - Overlooked small towns quietly outperform famous vacation markets: same guest experience, radically better economics.
 - Markets mature in four tiers. Tier 3, Emerging Rural ($150K–$350K), is the sweet spot; Tier 4, Undiscovered ($100K–$350K as of July 2026), pays more but only on a researched tourism thesis. The 35–65%+ returns are 2022–24 top-quartile results; today a well-run first deal more often lands at 15–25% cash-on-cash, still better than nearly anything else a beginner can buy.
 - My $355K Joshua Tree house grossed about $80K in year one; my $170K West Virginia cabin did $72K. Similar revenue and similar all-in cash, but the cabin won on everything that money bought: a fraction of the down payment, a payment about $700 a month lighter, seller financing on the table, almost no competition, less room to fall, and more room to run.
-- Skate to where the puck is going. The waiting crowd sees every market twice — "too risky," then "too late" — and never acts. Action on solid-but-imperfect information buys you reps, and reps compound.
+- Skate to where the puck is going. The waiting crowd sees every market twice, "too risky" and then "too late," and never acts. Action on solid-but-imperfect information buys you reps, and reps compound.
 - Rural STRs are an asymmetric bet. The downside is bounded (down payment, setup capital, some months of carry, a long-term-rental fallback); the upside isn't.
 - Famous markets pay in bragging rights. Boring markets pay in cash.
 - $10K of the right amenities, validated against market data, can add $15K–$25K a year in gross revenue and pay for itself inside a year or two. Chapter 11 has the math and the rule.
 - You don't need millions, just a plan and a ten-minute list of five towns nobody's heard of. The plan has five letters.
+
+---

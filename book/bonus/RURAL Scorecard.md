@@ -1,4 +1,4 @@
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*
 
 # The RURAL Scorecard
 
@@ -12,7 +12,7 @@ One page. One deal. Print a fresh copy for every candidate property and fill it 
 
 ---
 
-## R — Right Market First
+## R. Right Market First
 
 The market is 50% of the result. No anchor, no deal.
 
@@ -21,7 +21,7 @@ The market is 50% of the result. No anchor, no deal.
 - [ ] **Market scores 3.5+ on the Scoring Matrix.** Use the Market Scoring Template in this Bonus Pack. Score: ______ / 5.0
 - [ ] **The deal pencils at 60–70% occupancy** to $70K a year or better in gross revenue. Occupancy assumed: ______%
 
-## U — Under Budget
+## U. Under Budget
 
 Cheap entry means a cheap payment, and the payment is what protects you in slow months. Amateurs chase revenue. Pros guard the payment. (The book's benchmark: an $1,125 payment against $72K in revenue can survive almost any slow season.)
 
@@ -33,7 +33,7 @@ Cheap entry means a cheap payment, and the payment is what protects you in slow 
 - [ ] **Bindable STR insurance quote in hand** before the inspection contingency expires. Rural cabins with hot tubs and wood stoves commonly quote $2,500–$6,000 a year, and a number like that kills a marginal deal fast. Quote: $________ /yr
 - [ ] **Room left for furniture and a repair reserve** after closing. Setup budget: $________ Reserve: $________
 
-## R — Room for Everyone
+## R. Room for Everyone
 
 Income follows sleeping capacity. Big groups split the cost of the stay, so they book big homes and pay big totals.
 
@@ -41,7 +41,7 @@ Income follows sleeping capacity. Big groups split the cost of the stay, so they
 - [ ] **Capacity near one sleeper per 100 square feet.** ________ sqft ÷ 100 = ______ target sleepers. Planned sleeps: ______
 - [ ] **Extra-guest fee will be turned on.** On big-group homes that one setting is a meaningful slice of your revenue.
 
-## A — Aesthetics That Win the Scroll
+## A. Aesthetics That Win the Scroll
 
 Guests decide in 3 seconds. Your first five photos do the selling.
 
@@ -50,7 +50,7 @@ Guests decide in 3 seconds. Your first five photos do the selling.
 - [ ] **First five photos planned.** Which five shots win the scroll? ______________________________
 - [ ] **Every amenity validated with market data before you buy it.** $10K into the right amenities (a hot tub, a fire pit, excellent bedding) can add $15K–$25K a year in gross revenue.
 
-## L — Leverage Systems
+## L. Leverage Systems
 
 The asset should run without you. About $100 a month in software and smart-device subscriptions runs the whole machine.
 

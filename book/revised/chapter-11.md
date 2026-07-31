@@ -4,9 +4,9 @@ You already know the story of Myla's Oak Hill fixer from Chapter 8, contractor m
 
 Through the whole ordeal, she refused to compromise on the finish. The schedule blew up, the budget followed, the furniture she'd chosen sat in a shed waiting for the house to be ready, and she still would not cut a corner on anything a guest would see or touch.
 
-Guests walked into a home that looked better than the photos, and the photos already looked better than every comparable listing in town. They never saw the contractor mess. They saw the finish, and the finish is what they booked — review after review praised it.
+Guests walked into a home that looked better than the photos, and the photos already looked better than every comparable listing in town. They never saw the contractor mess. They saw the finish, and the finish is what they booked. Review after review praised it.
 
-One clarification before you turn that story into perfectionism, because "never cut a corner on anything a guest can see or touch" needs a definition of done. It's the same triage you used on the inspection report: **red** means broken, unsafe, or dirty — fix before launch, no exceptions. **Yellow** means guests would notice and a review might mention it — fix fast, but it doesn't block the calendar. **Green** means a slightly-off paint shade, a small scratch, a piece you'd have chosen differently — launch anyway. If it isn't crucial to a 5-star stay and doesn't compromise the home, it can wait. I've stayed at a five-star hotel in LA and spotted flaws nobody complains about, because photos hide a lot and guests aren't running inspections. Functional beats perfect, and things age anyway. Aim for genuinely good, not flawless.
+One clarification before you turn that story into perfectionism, because "never cut a corner on anything a guest can see or touch" needs a definition of done. It's the same triage you used on the inspection report: **red** means broken, unsafe, or dirty: fix before launch, no exceptions. **Yellow** means guests would notice and a review might mention it: fix fast, but it doesn't block the calendar. **Green** means a slightly-off paint shade, a small scratch, a piece you'd have chosen differently: launch anyway. If it isn't crucial to a 5-star stay and doesn't compromise the home, it can wait. I've stayed at a five-star hotel in LA and spotted flaws nobody complains about, because photos hide a lot and guests aren't running inspections. Functional beats perfect, and things age anyway. Aim for genuinely good, not flawless.
 
 ### Why Design Actually Matters
 
@@ -28,7 +28,7 @@ We've built room-by-room setup checklists to make this easier: a Kitchen Items C
 
 **Why it works:** High-margin amenities generate disproportionate revenue. Roughly $10K invested strategically in amenities (hot tub, sauna, fire pit, outdoor shower, game room) has commonly generated $1K–$5K per month in additional revenue across our homes.
 
-**The rule that comes with it:** before you buy any amenity, pull the data for your market. Your market-data tool will show you what listings with a hot tub earn against listings without one, and the same for a game room or a sauna. (For fresh amenity ideas that photograph well on a budget — a putting green, ladder toss, an outdoor games corner — ask an AI for options and then validate the winners the same way.) Buy the amenity you can see in your own market's data, not the one in this book.
+**The rule that comes with it:** before you buy any amenity, pull the data for your market. Your market-data tool will show you what listings with a hot tub earn against listings without one, and the same for a game room or a sauna. (For fresh amenity ideas that photograph well on a budget, like a putting green, ladder toss, or an outdoor games corner, ask an AI for options and then validate the winners the same way.) Buy the amenity you can see in your own market's data, not the one in this book.
 
 **Use it when:** Deciding what to splurge on. These are your profit levers. Invest in them first, then design around them.
 
@@ -48,7 +48,7 @@ DIY works when you've got time, discipline, and at least a basic eye for aesthet
 
 Most people overestimate their design sense. That's fine, because taste is optional here. What you need is a system, and if you follow the ones in this section instead of relying on instinct, you can get 80% of the way to professional results.
 
-And I have to be straight with you about that last 20%, because it's the part that separates a good rental from a great one. Early on, low on budget, I did it all myself: had AI help me plan rooms, copied what the top listings were doing, then got stuck for weeks sourcing every individual piece. It took me about a month, the result was mismatched in places, and returns without a plan are miserable — pros pre-plan specifically to avoid them. That experience is literally why I built a design company later. For contrast, a good pro hands you a high-quality design in one to two weeks, clear enough for two people or a contractor crew to execute in another one to two. DIY is fine and normal, just slower and rougher. Don't feel bad about choosing it; just choose it knowingly.
+And I have to be straight with you about that last 20%, because it's the part that separates a good rental from a great one. Early on, low on budget, I did it all myself: had AI help me plan rooms, copied what the top listings were doing, then got stuck for weeks sourcing every individual piece. It took me about a month, the result was mismatched in places, and returns without a plan are miserable (pros pre-plan specifically to avoid them). That experience is literally why I built a design company later. For contrast, a good pro hands you a high-quality design in one to two weeks, clear enough for two people or a contractor crew to execute in another one to two. DIY is fine and normal, just slower and rougher. Don't feel bad about choosing it; just choose it knowingly.
 
 ### Do You Actually Have a Good Eye?
 
@@ -187,9 +187,9 @@ Before the photographer arrives, do the prep work yourself: declutter every surf
 
 A bad photo kills a great room. A great photo saves an average room. Hire a pro. Budget $300–$1,000, with drone and twilight shots running extra, and expect a set of 30–50 photos back.
 
-Two rules for the gallery itself. First, consistency beats any single great shot: if the set's look is soft and warm, every photo is soft and warm; if it's bright, all bright. A gallery that jumps between looks reads amateur even when each photo is good, because the set has to tell one story. Second, know the amateur tells and cut them — nobody books because of a close-up of the coffee maker, the cups, or the spoons. Market like a 5-star hotel: pull up a Conrad or Four Seasons gallery and study what they show and what they skip. Show your best moments; if the bathroom is merely fine, keep it spotless and don't feature it.
+Two rules for the gallery itself. First, consistency beats any single great shot: if the set's look is soft and warm, every photo is soft and warm; if it's bright, all bright. A gallery that jumps between looks reads amateur even when each photo is good, because the set has to tell one story. Second, know the amateur tells and cut them. Nobody books because of a close-up of the coffee maker, the cups, or the spoons. Market like a 5-star hotel: pull up a Conrad or Four Seasons gallery and study what they show and what they skip. Show your best moments; if the bathroom is merely fine, keep it spotless and don't feature it.
 
-And you're not stuck with what the photographer hands you. Here's the honest pattern: pros nail framing and angles, but consistent lighting across a whole set is rarer, and I end up editing almost every pro shoot toward soft, warm light. If you don't love the edits, or the photos don't all share the same tint, a photo-editing service can mass-edit the set to one consistent, listing-ready look — my team built one for exactly that reason (the current link is in the Bonus Pack), and any editor that gets the whole set consistent works. Use the customize options to add people for lifestyle shots or swap in a beautiful sky, or keep the image original and just get the tint matched. Then curate like you're building a hotel or resort listing. Show only what you want guests to see.
+And you're not stuck with what the photographer hands you. Here's the honest pattern: pros nail framing and angles, but consistent lighting across a whole set is rarer, and I end up editing almost every pro shoot toward soft, warm light. If you don't love the edits, or the photos don't all share the same tint, a photo-editing service can mass-edit the set to one consistent, listing-ready look. My team built one for exactly that reason (the current link is in the Bonus Pack), and any editor that gets the whole set consistent works. Use the customize options to add people for lifestyle shots or swap in a beautiful sky, or keep the image original and just get the tint matched. Then curate like you're building a hotel or resort listing. Show only what you want guests to see.
 
 ### Audit Your Competitors First
 
@@ -244,7 +244,7 @@ Lighting is one of the most overlooked parts of design, and one of the best retu
 
 **Color temperature tips:**
 
-- The target everywhere: bright, and soft warm white. Wrong bulbs are the most common lighting miss in listings — harsh cool light photographs like an office. If your photos came out cold, fix them in editing or reshoot after swapping bulbs.
+- The target everywhere: bright, and soft warm white. Wrong bulbs are the most common lighting miss in listings; harsh cool light photographs like an office. If your photos came out cold, fix them in editing or reshoot after swapping bulbs.
 - Bedrooms and living areas: warm white (2700–3000K) for coziness and sleep
 - Kitchens and baths: neutral white (3500K) for clarity and cleanliness
 - Exteriors: warm lighting (string lights, lanterns) for ambiance
@@ -339,9 +339,9 @@ Best fit: busy professionals, investors scaling portfolios, and out-of-state own
 
 **The budget equation (as of July 2026, and rising):**
 
-- DIY: $15–$25 per square foot for furnishings and décor only — not the design fee — with most of our projects targeting the $15 end, plus your own labor
+- DIY: $15–$25 per square foot for furnishings and décor only (not the design fee), with most of our projects targeting the $15 end, plus your own labor
 - Hire it out: all-in design and installation commonly lands at $40K–$100K depending on house size and how much you outsource
-- One consolation while you wince: unlike most tax-motivated purchases, this one earns. Furniture is depreciable AND income-producing — a far better use of a write-off than a luxury car that makes no money. Chapter 15 shows the mechanics.
+- One consolation while you wince: unlike most tax-motivated purchases, this one earns. Furniture is depreciable AND income-producing, a far better use of a write-off than a luxury car that makes no money. Chapter 15 shows the mechanics.
 
 Launching even a month sooner can mean $5K–$15K in extra bookings during peak season. For some investors, the designer fee pays for itself in the first month.
 
@@ -384,3 +384,5 @@ One more thing about that look. Design only earns when the scroll can see it, an
 - Build 3–5 Instagram moments per property, and keep it to 20% local flavor, 80% timeless design.
 - Run the Design ROI Calculator with your market's numbers, not mine. If payback pencils under about two years, spend the money.
 - Buy like a hotel. If Hilton uses it, it survives guests.
+
+---

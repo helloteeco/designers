@@ -6,13 +6,13 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 
 | Month | Weeks | Step | Letter |
 |---|---|---|---|
-| 1 | 1–4 | 1. Pick the market | R — Right Market First |
-| 1 | 2–4 | 2. Line up the money (in parallel) | U — Under Budget |
-| 2 | 5–8 | 3. Find the house and negotiate | R — Room for Everyone |
+| 1 | 1–4 | 1. Pick the market | R. Right Market First |
+| 1 | 2–4 | 2. Line up the money (in parallel) | U. Under Budget |
+| 2 | 5–8 | 3. Find the house and negotiate | R. Room for Everyone |
 | 2–3 | 6–9 | 4. Verify and close remotely | (Chapter 6) |
 | 3 | 9–12 | 5. Set up, list, launch | A + L |
 
-## Step 1 — Pick the Market (Weeks 1–4) · R
+## Step 1. Pick the Market (Weeks 1–4) · R
 
 *Chapters 4–5. The market is 50% of the result.*
 
@@ -24,7 +24,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 **The rule:** anchor demand within 30 minutes. No anchor, no deal.
 **Walk away if:** the matrix scores below 3.0, or the market only pencils at 80%+ occupancy.
 
-## Step 2 — Line Up the Money (Weeks 2–4, in parallel) · U
+## Step 2. Line Up the Money (Weeks 2–4, in parallel) · U
 
 *Chapters 7 and 9. Money isn't the obstacle. Strategy is.*
 
@@ -36,7 +36,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 **The rule:** amateurs chase revenue. Pros guard the payment.
 **Walk away if:** closing would leave you below six months of PITI in reserves. (And underwrite the typical seller carry, about 10% down, 6–7% interest, five-year balloon. Ryu's 0% note is a top-1% outcome, not the template.)
 
-## Step 3 — Find the House and Negotiate (Weeks 5–8) · R
+## Step 3. Find the House and Negotiate (Weeks 5–8) · R
 
 *Chapters 8–10. Income follows sleeping capacity.*
 
@@ -49,7 +49,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 **The rule:** buy the house that sleeps the group. You can't sleep twelve and seat four.
 **Walk away if:** cash-on-cash at the moderate projection is under 30%, the deal doesn't still cash flow at the 25th percentile, or market long-term rent wouldn't cover at least about 80% of your payment.
 
-## Step 4 — Verify and Close Remotely (Weeks 6–9)
+## Step 4. Verify and Close Remotely (Weeks 6–9)
 
 *Chapter 6. Trust is not a strategy. Verification is.*
 
@@ -63,7 +63,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 **The rule:** three independent verification layers replace being there.
 **Walk away if:** the answer to the Final Question is no.
 
-## Step 5 — Set Up, List, Launch (Weeks 9–12) · A + L
+## Step 5. Set Up, List, Launch (Weeks 9–12) · A + L
 
 *Chapters 11–15. Guests decide in 3 seconds, and the asset should run without you.*
 
@@ -82,4 +82,4 @@ By the time you make an offer, the market is proven, the payment is safe, the ca
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

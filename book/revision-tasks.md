@@ -15,14 +15,16 @@
 - **Evergreen over dated dollars.** Hard numbers become frameworks + "how to find today's number"; any number that stays gets a time-stamp ("as of July 2026").
 - **Named tools out of the body.** In-body: generic ("search for X"). All product names (edge.teeco.co, photolab, PriceLabs, Turno, Hospitable, Steadily/Proper, HostGPO, Helix, Loom, Bravo VA, StayFi…) move to ONE back-of-book "Jeff's current stack" page + Bonus.
 - **AI framing: "use an AI agent"** as a framework — never a Claude ad, never an AI book.
-- **PM story, one canon everywhere:** first rental → hired PM company; first Airbnb → a friend managed it; first SC arbitrage homes → self-managed; then built the in-house PM company (Rui Yu, former PM, now business partner); today in-house salaried PM + 3 VAs + AI + director of management, heading to 50+ properties. Lesson: everyone self-manages first.
+- **PM story, one canon everywhere (UPDATED July 24 by Jeff):** first rental → hired PM company; first Airbnb → a friend managed it; first SC arbitrage homes → self-managed; then built the in-house PM company. RYU (never "Rui Yu" — that name is wrong): bought his OWN property first as one of Jeff's first students, THEN became Jeff's business partner, THEN took over managing their properties and built out the team. Today in-house salaried PM + 3 VAs + AI + director of management, heading to 50+ properties. Lesson: everyone self-manages first.
 - **Kill the phantom "$100K purchase / $78K year one" home** — appears nowhere after the sweep.
 - **Legal-safe phrasing** on LLCs, business cards, seller financing, PML: "your attorney/your situation," never "what most people do."
 - **Credit Dan Martell (Buy Back Your Time) and Profit First** where their ideas appear.
 - **AI-tells scrub (feedback §8)** on every chapter as it's revised.
 - **Bathroom rule everywhere it appears:** subtract 150 sqft per bathroom from total sqft BEFORE the 1-guest-per-100-sqft rule (Ch 3 + Ch 10 must match).
 
-## ✅ Conflicts — RULED by Jeff (July 23, 2026; these are now canon)
+## ✅ Conflicts — RULED by Jeff (July 23–24, 2026; these are now canon)
+
+**July 24 additions:** (a) NO Nevada anywhere (never owned there). (b) The name is Ryu, never "Rui Yu"; his arc: own property first → partners → then managed Jeff's properties. (c) Em-dashes: eliminated book-wide per Jeff (AI-tell); structural labels converted to colons. (d) Manual comp method: owner-blocks vs bookings can't be told apart from outside; the fix is counting multiple properties, phrased as "consider," not "watch for."
 
 1. **Joshua Tree = $355K.** Feedback's "155k" was a voice-to-text garble.
 2. **Lookout Lodge is Ryu's home — refined canon (July 23):** at that time Ryu was one of Jeff's FIRST STUDENTS (now business partner). Ryu hired a team to set his home up remotely. On the same setup trip, Jeff — with his brother-in-law (Myla's brother), whom Jeff hired to come out and help — was assembling about four homes; they pitched in near the end on Ryu's with photos and small stuff, and Lookout Lodge was the first to finish. Never say Ryu assembled it himself; never say Jeff's crew assembled it fully either.

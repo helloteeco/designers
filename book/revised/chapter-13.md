@@ -27,7 +27,7 @@ Speed matters, and the six-week clock starts before closing. The goal is keys in
 - **Line up contractor bids.** Don't wait until closing to figure out paint, flooring, or handyman work. Get bids in hand so work begins Day 1 after closing.
 - **Pre-schedule utilities, internet, and insurance.** Set start dates for electric, water, WiFi, and STR insurance to activate right after closing.
 - **Create a project calendar.** Block out the first six weeks post-close, plus a buffer. Plan the order: light reno, furniture install, photos, listing, launch.
-- **Prep your furniture financing.** For many hosts that's a 0% intro-APR card, but only if you'll clear it inside the intro window; Chapter 7's rules apply. A bridge, not a balance. Load the carts, but don't order anything until you own the home; deals fall through. The moment you close, hit "order" on the major pieces. Where they land is a judgment call: for paint-level work, deliver straight to the property and let your handyman receive the boxes; reserve a storage unit only when heavy renovation (flooring, wall work) would bury everything — moving a houseful out of storage is a whole job you don't want.
+- **Prep your furniture financing.** For many hosts that's a 0% intro-APR card, but only if you'll clear it inside the intro window; Chapter 7's rules apply. A bridge, not a balance. Load the carts, but don't order anything until you own the home; deals fall through. The moment you close, hit "order" on the major pieces. Where they land is a judgment call: for paint-level work, deliver straight to the property and let your handyman receive the boxes; reserve a storage unit only when heavy renovation (flooring, wall work) would bury everything. Moving a houseful out of storage is a whole job you don't want.
 
 ### Smart Renovation and Setup: Where to Splurge, Where to Save
 
@@ -54,7 +54,7 @@ Perfection doesn't book guests. Perception does.
 - Full kitchen and bath remodels, unless the cabinets are truly unusable
 - Luxury flooring or tile (guests won't notice unless it's broken)
 - High-end appliances: function over flair is fine
-- Structural repairs are a must; structural *changes* usually aren't worth the timeline. One exception worth doing the math on: adding a bedroom without stealing living space. Going from 2 to 3 or 3 to 4 bedrooms can lift a refi appraisal meaningfully; 4 to 5 rarely pays unless your market specifically books 5-beds; and carving a bedroom out of the living room trades away space groups need. Converting non-square-footage space — an enclosed patio, say — is the version that's often worth the disruption
+- Structural repairs are a must; structural *changes* usually aren't worth the timeline. One exception worth doing the math on: adding a bedroom without stealing living space. Going from 2 to 3 or 3 to 4 bedrooms can lift a refi appraisal meaningfully; 4 to 5 rarely pays unless your market specifically books 5-beds; and carving a bedroom out of the living room trades away space groups need. Converting non-square-footage space (an enclosed patio, say) is the version that's often worth the disruption
 
 ### The 80/20 of Amenities: Maximum ROI Per Dollar
 
@@ -104,7 +104,7 @@ Skip anything overly trendy or hard to maintain. A short-term rental is a utilit
 
 And remember the third letter of RURAL while you shop. Sleeping capacity is revenue. One of the best ROI tricks in furnishing is squeezing more sleepers out of every room with queen-over-queen bunks, trundle beds, and pull-out sofas. More heads in beds means more groups you can serve, and more money per night.
 
-**Where we shop** — and the rule behind the list: everything is bought online and delivered, because driving around shopping locally is a time sink, and every piece is intentional because a designer picked it:
+**Where we shop.** The rule behind the list: everything is bought online and delivered, because driving around shopping locally is a time sink, and every piece is intentional because a designer picked it:
 
 - **Wayfair:** Beds, sofas, lighting, nightstands
 - **Amazon:** Essentials, replacements, last-minute items
@@ -113,7 +113,7 @@ And remember the third letter of RURAL while you shop. Sleeping capacity is reve
 - **Costco:** Hot tubs, saunas, appliances. Serious value.
 - **Walmart/Home Depot:** Inexpensive furniture, rugs, outdoor gear
 
-**Design budget rule of thumb (as of July 2026, and it keeps rising):** budget $15–$25 per square foot for furniture and décor — that's furnishings only, not the design fee — and most of our own projects target the $15 end. An 800 sq ft cabin runs $12K–$20K on that rule, and treat it as the floor. All-in, design and setup on the 4 bed, 3 bath, 2,000 sq ft home we actually recommend (these typically sell for $250K–$350K as I write this) commonly lands at $40K–$100K, with where you fall decided by how much of the work you outsource. Full-service design and installation sits at the top of it, and it's often worth the premium to save time, avoid errors, and launch fast. One consolation: unlike the luxury car people buy for the write-off, this furniture is depreciable and income-producing at the same time.
+**Design budget rule of thumb (as of July 2026, and it keeps rising):** budget $15–$25 per square foot for furniture and décor. That's furnishings only, not the design fee, and most of our own projects target the $15 end. An 800 sq ft cabin runs $12K–$20K on that rule, and treat it as the floor. All-in, design and setup on the 4 bed, 3 bath, 2,000 sq ft home we actually recommend (these typically sell for $250K–$350K as I write this) commonly lands at $40K–$100K, with where you fall decided by how much of the work you outsource. Full-service design and installation sits at the top of it, and it's often worth the premium to save time, avoid errors, and launch fast. One consolation: unlike the luxury car people buy for the write-off, this furniture is depreciable and income-producing at the same time.
 
 If you hire help, approve mood boards and picks within 24 hours, trust the process, and stay focused on function first, aesthetics second. You are the bottleneck if you let yourself be.
 
@@ -141,15 +141,15 @@ The house is furnished, the listing is live, and the first booking just came in.
 
 **Troubleshoot with speed and grace.** You will have hiccups: WiFi issues, miscommunications, something forgotten. Don't panic. Respond quickly, be empathetic, and pair the solution with a small gesture. Keep a cleaner or local contact ready for emergencies, plus a short list of local vendors: plumber, electrician, HVAC. A problem handled fast and kindly becomes a story guests retell positively in reviews.
 
-**Set up bookkeeping from day one.** Pick a tool that fits: a mainstream accounting app if you're scaling to multiple properties, a real-estate-specific one, or a spreadsheet for one or two deals. Track revenue, operating expenses, capital expenditures, and loan payments, and build a receipt system (storage and categorization) for tax time. A bookkeeping AI can carry a surprising amount of this now — if you use one, redact account numbers and anything sensitive before you paste statements, because AI security is a real risk, and never hand any tool your bank logins. Clean books equal clean tax write-offs. If you don't know where your money's going, neither will your CPA.
+**Set up bookkeeping from day one.** Pick a tool that fits: a mainstream accounting app if you're scaling to multiple properties, a real-estate-specific one, or a spreadsheet for one or two deals. Track revenue, operating expenses, capital expenditures, and loan payments, and build a receipt system (storage and categorization) for tax time. A bookkeeping AI can carry a surprising amount of this now. If you use one, redact account numbers and anything sensitive before you paste statements, because AI security is a real risk, and never hand any tool your bank logins. Clean books equal clean tax write-offs. If you don't know where your money's going, neither will your CPA.
 
 ### Own the Guest Relationship (a Ten-Minute Insurance Policy)
 
 One more system belongs in your launch stack, and almost no small host builds it: your own direct-booking website and a guest email list.
 
-Here's why I care. I've been banned from Airbnb — for reasons outside my control, and it eventually got resolved — and I can tell you exactly what that morning feels like: every future booking, every review you earned, every guest relationship, gone behind a login you don't own. The platform is your best sales channel. It is not your business. The hosts who survive a platform problem are the ones who can still reach their guests.
+Here's why I care. I've been banned from Airbnb, for reasons outside my control (it eventually got resolved), and I can tell you exactly what that morning feels like: every future booking, every review you earned, every guest relationship, gone behind a login you don't own. The platform is your best sales channel. It is not your business. The hosts who survive a platform problem are the ones who can still reach their guests.
 
-The insurance costs almost nothing to start. Have an AI help you build a simple direct-booking site (it's a weekend project now, not a developer bill), and start collecting guest emails from day one — there are tools that capture them at the wifi login, and software that does it through your booking flow; search "guest email capture" for the current options, because the names change. Then email your past guests a couple of times a year with a friendly note and a direct-booking discount. Direct bookings skip the platform fee, and the list grows every stay whether you use it or not.
+The insurance costs almost nothing to start. Have an AI help you build a simple direct-booking site (it's a weekend project now, not a developer bill), and start collecting guest emails from day one. There are tools that capture them at the wifi login, and software that does it through your booking flow; search "guest email capture" for the current options, because the names change. Then email your past guests a couple of times a year with a friendly note and a direct-booking discount. Direct bookings skip the platform fee, and the list grows every stay whether you use it or not.
 
 At one or two properties this is a nice-to-have you set up once. Past five properties it stops being optional; by then your guest list is a real asset, and rebuilding it from zero would cost years.
 
@@ -157,7 +157,7 @@ At one or two properties this is a nice-to-have you set up once. Past five prope
 
 Every day the home sits empty is money left on the table. Wealth is built on momentum as much as on ROI.
 
-Most people never get this far. You did. Now beat the rest by launching faster and smarter. We've staged a ready home in about a week, and we've watched a botched fixer swallow four months. Nobody on our team was a contractor, a designer, or a photographer by trade — today we have handymen, contractors, designers, and photographers, and every one of them learned by reps. These skills are learnable, including by you. What separates the week from the four months is a timeline that starts before closing and a refusal to let perfect delay done.
+Most people never get this far. You did. Now beat the rest by launching faster and smarter. We've staged a ready home in about a week, and we've watched a botched fixer swallow four months. Nobody on our team was a contractor, a designer, or a photographer by trade. Today we have handymen, contractors, designers, and photographers, and every one of them learned by reps. These skills are learnable, including by you. What separates the week from the four months is a timeline that starts before closing and a refusal to let perfect delay done.
 
 That first booking notification is execution, not luck.
 
@@ -174,3 +174,5 @@ That first booking notification is execution, not luck.
 - None of it reaches the bank until you launch.
 
 One letter of RURAL remains. L is Leverage Systems, and it's what keeps the property you just launched from becoming your second job.
+
+---

@@ -103,3 +103,5 @@ The next chapter shows you where this strategy works best, and I'll warn you now
 - A raise just makes the leash more comfortable.
 - Keep the W2. Stop making it your only engine.
 - Wanting out doesn't make you lazy. It means you're ready for a system.
+
+---

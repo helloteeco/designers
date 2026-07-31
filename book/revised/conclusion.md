@@ -18,7 +18,7 @@ If something in this book lit a fire in you (a specific chapter, or just the ide
 
 Here's the step, and it's this week's work. Pick one national park or outdoor anchor within a day's drive and pull its visitor numbers. Then run the RURAL Scorecard on one town near it. Two hours. That's the Think phase already started, and everything else waits on it.
 
-You don't need a coach to succeed. I started with Google, a market-data tool, and messy spreadsheets, completely alone, and that path still works. Funny thing, though: now that I can afford it, I hire coaches constantly, because compressing twelve months of figuring-it-out into two is worth a fortune once you have things compounding. If you're not at that stage, that's completely fine — I wasn't either. But if you want support, I've built the help I wish I'd had:
+You don't need a coach to succeed. I started with Google, a market-data tool, and messy spreadsheets, completely alone, and that path still works. Funny thing, though: now that I can afford it, I hire coaches constantly, because compressing twelve months of figuring-it-out into two is worth a fortune once you have things compounding. If you're not at that stage, that's completely fine. I wasn't either. But if you want support, I've built the help I wish I'd had:
 
 - **Follow @teeco.co on Instagram.** That's where we keep in touch with readers: real numbers, behind-the-scenes updates, and practical tips every week. We answer DMs.
 - **Take my free mini course.** The link is in the Bonus Pack at the back of this book.
@@ -36,7 +36,7 @@ But the real win is the confidence. Knowing I can buy a property, run it right, 
 
 That's what's waiting for you. The money turns out to be the smallest part.
 
-Before the last page, one honest note about this book itself. It took two years to write. Nine months in, I quit — I had a full draft and didn't love it, and I wasn't going to put my name on something I didn't believe. What you just read is the version I came back for. It holds my current best playbook, and I mean current: markets shift, tools change, and AI is going to change more of this business than any of us can predict. The frameworks are built to outlive the details. Stay connected and you'll watch them evolve, because I'll keep getting better at this, and I'd like you along.
+Before the last page, one honest note about this book itself. It took two years to write. Nine months in, I quit. I had a full draft and didn't love it, and I wasn't going to put my name on something I didn't believe. What you just read is the version I came back for. It holds my current best playbook, and I mean current: markets shift, tools change, and AI is going to change more of this business than any of us can predict. The frameworks are built to outlive the details. Stay connected and you'll watch them evolve, because I'll keep getting better at this, and I'd like you along.
 
 ### One Last Thing
 
@@ -52,10 +52,10 @@ P.P.S. Thank you for reading this far. If you commit to your five-year plan, we'
 
 And if you remember nothing else, remember the spine of this book:
 
-- **R — Right market first.**
-- **U — Under budget.**
-- **R — Room for everyone.**
-- **A — Aesthetics that win the scroll.**
-- **L — Leverage systems.**
+- **R: Right market first.**
+- **U: Under budget.**
+- **R: Room for everyone.**
+- **A: Aesthetics that win the scroll.**
+- **L: Leverage systems.**
 
 In this order. Every time.

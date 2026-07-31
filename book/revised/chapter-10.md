@@ -10,7 +10,7 @@ That's the big idea of this chapter, and it fits in four words. Income follows s
 
 Here is the target I use when I evaluate a home and again when I furnish it:
 
-**Aim near one sleeper per 100 square feet — after subtracting 150 square feet for every bathroom.** Bathrooms sleep nobody, so pull them out of the math first, the same adjustment you saw in Chapter 3. A 2,000-square-foot home with three baths plans as 1,550 square feet, call it 15 sleepers.
+**Aim near one sleeper per 100 square feet, after subtracting 150 square feet for every bathroom.** Bathrooms sleep nobody, so pull them out of the math first, the same adjustment you saw in Chapter 3. A 2,000-square-foot home with three baths plans as 1,550 square feet, call it 15 sleepers.
 
 Most hosts never get close. They put a queen in each bedroom, a sofa in the living room, and call it done. A 1,000-square-foot, two-bedroom cabin sleeps four, and thousands of dollars a year walk past the listing because the search filter says "6 guests" and the home says "4."
 
@@ -22,7 +22,7 @@ You close that gap with furniture, not square footage:
 
 Stack those moves in that same two-bedroom cabin and watch the count climb. The two queens sleep four. Add a trundle and you're at six. Make the sofa a pull-out and you're at eight. Run the rule to check: 1,000 square feet minus 150 for the bath plans as 850, so eight or nine sleepers is right on target. If the rooms can take it, a queen-over-queen bunk pushes you to ten.
 
-I love the queen-over-queen hack, so let me push it to its ceiling — literally. If a room is genuinely big enough (a safe layout, a ceiling high enough for the top sleeper to sit up, no fan waiting at head height), two queen-over-queen bunks put eight people in a single room. Run single queen-over-queens across a 3-bedroom home and it sleeps twelve. Two cautions ride along. Keep one bunk-free bedroom, because some guests just don't do ladders. And check your insurer's rules and the local code before you build up: in Columbus, Georgia, we once had to pull a bunk out of a home because the ceiling height didn't allow it. Measure first, then stack.
+I love the queen-over-queen hack, so let me push it to its ceiling, literally. If a room is genuinely big enough (a safe layout, a ceiling high enough for the top sleeper to sit up, no fan waiting at head height), two queen-over-queen bunks put eight people in a single room. Run single queen-over-queens across a 3-bedroom home and it sleeps twelve. Two cautions ride along. Keep one bunk-free bedroom, because some guests just don't do ladders. And check your insurer's rules and the local code before you build up: in Columbus, Georgia, we once had to pull a bunk out of a home because the ceiling height didn't allow it. Measure first, then stack.
 
 That little cabin is the floor, the smallest home the math still works on, not the home I'm telling you to buy. My minimum spec is 3 bedrooms, 2 baths, and 1,500 square feet. What I actually recommend is 4 bedrooms, 3 baths, and 2,000-plus square feet. I never suggest a 2 bed, 1 bath.
 
@@ -40,7 +40,7 @@ One warning before you go bunk-bed crazy. Capacity is a system, not a bed count.
 
 To understand why capacity pays, look at the booking decision from the guest's side.
 
-A couple weighing your cabin against a hotel compares one price to one price. But a group doesn't shop by the room. A group shops by the roof — and splits it by the head.
+A couple weighing your cabin against a hotel compares one price to one price. But a group doesn't shop by the room. A group shops by the roof and splits it by the head.
 
 Run the math. A 6-bedroom home at $400 a night sounds expensive next to a $150 hotel room. Now split it. Twelve people sharing that $400 pay about $33 each per night. The couple in the $150 hotel room pays $75 a head for one room, no kitchen, no living room, and nowhere for everyone to gather after dinner.
 
@@ -66,7 +66,7 @@ Setting it up takes minutes. Choose a base guest count below your maximum, then 
 
 But notice what the fee requires. Capacity. You cannot charge for the seventh sleeper if your home only sleeps six. Every bunk, trundle, and pull-out from the capacity principle earns twice: it widens your audience in search, and it adds billable guests to every booking. The extra-guest fee is where heads in beds turns directly into dollars.
 
-### Know Your Ideal Guest — and Design for Them
+### Know Your Ideal Guest, and Design for Them
 
 Capacity tells you how many. Your guest avatar tells you who. Each market attracts a different guest, and you don't have to appeal to everyone. You have to nail it for one.
 
@@ -129,7 +129,7 @@ Here's how it looks on a real 3-bedroom cabin running a $250–$300 average dail
 - **Orphan nights:** discounted to $229–$249 to close gaps.
 - **Hot tub and fire pit:** +$50/night. An amenity is pricing power, not a photo prop. Validate what it earns in your market with your market-data tool before you buy it.
 
-Those dollar figures are one real listing's ladder as of 2026 — copy the framework, not the prices, and revisit yours twice a week once you're live. If you want a shortcut, this whole chapter's setup work (capacity plan, pricing ladder, listing checklist) is the kind of thing you can hand to an AI agent step by step; this isn't an AI book, but there's no rule against help. My complete Pricing SOP and calendar-management templates are in the Bonus Pack at the back of this book.
+Those dollar figures are one real listing's ladder as of 2026. Copy the framework, not the prices, and revisit yours twice a week once you're live. If you want a shortcut, this whole chapter's setup work (capacity plan, pricing ladder, listing checklist) is the kind of thing you can hand to an AI agent step by step; this isn't an AI book, but there's no rule against help. My complete Pricing SOP and calendar-management templates are in the Bonus Pack at the back of this book.
 
 ### The Numbers Capacity Makes Possible
 

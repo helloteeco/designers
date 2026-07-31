@@ -144,6 +144,16 @@ You asked whether your "this chapter is so boring I can't read it" notes were ad
 
 ---
 
+## July 24 corrections (your read-through notes)
+
+- **Nevada is gone.** You never owned there; the claim came from the feedback doc's canon section and I should have flagged it. The time-stamp line now says "mostly in West Virginia."
+- **It's Ryu, not "Rui Yu," and the story order is fixed** in Chapters 4 and 14: he bought his own property first as one of your first students, then you became business partners, then he took over managing your properties and built out the team.
+- **The Puck checklist's double bullets are fixed** (the checkbox glyphs were stacking on top of the list bullets in the DOCX; the printable version with real boxes lives in the Bonus Pack).
+- **The manual comp method is honest now**: instead of "watch for owner-blocked stretches" it says you can't tell blocks from bookings from the outside, and counting several properties washes that noise out.
+- **Em-dashes: zero, book-wide.** All ~150 were rewritten by hand into commas, colons, periods, or parentheses that fit each sentence; structural labels (Part headings, the RURAL letters, tier names) became colons. The reader-facing Bonus Pack docs were swept too. If you ever want a handful back for punch, say so, but the default is now none.
+
+---
+
 ## Still waiting on you (nothing blocks reading the draft)
 
 1. **The "90,000+ over two years" growth stat** — I never printed it because the unit is ambiguous (guests? nights? dollars?). Tell me what it counts and where you want it, and I'll add it.

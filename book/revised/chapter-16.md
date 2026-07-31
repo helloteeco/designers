@@ -31,7 +31,7 @@ Stop planning for deal five. Nail deal one.
 
 You know Myla's Oak Hill deal by now: the $103K cash purchase, the botched renovation she finished with her own hands (Chapter 8), the $150K gross across her first two years. What matters here is what the deal did to her. The refinance handed most of her capital back, that capital bought her second property in Tennessee, and the second domino stopped feeling like a dream.
 
-She ran that first launch the way we teach everyone to: self-managed. A local cleaner, a VA answering guests through an automation platform, and spreadsheets. (Today that home runs through the in-house management company we later built — a salaried property manager, VAs, and an AI agent, on its way to fifty-plus homes. But it started with three tools and her phone, and that's the version you're copying.)
+She ran that first launch the way we teach everyone to: self-managed. A local cleaner, a VA answering guests through an automation platform, and spreadsheets. (Today that home runs through the in-house management company we later built: a salaried property manager, VAs, and an AI agent, on its way to fifty-plus homes. But it started with three tools and her phone, and that's the version you're copying.)
 
 And she didn't compromise on setup, even after the contractors let her down. Quality furnishings, stunning photos, reviews that matched her standards. Nothing about the operation was shoestring. It was built to last.
 
@@ -50,10 +50,10 @@ Your listing goes live. First bookings come in. You're responding to every messa
 
 You've hosted 8–12 guests. Patterns emerge. Some nights book instantly; others sit empty. Your cleaner has a rhythm. The first hiccups are solved.
 
-- Expect: 60–75% occupancy. Your rating is forming — target 4.8+, and read a 4.7 as a warning light telling you what to fix.
+- Expect: 60–75% occupancy. Your rating is forming. Target 4.8+, and read a 4.7 as a warning light telling you what to fix.
 - Your job: Adjust your listing description based on what reviews praise. Test a rate increase on strong weekends. Hand more to your VA or AI agent. Stop answering every message yourself.
 
-And a word about ratings here, because they torment new hosts. You will not hold a perfect 5.0 forever. A bad review is inevitable eventually, and it isn't fatal — if it helps, imagine your first review had been the 1-star; every review after would have improved the average. Run the home well and 4.8+ is a holdable standard long-term (plenty of our students hold 4.9+). Treat 4.7 as the warning light and anything below it as a to-do list, not a tragedy.
+And a word about ratings here, because they torment new hosts. You will not hold a perfect 5.0 forever. A bad review is inevitable eventually, and it isn't fatal. If it helps, imagine your first review had been the 1-star; every review after would have improved the average. Run the home well and 4.8+ is a holdable standard long-term (plenty of our students hold 4.9+). Treat 4.7 as the warning light and anything below it as a to-do list, not a tragedy.
 
 **Weeks 9–12: Stabilization (You're an Owner Now)**
 
@@ -62,7 +62,7 @@ You've hosted 20+ guests. Your systems are humming. Your VA handles 90% of commu
 - Expect: 65–75% occupancy. Predictable income of $1,500–$2,500 per month net after all expenses.
 - Your job: Check in weekly. Tune pricing twice a month. Quarterly, plan the next property or optimize this one. Spend about three hours a week, max.
 
-One caution. Airbnb boosts new listings, so your first 90 days flatter you, and your month-three number is mostly a function of the season you launched into. Stabilized, for a rural home, means 55–70% averaged over a full year — and remember the standing rule: sustained occupancy far above that band usually means you're underpriced, not winning. It's why Chapter 8 made you underwrite at 60–70%, not your best quarter.
+One caution. Airbnb boosts new listings, so your first 90 days flatter you, and your month-three number is mostly a function of the season you launched into. Stabilized, for a rural home, means 55–70% averaged over a full year. And remember the standing rule: sustained occupancy far above that band usually means you're underpriced, not winning. It's why Chapter 8 made you underwrite at 60–70%, not your best quarter.
 
 ### A Day in the Life: Six Months In
 

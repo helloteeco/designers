@@ -51,7 +51,7 @@ Save the bed counts and kitchen features for later in the description. Sell the 
 
 Your first 3–5 guests are gold. Their reviews anchor your reputation and drive your early ranking.
 
-Set launch pricing 15–20% below your comps. Offer extras like early check-in or free firewood. Set a 2-to-4-night minimum — 3 is my usual starting point, but the right number depends on your house and what the top performer in your market is doing.
+Set launch pricing 15–20% below your comps. Offer extras like early check-in or free firewood. Set a 2-to-4-night minimum; 3 is my usual starting point, but the right number depends on your house and what the top performer in your market is doing.
 
 It feels like leaving money on the table, until you remember that a new listing with zero reviews at full price is invisible. A new listing priced under the comps books immediately, and each booking buys the proof you actually need in month one.
 
@@ -60,7 +60,7 @@ It feels like leaving money on the table, until you remember that a new listing 
 - Use 30–50 high-quality photos; volume builds trust
 - Enable Instant Book to improve visibility
 - List on both Airbnb and Vrbo
-- Put proximity to attractions in the title and description — and know exactly who those attractions send you. Map it like a chain: Columbus, Georgia → Fort Moore → basic-training graduations → big, kid-friendly family groups. Write the listing for the person at the end of that chain
+- Put proximity to attractions in the title and description, and know exactly who those attractions send you. Map it like a chain: Columbus, Georgia → Fort Moore → basic-training graduations → big, kid-friendly family groups. Write the listing for the person at the end of that chain
 - Include local photos (waterfalls, breweries, trail signs) to connect the listing to the experience
 
 Your photos, title, and first few lines do the heavy lifting. Lead with what makes your property stand out, not how many beds you have.
@@ -71,7 +71,7 @@ Airbnb's search algorithm determines your visibility. It decides whether the mom
 
 Most hosts have no idea how it works. Understanding it matters less than working it during the one window when the algorithm is actively rooting for you: your first month live.
 
-A durability note before the specifics, because the platform retunes its search constantly and any book that claims to know this month's weights is bluffing. What doesn't change is the logic underneath: booking platforms make money when guests book, so they will always reward listings that convert — fast responses, competitive prices, strong reviews, few cancellations. Learn that principle and every future algorithm update becomes a detail. With that said, here are the five factors it rewards as I write this, in rough order of importance:
+A durability note before the specifics, because the platform retunes its search constantly and any book that claims to know this month's weights is bluffing. What doesn't change is the logic underneath: booking platforms make money when guests book, so they will always reward listings that convert: fast responses, competitive prices, strong reviews, few cancellations. Learn that principle and every future algorithm update becomes a detail. With that said, here are the five factors it rewards as I write this, in rough order of importance:
 
 1. **New listing boost.** New listings get priority visibility when they launch. This one isn't a host rumor; Airbnb's own search documentation says new listings get an immediate boost in search to help them get booked before they have reviews. This is your golden window, when the algorithm hands you free traffic. Use it aggressively. Launch pricing 15–20% below market, give early guests amazing experiences, and rack up reviews fast.
 
@@ -122,3 +122,5 @@ None of it matters if the listing goes live three months late, though. Chapter 1
 - The algorithm rewards newness, response speed, Instant Book, competitive pricing, and review velocity.
 - Climb the Pricing Ladder. The full 20% under market at launch, market rate by month 2, 5–10% over by months 3–6.
 - Early reviews are easily worth a few thousand dollars in future bookings, in my experience. Buy them cheap while you can.
+
+---

@@ -75,4 +75,4 @@ Put all six together and an emergency turns into a checklist your team runs.
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

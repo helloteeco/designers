@@ -6,7 +6,7 @@ Ryu doesn't open with a bigger check. He opens with a better structure: $15,000 
 
 Then Ryu put the furniture and setup on 0% business credit cards and let the market he'd carefully chosen do the heavy lifting. In its first year live, June 2024 to June 2025, Lookout Lodge grossed $83,937.81. That's gross, before expenses. But nearly $84K of bookings in year one, on a home that took $15K to control, is a win by any measure.
 
-Now the honest label. Ryu's 0% note is a top-1% outcome, not the template. A typical seller-carry deal looks more like 10% down, 6–7% interest, and a balloon due in five years, meaning the whole remaining balance comes due at once and you refinance or sell to pay it. The balloon is your refinance risk wearing a different hat. Underwrite the payoff, not the fairy tale. And one wrinkle on 0% notes, in plain English: the IRS doesn't believe in free loans, so it may tax the seller as if interest had been charged anyway. Not your problem to solve — just have a professional paper the deal so it surprises nobody.
+Now the honest label. Ryu's 0% note is a top-1% outcome, not the template. A typical seller-carry deal looks more like 10% down, 6–7% interest, and a balloon due in five years, meaning the whole remaining balance comes due at once and you refinance or sell to pay it. The balloon is your refinance risk wearing a different hat. Underwrite the payoff, not the fairy tale. And one wrinkle on 0% notes, in plain English: the IRS doesn't believe in free loans, so it may tax the seller as if interest had been charged anyway. Not your problem to solve; just have a professional paper the deal so it surprises nobody.
 
 Notice something. The gap between Ryu and everyone still "saving up" was never money. It was strategy. That's the big idea of this chapter. **Money isn't the obstacle. Strategy is.**
 
@@ -82,13 +82,13 @@ The deck is seven pages, no fluff, and here's each page's one job:
 1. **Executive summary.** The deal and the ask in plain numbers: "I'm buying a $250,000 short-term rental in [market]. I'm seeking $20,000 for furnishing and setup: 18 months at 10% annual interest, secured by a second deed of trust. In plain English, that's a recorded claim on the house, behind the bank's, so if everything fails you're in line to be paid from the sale."
 2. **Market analysis** (two pages). Screenshots from your data tools: comps, occupancy history, the ADR trend. Show them the data is real, not your gut feeling.
 3. **Deal summary.** Price, down payment, mortgage, what their capital buys, and the timeline: close in 45 days, guests within 90.
-4. **Returns for the lender.** The rate, the payment schedule, and the total interest in dollars — $3,000 over 18 months on that $20,000.
+4. **Returns for the lender.** The rate, the payment schedule, and the total interest in dollars: $3,000 over 18 months on that $20,000.
 5. **Risk mitigation.** Insurance, six months of reserves (show the actual number), your personal guarantee, and your research.
 6. **Exit strategy.** How they get repaid: at this deal's numbers the cash flow alone earns the principal inside a year, with a refinance as the backup. Paid in full by month 18 either way.
 
 And the message the whole deck exists to deliver: "You're not betting on me. You're betting on the property's cash flow and the equity I'm building. Worst case, the property still has value and you have a lien against it."
 
-The full deck — every page written out with the numbers templated, ready to copy — is the Private Money Pitch Deck Template in the Bonus Pack at the back of this book.
+The full deck, every page written out with the numbers templated and ready to copy, is the Private Money Pitch Deck Template in the Bonus Pack at the back of this book.
 
 ### The Negotiation Playbook
 
@@ -152,7 +152,7 @@ Here's what it looks like in real life. My friends Diane and Jon, full-service c
 *Strategy note:* this is the go-to for scaling past deal one, or for a home that doesn't qualify as a vacation home. Combine with 0% cards and you can be all-in for under $50K. Watch the costs, though. DSCR money runs a point or more above vacation-home rates (a full percentage point of interest), and 2–3 points at closing aren't unusual (a closing point is an upfront fee of 1% of the loan). Rates move; that premium is the part that doesn't.
 
 **Path 4: Private Money.**
-Best for down payments and furnishing when your network has idle cash. Nobody's begging here. You're offering someone an 8–12% return backed by real property, far better than their savings account or bonds. The ask, without the cringe: "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly — much better than letting it sit in savings." Back it with the pitch deck above. This works best with family and friends who trust you, coworkers with idle savings, local professionals, and retirees with rollover funds. And you're not recruiting a hundred rich people. One or two with idle cash and a fear of inflation will do. Always get it in writing (a promissory note plus terms), and for larger loans, record a lien or deed of trust.
+Best for down payments and furnishing when your network has idle cash. Nobody's begging here. You're offering someone an 8–12% return backed by real property, far better than their savings account or bonds. The ask, without the cringe: "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly, much better than letting it sit in savings." Back it with the pitch deck above. This works best with family and friends who trust you, coworkers with idle savings, local professionals, and retirees with rollover funds. And you're not recruiting a hundred rich people. One or two with idle cash and a fear of inflation will do. Always get it in writing (a promissory note plus terms), and for larger loans, record a lien or deed of trust.
 
 **Path 5: 0% Interest Business Credit Cards.**
 Best for covering a big slice of the furnishing and setup bill without draining your down payment. You get 6–18 months interest-free, which is breathing room to get listed and profitable before paying it down. The rule stands. If you put $30K on a 0% card, that $30K goes in your ROI calculation. It's still real debt.

@@ -166,7 +166,7 @@ If your deal needs 80%+ occupancy to cash flow, you bought a slot machine. The b
 Ski-only. Lake-only. Foliage-only. If 60–80% of revenue lands in one three-month season, you bleed the other nine months. That's a seasonal rental, not a year-round business.
 *Walk test:* Pull the monthly revenue distribution from your market-data tool. Any month at zero bookings? Skip it. Three consecutive months under 5% of annual revenue? Skip it.
 
-**Deal-Killer #3: An HOA that restricts — or could restrict — STRs.**
+**Deal-Killer #3: An HOA that restricts (or could restrict) STRs.**
 Some covenants prohibit short-term rentals outright. Some cap rental days or require written approval. Some say nothing, which means they can try to restrict later, once Airbnbs multiply on the street.
 *Walk test:* Get the HOA documents before making an offer. If the rules are unclear, ask for written permission. If they say no, or require approval case by case, skip it. The last thing you need is an HOA lawsuit or a forced shutdown.
 
@@ -212,7 +212,7 @@ If you want, track two versions: "True Total Investment" (down + closing + furni
 
 ### The Tools I Use to Run These Numbers
 
-You don't need to build formulas from scratch. These are the tool categories I lean on (just don't take any single one as gospel — the current names live in the Bonus Pack, and my own team's revenue calculator runs at edge.teeco.co):
+You don't need to build formulas from scratch. These are the tool categories I lean on (just don't take any single one as gospel; the current names live in the Bonus Pack, and my own team's revenue calculator runs at edge.teeco.co):
 
 - **A revenue-comps tool with percentile analysis**, for the Conservative/Moderate/Aggressive scenarios
 - **A market dashboard** for occupancy, ADR, trendlines, and seasonality
@@ -251,7 +251,7 @@ Honesty notes, because a real statement has them. Electric is included at the ow
 
 Now read what the page says. Roughly 52 cents of every payout dollar went to running the house, and that's with an interest-only seller note keeping the payment small. The cash in was about $66K: $20K down plus roughly $46K of renovation and furnishings. So the seven-month net of $22,502 works out to about 34% cash-on-cash in a little over half a year. By its twelfth month the home had crossed $72K in revenue.
 
-Hold your own deals against this page. It's the standard the 18% Floor has been asking you to meet all chapter — met with room to spare.
+Hold your own deals against this page. It's the standard the 18% Floor has been asking you to meet all chapter, met with room to spare.
 
 ### The Math Will Save You
 
@@ -274,3 +274,5 @@ The math saved me. It will save you too. You'll find the Real Estate Numbers Che
 - Count 0% card balances as cash invested. Honest math scales; hopeful math dies.
 - Returns come in layers: cash flow, equity, and taxes. Myla's botched renovation still ended with almost all of her money back inside two years, and she kept the house.
 - Pad your expenses, don't pinch them. The deal that survives fat budgets is the deal you buy.
+
+---

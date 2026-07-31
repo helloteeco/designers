@@ -114,4 +114,4 @@ A little appreciation keeps your team loyal and your business running smoothly.
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

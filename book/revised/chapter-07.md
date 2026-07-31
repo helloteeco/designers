@@ -56,7 +56,7 @@ Run the real numbers:
 
 In Scenario B you control three doors and $450,000 of real estate, nearly four times the asset base, with a smaller pile of savings. More properties means more cash flow, more learning, and faster scaling.
 
-One honesty check before you fall in love with the three-home version: $30K of cards across three homes is $10K of setup per home, which only works if you DIY the design, source furniture cheap, and skip the pros. A full-service setup runs several times that per home (Chapter 8 has the real ranges). Most people should read Scenario B as a two-to-three-year sequence, not a shopping spree — buy one, let it cash flow, then let that cash flow and the tools in this chapter fund the next. The leverage math is the point, not the pace.
+One honesty check before you fall in love with the three-home version: $30K of cards across three homes is $10K of setup per home, which only works if you DIY the design, source furniture cheap, and skip the pros. A full-service setup runs several times that per home (Chapter 8 has the real ranges). Most people should read Scenario B as a two-to-three-year sequence, not a shopping spree: buy one, let it cash flow, then let that cash flow and the tools in this chapter fund the next. The leverage math is the point, not the pace.
 
 Why this works:
 
@@ -96,7 +96,7 @@ By year 6 you control $500,000 in real estate across two doors, and door two has
 
 The velocity investor pulls ahead by a full property every cycle, not by finding better deals, but by keeping capital moving instead of sitting.
 
-So here's the plain-English definition, because this idea trips people up. **Velocity of capital is how fast your invested cash comes back to you so it can buy the next deal.** Its purpose is simple: the same $50K, recycled, buys more houses than a bigger return that stays locked up. Two footnotes keep it honest. First, a 20% cash-on-cash deal is still a good deal — slower is not bad, and plenty of my favorite properties pay back patiently. Second, your capital comes back through more doors than cash flow alone: tax write-offs and refunds, a cash-out refinance if you forced value, and the STR tax treatment in Chapter 15. Those streams are hard to total precisely on a spreadsheet, which is why the payback always lands sooner than the cash-flow-only math suggests.
+So here's the plain-English definition, because this idea trips people up. **Velocity of capital is how fast your invested cash comes back to you so it can buy the next deal.** Its purpose is simple: the same $50K, recycled, buys more houses than a bigger return that stays locked up. Two footnotes keep it honest. First, a 20% cash-on-cash deal is still a good deal; slower is not bad, and plenty of my favorite properties pay back patiently. Second, your capital comes back through more doors than cash flow alone: tax write-offs and refunds, a cash-out refinance if you forced value, and the STR tax treatment in Chapter 15. Those streams are hard to total precisely on a spreadsheet, which is why the payback always lands sooner than the cash-flow-only math suggests.
 
 **Don't chase the highest percentage. Chase the fastest capital recovery.**
 
@@ -132,9 +132,9 @@ One of the most powerful tools I've used. In rural markets, a surprising number 
 
 Why would a seller agree? They skip agent fees (5–6%), collect steady, predictable monthly income, and move a property that might otherwise sit. It's ideal for fixer-uppers, tired landlords, and inherited homes.
 
-One honest caveat before you fall in love with this path. Seller financing is an advanced tool. Deals like Ryu's are out there, but they're harder to find, and they take patience and a seller in exactly the right situation. Don't chase it — but when a clean offer with good terms lands in front of you, it's usually the best money available. Take it, with an attorney handling the paperwork. If you're just starting, the 10% down vacation-home loan in Path 1 is the simpler move. That's what I did when I started. Seller-financing rules vary by state; have a local real estate attorney draft or review the note and deed of trust.
+One honest caveat before you fall in love with this path. Seller financing is an advanced tool. Deals like Ryu's are out there, but they're harder to find, and they take patience and a seller in exactly the right situation. Don't chase it. But when a clean offer with good terms lands in front of you, it's usually the best money available. Take it, with an attorney handling the paperwork. If you're just starting, the 10% down vacation-home loan in Path 1 is the simpler move. That's what I did when I started. Seller-financing rules vary by state; have a local real estate attorney draft or review the note and deed of trust.
 
-**Pro tip — where to look for seller financing:**
+**Pro tip: where to look for seller financing**
 
 - Zillow (search "seller financing" or "owner financing")
 - Craigslist and Facebook Marketplace
@@ -195,7 +195,7 @@ It fits STRs because you're buying income-producing assets, the home starts earn
 
 **Which cards?** Specific offers rotate too fast to put in print. Issuers change intro periods, cash-back rates, and signup bonuses every few months. The pattern is what lasts: the major issuers almost always have business cards running 0% intro periods of 12–18 months, usually with a signup bonus worth several hundred dollars once you clear a spend threshold, and furnishing a rental clears those thresholds fast. The card list lives in the Bonus Pack, a download I keep current, because paper can't keep up with the issuers.
 
-**How to apply without a formal business:** Whether to hold the home in an LLC at all is a question for you and your attorney — it depends on your situation, and there's no universal answer. What I can tell you is that you don't need an LLC to get a business card. A sole proprietor is a real business in the issuer's eyes, so your full name is your business name and your SSN works as the tax ID. Pick "Real Estate" as the business type. For revenue, give your honest projection of what the rental will earn in its first year, based on the comps you ran, and mark the business as new. Issuers expect new businesses to report projections. What you must never do is inflate numbers to get approved. Misstating information on a credit application is fraud, the approval isn't worth it, and your honest projection on a $70K-a-year rental is plenty impressive on its own.
+**How to apply without a formal business:** Whether to hold the home in an LLC at all is a question for you and your attorney; it depends on your situation, and there's no universal answer. What I can tell you is that you don't need an LLC to get a business card. A sole proprietor is a real business in the issuer's eyes, so your full name is your business name and your SSN works as the tax ID. Pick "Real Estate" as the business type. For revenue, give your honest projection of what the rental will earn in its first year, based on the comps you ran, and mark the business as new. Issuers expect new businesses to report projections. What you must never do is inflate numbers to get approved. Misstating information on a credit application is fraud, the approval isn't worth it, and your honest projection on a $70K-a-year rental is plenty impressive on its own.
 
 **What to buy with these cards:**
 
@@ -272,15 +272,15 @@ That last line is the rule, not leftovers. PITI (principal, interest, taxes, ins
 - Mortgage payments (PITI): ~$11,500
 - Net cash: ~$11,500, every dollar of it aimed at the card balances
 
-**Year one and beyond:** On that trajectory, the home projects to $70,000+ in annual bookings. After the mortgage, cleaning, utilities, and maintenance, that's a target of $26,000–$30,000 in annual net income — before counting the depreciation write-offs, the possible cost-seg refund, and any appreciation or forced value, which all stack on top. Count the cards as invested (Chapter 8 will insist) and you're all-in for about $59,000. That's roughly a 45–50% cash-on-cash return.
+**Year one and beyond:** On that trajectory, the home projects to $70,000+ in annual bookings. After the mortgage, cleaning, utilities, and maintenance, that's a target of $26,000–$30,000 in annual net income, before counting the depreciation write-offs, the possible cost-seg refund, and any appreciation or forced value, which all stack on top. Count the cards as invested (Chapter 8 will insist) and you're all-in for about $59,000. That's roughly a 45–50% cash-on-cash return.
 
 Send the cards every spare dollar first, so the balances die before the 0% windows do. Run this deal's own numbers and they will. The first six months send $11,500 at the balance, the months after that send $2,200 or so each, and the $30,000 is dead around month 15 of operation, inside the window; end of year two is the slack version, not the plan.
 
-Two admissions before you copy this. First, on a full-service setup, the real bill often lands closer to $60K than $30K — the good news is that issuers commonly approve $50K–$100K of 0% business credit across a couple of cards, and the gaps close with seller credits and, if needed, private money. Keep maximum cash reserves either way. (Backup plan some people use, and I did early on: 0% personal cards. That's a report of what I did, not advice.) Second, thirty grand is more than my six-month cap would bless if the deal only ever performed at its conservative case. I run it anyway because the payback plan has more than one exit: the deal's own pace, the rollover, and worst case the carry. If you'd rather have no admissions in your plan, float less and furnish in stages out of cash flow.
+Two admissions before you copy this. First, on a full-service setup, the real bill often lands closer to $60K than $30K. The good news: issuers commonly approve $50K–$100K of 0% business credit across a couple of cards, and the gaps close with seller credits and, if needed, private money. Keep maximum cash reserves either way. (Backup plan some people use, and I did early on: 0% personal cards. That's a report of what I did, not advice.) Second, thirty grand is more than my six-month cap would bless if the deal only ever performed at its conservative case. I run it anyway because the payback plan has more than one exit: the deal's own pace, the rollover, and worst case the carry. If you'd rather have no admissions in your plan, float less and furnish in stages out of cash flow.
 
 Roughly a year after the cards die, the $29,000 you put in at closing is back in your hand. A return like that implies a payback of two years and change. Same money, second property. That's the Stack Strategy, and it's why the leverage ratio matters more than the sticker price.
 
-### Debt Isn't the Risk — Lack of Cash Flow Is
+### Debt Isn't the Risk. Lack of Cash Flow Is
 
 Debt scares people. What should scare them is being stuck with one property that doesn't perform, with no reserves and no way to scale. Use other people's money wisely (banks for mortgages, 0% cards for furniture) and you keep cash in your pocket, create multiple income streams, learn faster by running more than one unit, and build a portfolio while others are still saving.
 
@@ -290,7 +290,7 @@ This is exactly how I scaled. One well-picked rural Airbnb with 10% down and sma
 
 ### Five Paths Are Enough
 
-There are over 20 ways to fund a real estate deal. HELOCs, SBLOCs, 401(k) loans, bridge loans, lease options — these are all good tools, and some will serve you well later. But twenty options is how first-time buyers talk themselves into buying nothing. Park the rest for now. These five are the most common, accessible, and scalable ways to buy your first rural Airbnb, and one of them is enough:
+There are over 20 ways to fund a real estate deal. HELOCs, SBLOCs, 401(k) loans, bridge loans, lease options: these are all good tools, and some will serve you well later. But twenty options is how first-time buyers talk themselves into buying nothing. Park the rest for now. These five are the most common, accessible, and scalable ways to buy your first rural Airbnb, and one of them is enough:
 
 1. Vacation-home loans (10% down)
 2. Seller financing
@@ -315,3 +315,5 @@ The rest you'll learn by doing. Next comes the one number that tells you whether
 - Close with reserves, not fumes; six months of PITI in the bank makes a slow season a nuisance, not a crisis.
 - The payback waterfall runs cards first, pocket second, next deal third. That's the Stack Strategy, and it's how the same dollars buy deal two.
 - Don't chase the highest percentage return. Chase the fastest capital recovery.
+
+---

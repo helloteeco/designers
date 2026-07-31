@@ -18,7 +18,7 @@ Here's the model I teach, compressed to its shape. It assumes you buy with a loa
 | 2 | Refi Property 1 + saved cash flow buy Property 2 | $42,000 | ~$60,500 |
 | 3 | The pair's cash flow funds Property 3 | ~$60,000 | ~$85,000–$95,000 |
 
-Read the right column top to bottom. Year 1 created $34K of net wealth (cash flow plus equity plus tax shelter). Year 3 created nearly triple that. Nothing about the properties changed — what changed is that each one started feeding the next, the tax benefits stacked, and every equity position supported a bigger refinancing round.
+Read the right column top to bottom. Year 1 created $34K of net wealth (cash flow plus equity plus tax shelter). Year 3 created nearly triple that. Nothing about the properties changed. What changed is that each one started feeding the next, the tax benefits stacked, and every equity position supported a bigger refinancing round.
 
 One warning before you build your life around the Year 2 refinance. A cash-out loan underwritten on short-term-rental income typically tops out at 70–75% of the appraised value, not the clean 80% a spreadsheet assumes, and most lenders want "seasoning", meaning a full year of ownership and income, before they'll count it. If the appraisal comes in soft or the new rate makes the payment ugly, you don't refi. You keep the loan you have, keep saving the cash flow, and buy property two a year later. The plan slows. It doesn't break, because the house keeps paying you while you wait. Never make deal two dependent on deal one's appraisal.
 
@@ -45,7 +45,7 @@ Myla treated reviews like a heat map. Every negative comment became a task. A gu
 
 **Level 2: Pricing Optimization (Add 10–20% in Annual Revenue)**
 
-Once your review profile is strong (4.8+), you have pricing power. This is where your pricing tool earns its keep. Concretely, the moves live in its dashboard: raise your base price for the season or bump specific hot dates, lower them to close gaps, and let the tool handle the daily wiggle in between — and if the dashboard confuses you, an AI agent can walk you through your own screen and propose the changes.
+Once your review profile is strong (4.8+), you have pricing power. This is where your pricing tool earns its keep. Concretely, the moves live in its dashboard: raise your base price for the season or bump specific hot dates, lower them to close gaps, and let the tool handle the daily wiggle in between. And if the dashboard confuses you, an AI agent can walk you through your own screen and propose the changes.
 
 Most owners set a base rate and leave it. Smart owners treat pricing like a weekly discipline:
 

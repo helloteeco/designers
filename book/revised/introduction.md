@@ -70,10 +70,12 @@ One more thing before we start. Every number in this book is real: real purchase
 
 Here are the five letters. By the end of this book you'll know them by heart:
 
-- **R — Right Market First.** Anchor demand within 30 minutes: something that pulls visitors year-round (a park, a lake, a base). No anchor, no deal.
-- **U — Under Budget.** Cheap entry means a cheap payment, and the payment protects you.
-- **R — Room for Everyone.** Income follows sleeping capacity.
-- **A — Aesthetics That Win the Scroll.** Guests decide in 3 seconds.
-- **L — Leverage Systems.** The asset should run without you.
+- **R: Right Market First.** Anchor demand within 30 minutes: something that pulls visitors year-round (a park, a lake, a base). No anchor, no deal.
+- **U: Under Budget.** Cheap entry means a cheap payment, and the payment protects you.
+- **R: Room for Everyone.** Income follows sleeping capacity.
+- **A: Aesthetics That Win the Scroll.** Guests decide in 3 seconds.
+- **L: Leverage Systems.** The asset should run without you.
 
 Let's go.
+
+---

@@ -69,4 +69,4 @@ You're not stuck with what the photographer hands you. If you don't love the edi
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

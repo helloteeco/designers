@@ -71,4 +71,4 @@ Know when to refund and when to defend. Don't default to over-refunding.
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

@@ -1,12 +1,12 @@
-# The 5-Year Wealth Model — The Full Math
+# The 5-Year Wealth Model: The Full Math
 
-This companion holds every number behind the five-year plan in Chapters 17 and 18 — the version the book deliberately keeps lean so it stays readable. Here, nothing is compressed: every purchase, every refinance, every card balance retired, every deduction counted at its cash value. Load your own numbers into the companion spreadsheet (*5-Year Wealth Model.xlsx*) and stress it until you believe it — or don't.
+This companion holds every number behind the five-year plan in Chapters 17 and 18, the version the book deliberately keeps lean so it stays readable. Here, nothing is compressed: every purchase, every refinance, every card balance retired, every deduction counted at its cash value. Load your own numbers into the companion spreadsheet (*5-Year Wealth Model.xlsx*) and stress it until you believe it, or don't.
 
 **The disclaimers ride along here too.** This is a hypothetical model, not a projection of your results. It assumes every purchase, refinance, and stabilization lands on schedule; in real life many will not, results vary widely, and some investors lose money. Nothing here is a promise of income. The model uses deliberately conservative round numbers on $200K buys; the 4-bed homes the book targets mostly run $250K–$350K as of July 2026, so scale the capital and the outcome.
 
 ---
 
-## Part 1 — The Wealth Equation, term by term
+## Part 1: The Wealth Equation, term by term
 
 **Wealth = Annual Net Cash Flow + Annual Appreciation + Annual Tax Savings**
 
@@ -45,7 +45,7 @@ The five-year model deliberately uses less: $12,000 of deductions for each prope
 
 Under the 2025 tax law, 100% bonus depreciation is back and permanent, so a cost-segregated first year can run several times the $12K figure. Better to be surprised in that direction.
 
-**A deduction is not a dollar.** The model counts each year's deductions at their cash value at a 32% bracket — 32 cents per dollar of face value, or $46,560 across the five years. Your bracket sets your number. And the string attached: those 32 cents arrive this year only if you pass the material participation test (Chapter 15), and the more of the business you delegate, the harder that test gets. Fail it and the deductions don't disappear; they wait for a year with rental profit or for the sale.
+**A deduction is not a dollar.** The model counts each year's deductions at their cash value at a 32% bracket, 32 cents per dollar of face value, or $46,560 across the five years. Your bracket sets your number. And the string attached: those 32 cents arrive this year only if you pass the material participation test (Chapter 15), and the more of the business you delegate, the harder that test gets. Fail it and the deductions don't disappear; they wait for a year with rental profit or for the sale.
 
 ### Component 4: Total carrying cost (what you pay before a dollar reaches you)
 
@@ -56,11 +56,11 @@ Debt service plus operating expenses: mortgage, insurance, utilities, cleaning, 
 - Property 3: ~$38,000/year
 - Property 4: ~$36,000/year
 
-One flag: Property 1 nets about 16% on its deployed capital here, a hair under Chapter 8's 18% Floor, and that's deliberate. The floor screens a deal before you buy, at the conservative underwrite. This model runs at conservative realized numbers — the returns you accept after a rough year, not the ones you screen for.
+One flag: Property 1 nets about 16% on its deployed capital here, a hair under Chapter 8's 18% Floor, and that's deliberate. The floor screens a deal before you buy, at the conservative underwrite. This model runs at conservative realized numbers, the returns you accept after a rough year, not the ones you screen for.
 
 ---
 
-## Part 2 — The five years, one at a time
+## Part 2: The five years, one at a time
 
 ### Year 1: one property
 
@@ -128,21 +128,21 @@ No new purchases. You run the Optimization Hierarchy (Chapter 17) across the por
 
 **Every row is traceable.** The $150K is Property 1 all-in and in cash, down payment through renovation and setup. The 3 × $50K is shorthand for the recycled rounds, none from savings: $69K into Property 2 (refi money plus Year 1's saved flow), then roughly $35K each with closing into 3 and 4, the rest topping reserves. The cards are real debt, and the model retires them from the cash flow it already counts: Year 2's leftover after Property 3's down payment goes first, then Year 3's after Property 4's, then Years 4 and 5 until zero, about $10K to spare.
 
-You deployed $300K and created roughly $435K of cash-equivalent wealth — deductions counted at their 32%-bracket cash value (face value $145.5K; your bracket sets your number). That's a 145% return on deployed capital. Be clear-eyed about the $312K, though: nearly all of it goes back into the machine during the build — down payments and card paydown — and only about $10K plus a funded reserve stays loose. You earned it; you reinvested it. **Year six is the payday:** $91K a year at run rate with the cards gone and nothing new to feed.
+You deployed $300K and created roughly $435K of cash-equivalent wealth, deductions counted at their 32%-bracket cash value (face value $145.5K; your bracket sets your number). That's a 145% return on deployed capital. Be clear-eyed about the $312K, though: nearly all of it goes back into the machine during the build, down payments and card paydown, and only about $10K plus a funded reserve stays loose. You earned it; you reinvested it. **Year six is the payday:** $91K a year at run rate with the cards gone and nothing new to feed.
 
 The debt stays honest too: $200K on Property 1 after the refi, $160K on 2, $175K each on 3 and 4, plus the card balances above, borrowed and retired in the open. No hidden equity pulls, houses or cards. One more cushion: Properties 2 through 4 are carried at purchase price, so the value their $70K renovations created goes uncounted.
 
 By year 5: $7,600 a month in passive income and a portfolio worth around $926K ($850K of purchases plus $76K of appreciation), roughly $216K of it your equity once the ~$710K of debt is netted out, on a few hours a week of real work.
 
-**The alternative, priced.** Put the same $300K in the S&P 500 at its 10% long-run average and five years of growth adds about $183K, every dollar locked up until you sell. This plan creates about $435K, arriving as cash flow you control. Control and income against pure hands-off growth — pick with your eyes open.
+**The alternative, priced.** Put the same $300K in the S&P 500 at its 10% long-run average and five years of growth adds about $183K, every dollar locked up until you sell. This plan creates about $435K, arriving as cash flow you control. Control and income against pure hands-off growth, pick with your eyes open.
 
 **Timing caveat:** these run rates assume each property stabilizes on schedule. If a launch lands mid-year, it contributes a partial-year fraction of its run rate that first year. The plan still works; the timeline stretches a little.
 
 ---
 
-## Part 3 — The stacking math behind Chapter 17 (Years 1–3 mechanics)
+## Part 3: The stacking math behind Chapter 17 (Years 1–3 mechanics)
 
-**Year 1: One property in motion.** 1 property worth $250K after renovation; $150K invested (down payment, renovation, setup); $2,000/month net cash flow; ~$5,000 equity through appreciation (a conservative 2% rural rate here); ~$5,500/year of tax write-offs (straight-line on a $150K building value at the residential rate; a short-stay rental may sit on the slower 39-year schedule, so treat this as the high end — and it's the deduction, not cash). **Year 1 wealth increase: $34,500.** (Part 2 above pencils appreciation at 2.5% and counts the fuller $12K first-year deduction at cash value, which is why its Year 1 lands a few hundred dollars away. The shape is what matters.)
+**Year 1: One property in motion.** 1 property worth $250K after renovation; $150K invested (down payment, renovation, setup); $2,000/month net cash flow; ~$5,000 equity through appreciation (a conservative 2% rural rate here); ~$5,500/year of tax write-offs (straight-line on a $150K building value at the residential rate; a short-stay rental may sit on the slower 39-year schedule, so treat this as the high end, and it's the deduction, not cash). **Year 1 wealth increase: $34,500.** (Part 2 above pencils appreciation at 2.5% and counts the fuller $12K first-year deduction at cash value, which is why its Year 1 lands a few hundred dollars away. The shape is what matters.)
 
 **Year 2: Stack Property 2, funded by Property 1.** After 12 months of stabilization, refinance Property 1: original loan $150K, new appraisal $250K, cash-out refi at 80% LTV = $200K borrowed; after paying off the original loan, $50K pulled out, call it $45K after closing costs. Plus the $24,000 of year-one cash flow you saved: **~$69K available for Property 2.** Property 2 at $200K: $40K down (cutting your financing to $160K and your year-two debt service with it), $70K of renovation and setup stacked on 0% business cards, retired from cash flow in the open.
 
@@ -152,15 +152,15 @@ Result at the end of Year 2: Property 1 contributes $24,000 cash flow + $5,500 w
 
 Result at the end of Year 3: three properties generating ~$60,000/year net after all expenses and debt service; ~$14,000/year of tax benefits; $650K+ combined portfolio value; **Year 3 wealth increase ~$85,000–$95,000.**
 
-**The refinance warning, in full.** The model assumes a clean 80% LTV, and lenders don't always hand you that. A cash-out loan underwritten on short-term-rental income typically tops out at 70–75% of appraised value, and most lenders want "seasoning" — a full year of ownership and income — before they'll count it. If the appraisal comes in soft or the new rate makes the payment ugly, you don't refi. You keep the loan you have, keep saving the cash flow, and buy property two a year later. The plan slows. It doesn't break, because the house keeps paying you while you wait. Never make deal two dependent on deal one's appraisal.
+**The refinance warning, in full.** The model assumes a clean 80% LTV, and lenders don't always hand you that. A cash-out loan underwritten on short-term-rental income typically tops out at 70–75% of appraised value, and most lenders want "seasoning", a full year of ownership and income, before they'll count it. If the appraisal comes in soft or the new rate makes the payment ugly, you don't refi. You keep the loan you have, keep saving the cash flow, and buy property two a year later. The plan slows. It doesn't break, because the house keeps paying you while you wait. Never make deal two dependent on deal one's appraisal.
 
 ---
 
-## Part 4 — The refi document checklist (months 10–14)
+## Part 4: The refi document checklist (months 10–14)
 
 Start talking to lenders at month 10 so you're ready to close around month 12.
 
-**Month 10 — gather:**
+**Month 10, gather:**
 
 - [ ] Full 12 months of bank statements showing the booking deposits
 - [ ] A profit-and-loss statement for the property
@@ -170,30 +170,30 @@ Start talking to lenders at month 10 so you're ready to close around month 12.
 
 **What lenders look for:**
 
-- [ ] 12 months of consistent STR income history — seasonal patterns and stability
+- [ ] 12 months of consistent STR income history, seasonal patterns and stability
 - [ ] DSCR around 1.2: the property earning about 20% more than the new payment
 - [ ] An appraisal that supports the cash-out at 70–75% LTV on STR income (some lenders stretch to 80; don't build the plan on it)
 - [ ] Credit 680+ (740+ gets better terms); a year of on-time payments helps
 
-**Months 11–12 — shop three quotes minimum** (DSCR lenders, portfolio lenders, STR-specialist shops, credit unions) and compare: rate, points (typically 1–3), LTV offered, closing timeline (30–45 days is typical), and prepayment penalties (you want none).
+**Months 11–12, shop three quotes minimum** (DSCR lenders, portfolio lenders, STR-specialist shops, credit unions) and compare: rate, points (typically 1–3), LTV offered, closing timeline (30–45 days is typical), and prepayment penalties (you want none).
 
 ---
 
-## Part 5 — The exit playbook, in full
+## Part 5: The exit playbook, in full
 
 Four doors. Knowing them is why owners with exits make calmer decisions.
 
-**Exit 1: Sell as a turnkey STR business (premium valuation — and the exception).** A well-run STR can be worth more than the same house as a long-term rental, because it's a proven cash-flowing asset. The right buyer (a new operator, a passive investor, a partnership) prices it off the income, at 8–12x annual net cash flow, so a property netting $24,000 a year lists at $192K–$288K. That buyer is the exception, not the norm. Most rural homes sell as houses, priced off residential comps, to a thin pool of local buyers who don't care what it grossed on Airbnb — and a bunk-room-heavy layout narrows the pool further. Anchor your expectations to the appraised value and a 6–12 month timeline, and treat the turnkey premium as upside, not the plan. And one line for the closing table: the depreciation you deducted along the way gets partly **recaptured** when you sell, at rates your CPA will estimate before you list. The write-offs were a loan from the IRS with great terms, not a gift.
+**Exit 1: Sell as a turnkey STR business (premium valuation, and the exception).** A well-run STR can be worth more than the same house as a long-term rental, because it's a proven cash-flowing asset. The right buyer (a new operator, a passive investor, a partnership) prices it off the income, at 8–12x annual net cash flow, so a property netting $24,000 a year lists at $192K–$288K. That buyer is the exception, not the norm. Most rural homes sell as houses, priced off residential comps, to a thin pool of local buyers who don't care what it grossed on Airbnb, and a bunk-room-heavy layout narrows the pool further. Anchor your expectations to the appraised value and a 6–12 month timeline, and treat the turnkey premium as upside, not the plan. And one line for the closing table: the depreciation you deducted along the way gets partly **recaptured** when you sell, at rates your CPA will estimate before you list. The write-offs were a loan from the IRS with great terms, not a gift.
 
 **Exit 2: Convert to a long-term rental (lower return, near-zero management).** Rent at $1,500–$2,000 a month (typical for rural homes) and hire a property manager. Net $600–$1,000 a month with quarterly check-ins. The trade: less income, 12-month leases, eviction risk. Timeline: immediate. Some operators convert one or two properties to LTR and keep the rest as STRs, diversifying against platform risk.
 
-**Exit 3: Sell to a cash buyer (the fast exit, bought with a discount).** Cash buyers exist in rural markets, but the pool is thin, so the discount is what creates the speed. Expect 90–95% of market value, sometimes less — and the 14–30 day close only starts once you've found the buyer, which in a thin market can take months. This is your escape hatch if a market sours or you need capital urgently, not a plan.
+**Exit 3: Sell to a cash buyer (the fast exit, bought with a discount).** Cash buyers exist in rural markets, but the pool is thin, so the discount is what creates the speed. Expect 90–95% of market value, sometimes less, and the 14–30 day close only starts once you've found the buyer, which in a thin market can take months. This is your escape hatch if a market sours or you need capital urgently, not a plan.
 
-**Exit 4: 1031 exchange into a bigger deal (tax-deferred growth).** A 1031 exchange, named for its section of the tax code, lets you sell one property and roll the proceeds into a larger one without paying capital gains tax at the time of the sale — 45 days to identify the new property, 180 days to close, per IRS rules. The tax is deferred, not erased; it travels with you into the new property, and goes away only if you hold until the basis step-up at death or keep rolling. This is how operators scale from four properties to ten without tax drag crushing their compounding.
+**Exit 4: 1031 exchange into a bigger deal (tax-deferred growth).** A 1031 exchange, named for its section of the tax code, lets you sell one property and roll the proceeds into a larger one without paying capital gains tax at the time of the sale, 45 days to identify the new property, 180 days to close, per IRS rules. The tax is deferred, not erased; it travels with you into the new property, and goes away only if you hold until the basis step-up at death or keep rolling. This is how operators scale from four properties to ten without tax drag crushing their compounding.
 
 ---
 
-## Part 6 — The bigger creative stack, month by month
+## Part 6: The bigger creative stack, month by month
 
 The Chapter 9 example, run forward. A $280K home and $40K saved:
 
@@ -206,4 +206,4 @@ First-year projections on solid comps: $70,000 in revenue, about $40,000 in expe
 
 Be honest about that $9,000: it sits below the six-months-of-PITI reserve floor, so either bring a bigger cushion to closing or send the first months of cash flow to reserves before anything else and accept a slower second deal.
 
-Run it forward: by month 18 the card balances are cleared and reserves sit around $25,000. By month 24, reserves are past $40,000 — enough for the down payment on property #2 with cushion left over. By month 30, you control two properties, the cash flow has already paid back more than the $40K you started with, and you're rebuilding the reserve for property #3. That's $500K+ in real estate controlled, debt paid down, and cash generated, all starting from a $40K savings account and a plan.
+Run it forward: by month 18 the card balances are cleared and reserves sit around $25,000. By month 24, reserves are past $40,000, enough for the down payment on property #2 with cushion left over. By month 30, you control two properties, the cash flow has already paid back more than the $40K you started with, and you're rebuilding the reserve for property #3. That's $500K+ in real estate controlled, debt paid down, and cash generated, all starting from a $40K savings account and a plan.

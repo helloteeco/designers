@@ -41,19 +41,19 @@ Buy local what's bulky, fragile, or forgotten; Walmart and Home Depot cover most
 
 ## The Schedule
 
-**Day 1 — Travel and arrival.** Get the keys. Walk every room and test what a guest would touch: locks, HVAC, water, appliances. Run a WiFi speed test. Check every delivery against the master list and stage unopened boxes in their rooms. Flag anything missing or damaged and reorder tonight; replacements need the week to arrive.
+**Day 1. Travel and arrival.** Get the keys. Walk every room and test what a guest would touch: locks, HVAC, water, appliances. Run a WiFi speed test. Check every delivery against the master list and stage unopened boxes in their rooms. Flag anything missing or damaged and reorder tonight; replacements need the week to arrive.
 
-**Day 2 — Big assembly.** Beds first: frames, queen-over-queen bunks, trundles, mattresses. Then the sofa and pull-out, dining table, and dressers. This is the day your hired local hands earn their fee. Break down boxes as you go; the trash pile grows faster than you think.
+**Day 2. Big assembly.** Beds first: frames, queen-over-queen bunks, trundles, mattresses. Then the sofa and pull-out, dining table, and dressers. This is the day your hired local hands earn their fee. Break down boxes as you go; the trash pile grows faster than you think.
 
-**Day 3 — Bedrooms and kitchen.** Finish every bedroom: mattress protectors, linens, minimum 4 pillows per bed, layered throw and blanket, matching nightstands and identical lamps, headboards secure. Wash and shelve the entire kitchen, stocked to max occupancy per the Kitchen Items Checklist (this pack). Set up the coffee station.
+**Day 3. Bedrooms and kitchen.** Finish every bedroom: mattress protectors, linens, minimum 4 pillows per bed, layered throw and blanket, matching nightstands and identical lamps, headboards secure. Wash and shelve the entire kitchen, stocked to max occupancy per the Kitchen Items Checklist (this pack). Set up the coffee station.
 
-**Day 4 — Bathrooms, living, dining.** Bathrooms stocked per the Bathroom Items Checklist: white towels, staged trays, toiletries. Living room styled: rug anchored, art hung, cords hidden. Dining table set with seating for max occupancy. Hang mirrors and remaining art through the house.
+**Day 4. Bathrooms, living, dining.** Bathrooms stocked per the Bathroom Items Checklist: white towels, staged trays, toiletries. Living room styled: rug anchored, art hung, cords hidden. Dining table set with seating for max occupancy. Hang mirrors and remaining art through the house.
 
-**Day 5 — Tech and outdoors.** Install the smart lock, exterior camera (never indoors), noise monitor, smart thermostat, and TVs with guest mode. Test every device from your phone before you leave the property. Outside: fire pit staged with at least 4 chairs, hot tub running with the cover visible, string lights hung and tested at dusk.
+**Day 5. Tech and outdoors.** Install the smart lock, exterior camera (never indoors), noise monitor, smart thermostat, and TVs with guest mode. Test every device from your phone before you leave the property. Outside: fire pit staged with at least 4 chairs, hot tub running with the cover visible, string lights hung and tested at dusk.
 
-**Day 6 — Staging and the gap run.** Walk the property as the largest group the listing claims to hold; fix every spot where the last guest has nowhere to sit, eat, or set down a coffee. Make the shopping run for gaps. Stock and lock the owner's closet. Build the welcome basket and lifestyle setups (s'mores kit at the fire pit, cookbook in the kitchen). Complete the inventory checklist. Cleaner does the pre-photo clean tonight or first thing tomorrow.
+**Day 6. Staging and the gap run.** Walk the property as the largest group the listing claims to hold; fix every spot where the last guest has nowhere to sit, eat, or set down a coffee. Make the shopping run for gaps. Stock and lock the owner's closet. Build the welcome basket and lifestyle setups (s'mores kit at the fire pit, cookbook in the kitchen). Complete the inventory checklist. Cleaner does the pre-photo clean tonight or first thing tomorrow.
 
-**Day 7 — Final walkthrough and photos.** Photo prep: declutter every surface, close the toilet lids, adjust the blinds for natural light, run the staging checklist, turn on every light in the house. Hand the photographer the Photo Shot List (this pack) and shoot. Before you leave town: leave the setup checklist and owner's-closet key arrangement with your cleaner, and confirm the smart lock code plan.
+**Day 7. Final walkthrough and photos.** Photo prep: declutter every surface, close the toilet lids, adjust the blinds for natural light, run the staging checklist, turn on every light in the house. Hand the photographer the Photo Shot List (this pack) and shoot. Before you leave town: leave the setup checklist and owner's-closet key arrangement with your cleaner, and confirm the smart lock code plan.
 
 ## After the Sprint
 
@@ -61,4 +61,4 @@ The listing build, pricing ladder, and go-live steps are in the Six-Week Launch 
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

@@ -2,7 +2,7 @@
 
 My business partner Ryu sat down with a laptop and a spreadsheet and did something almost no investor bothers to do.
 
-He didn't browse Zillow for cute cabins. He didn't ask friends where they liked to vacation. He pulled the visitor spending reports for eight different national parks — public data, free to anyone — and started dividing big numbers by small ones. Which parks had tens of millions of dollars in lodging demand? Which nearby towns had almost no listings to absorb it?
+He didn't browse Zillow for cute cabins. He didn't ask friends where they liked to vacation. He pulled the visitor spending reports for eight different national parks (public data, free to anyone) and started dividing big numbers by small ones. Which parks had tens of millions of dollars in lodging demand? Which nearby towns had almost no listings to absorb it?
 
 Eight parks became three. Three became two towns. Two towns became one property: Lookout Lodge, a $170K manufactured home he negotiated with seller financing. $15K down, 0% interest, $1,000 a month, principal only. In its first year live, June 2024 to June 2025, that home brought in $83,937.81 in gross revenue. That's a first year most investors never see.
 
@@ -30,7 +30,7 @@ Every winning rural market I've seen shares three traits.
 
 These destinations attract millions of visitors without needing major cities, big airports, or influencers. They're powered by simple human needs: nature, rest, and adventure.
 
-A fair word about urban stays, because they aren't dumb — they're just a different game. Cities have endless things for guests to spend on, which also means endless places for guests to stay, and all that supply competes nightly rates down; even high occupancy often doesn't pencil, and the homes cost several times more. Urban demand also leans on conferences and business travel, which is a real risk if a market cools, though the upside is deep, steady demand in good times. Rural runs the opposite way: there's little else nearby to spend on, so more of the trip's budget lands on the stay itself, supply is thin, and the home costs a fraction as much. People always want to get away, and they want a place that feels like an escape. When peak season arrives on top of that steady base, it pays. One home I manage had a June and July you'll see broken down in Chapter 10.
+A fair word about urban stays, because they aren't dumb. They're just a different game. Cities have endless things for guests to spend on, which also means endless places for guests to stay, and all that supply competes nightly rates down; even high occupancy often doesn't pencil, and the homes cost several times more. Urban demand also leans on conferences and business travel, which is a real risk if a market cools, though the upside is deep, steady demand in good times. Rural runs the opposite way: there's little else nearby to spend on, so more of the trip's budget lands on the stay itself, supply is thin, and the home costs a fraction as much. People always want to get away, and they want a place that feels like an escape. When peak season arrives on top of that steady base, it pays. One home I manage had a June and July you'll see broken down in Chapter 10.
 
 **2. Low acquisition cost.** This is your unfair advantage, and cash-on-cash return, the yardstick from Chapter 2, is how you measure it. Buying in LA might get you a hot address, along with a $6,000 mortgage and 4% annual returns if you're lucky. Buy a $250K cabin in a rural town and the mortgage runs, call it $1,700–$1,900 a month at recent rates, and in the 2021–24 top-quartile window smart design turned that into 25–50% cash-on-cash. A well-executed deal today more often pencils to 15–25% (pencils, meaning the math works), which still beats almost anything else a beginner can buy. Lower price equals lower risk and faster payback.
 
@@ -38,7 +38,7 @@ I've lived both sides of this. You saw the table in Chapter 2: my $355K Joshua T
 
 What does "low acquisition cost" mean in dollars? When I wrote this, my top ten markets mostly traded between $250K and $350K for the home I recommend, a 4 bed, 3 bath with 2,000-plus square feet and good bones. My minimum is 3 bed, 2 bath, 1,500 square feet; I never go smaller. Bigger homes appear in more bedroom-filtered searches and book bigger groups, and Chapter 10 explains why that matters so much. Prices drift, so anchor to the price-to-revenue ratio instead of the sticker. Appalachia, the country around Mammoth Cave and Daniel Boone National Forest, parts of the Midwest near big parks and lakes. These are your hunting grounds. One filter I apply everywhere: I skip states that aren't landlord-friendly. If the law leans hard against property owners, no ratio is good enough.
 
-**3. Little to no competition.** Demand means nothing if supply is maxed out. Look for towns with high visitor counts but low Airbnb saturation, the ones where you search "Entire Place" and get two dozen results. Goldmine. My underwriting target is 60–70% occupancy — read that as a health band, not a pass/fail floor. Consistently above it usually means the market's listings are underpriced; well below it means price, photos, or amenities need work. Underwrite in that band, at whatever nightly rate it takes to pencil at least $70K a year in revenue. On top of that, only a handful of truly great listings, whatever the raw count says.
+**3. Little to no competition.** Demand means nothing if supply is maxed out. Look for towns with high visitor counts but low Airbnb saturation, the ones where you search "Entire Place" and get two dozen results. Goldmine. My underwriting target is 60–70% occupancy. Read that as a health band, not a pass/fail floor. Consistently above it usually means the market's listings are underpriced; well below it means price, photos, or amenities need work. Underwrite in that band, at whatever nightly rate it takes to pencil at least $70K a year in revenue. On top of that, only a handful of truly great listings, whatever the raw count says.
 
 A million-plus visitors a year and fewer than a hundred places to stay, or the same proportions at a smaller scale. When all three legs of the triangle hold, that's the market you want.
 
@@ -62,7 +62,7 @@ Rate each market 1–5 on five criteria (1 = poor, 5 = excellent), multiply by t
 - 2 = $350K–$450K, requires near-perfect execution
 - 1 = Over $450K, which is not Emerging Rural economics
 
-**Competition Level (weight 20%).** Don't score raw listing counts — score the listings that actually compete. A "beautiful listing" means good exterior, good interior, professional photos, and dynamic pricing. If a town has 80 listings and most look like 2003, that's not competition; that's your invitation.
+**Competition Level (weight 20%).** Don't score raw listing counts; score the listings that actually compete. A "beautiful listing" means good exterior, good interior, professional photos, and dynamic pricing. If a town has 80 listings and most look like 2003, that's not competition; that's your invitation.
 - 5 = Only a handful of beautiful, well-priced, active listings
 - 4 = A dozen or so strong listings, plenty of room to out-design
 - 3 = A real cohort of good operators; you'll need the full A of RURAL
@@ -83,7 +83,7 @@ Rate each market 1–5 on five criteria (1 = poor, 5 = excellent), multiply by t
 - 2 = One season only; the dead months are brutal
 - 1 = Extremely seasonal (a 3–4 month peak, then silence)
 
-**Worked example — New River Gorge, West Virginia, scored the way it looked when we were buying:**
+**Worked example: New River Gorge, West Virginia, scored the way it looked when we were buying**
 
 - Tourism Demand: 4/5 × 30% = 1.2
 - Acquisition Cost: 4/5 × 25% = 1.0 (a quality 4 bed / 3 bath mostly runs $250K–$300K there)
@@ -136,11 +136,11 @@ So is the window shut? The easy era is. From 2021 through 2024, the years when t
 
 The method still works, for one stubborn reason. Most buyers still skip the order of operations. They fall in love with a house first and check the market after, if at all. Do the first step first and you can be the tenth-smartest buyer in the market and still come out fine.
 
-But demand extra margin now. Underwrite on trailing-twelve-month comps only, meaning what similar listings actually earned over the past twelve months, and treat every revenue-tool projection with suspicion — the estimators are weaker than their confident interfaces suggest, mine included. One honest caution, though: if you haircut every number and hug the most pessimistic percentile, you will never buy anything. The fix isn't more pessimism. It's better data.
+But demand extra margin now. Underwrite on trailing-twelve-month comps only, meaning what similar listings actually earned over the past twelve months, and treat every revenue-tool projection with suspicion, because the estimators are weaker than their confident interfaces suggest, mine included. One honest caution, though: if you haircut every number and hug the most pessimistic percentile, you will never buy anything. The fix isn't more pessimism. It's better data.
 
 The best data is a person: a friend, host, or property manager in the market who can tell you "a 4/3 near you did $120K in four or five months." No contact like that yet? Use the manual method, free and surprisingly accurate:
 
-- Open a comparable listing on Airbnb and count how many nights are booked over the next few weeks. (Watch for owner-blocked or long-term-blocked stretches, which look like bookings but aren't.)
+- Open a comparable listing on Airbnb and count how many nights are booked over the next few weeks. Some of those nights may be owner blocks or long-term-rental blocks rather than real bookings, and there's no way to tell from the outside. Counting several properties washes that noise out.
 - Estimate its ADR: take a full month of its revenue, say roughly $10K in October, and divide by 30.
 - Repeat across a few months and a few good-looking houses, and you'll know the market's real ADR pattern better than any tool.
 
@@ -202,17 +202,17 @@ Not all small towns are tourist gold. Some are shrinking. Others are stable but 
 - Park infrastructure investment (new trails, visitor centers, expanded NPS or state promotion)
 - Local business growth (new cafes, festivals, breweries, outdoor shops, restaurants opening)
 - STR-friendly regulations (a city or county embracing STRs, not restricting them)
-- Population stability or growth (a preference, not a rule — see below)
+- Population stability or growth (a preference, not a rule; see below)
 
 **Avoid:**
 
 - One-trick-pony towns (summer demand only, dead nine months a year)
 - Overregulated counties (complex licensing, day limits, owner-occupancy requirements)
 - Major chain hotels breaking ground (Marriott or IHG building means saturation is near)
-- Betting everything on population (honestly, some of my best markets are small and even shrinking towns — that's part of why the homes are affordable. It's a risk you accept knowingly, not a disqualifier. Labor is the real worry, and referrals solve it: we've staffed cleaners and handymen across 50+ properties in towns most maps ignore)
+- Betting everything on population (honestly, some of my best markets are small and even shrinking towns. That's part of why the homes are affordable. It's a risk you accept knowingly, not a disqualifier. Labor is the real worry, and referrals solve it: we've staffed cleaners and handymen across 50+ properties in towns most maps ignore)
 - Single-employer towns (if that employer leaves, the town goes with it)
 
-### You Can't Just Buy Anywhere — You Need to Design Everywhere
+### You Can't Just Buy Anywhere. You Need to Design Everywhere
 
 Don't panic if a town already has a handful of Airbnbs. Most of them probably aren't very good.
 
@@ -234,7 +234,7 @@ You're no longer guessing. You're running a real estate business with replicable
 
 When you find that rural gem, you'll wonder why you ever limited yourself to your own backyard.
 
-**Before the next chapter, do one thing.** Take the five-town list you made after Chapter 2 and run ONE of those towns through the Scoring Matrix tonight. Twenty minutes, five scores, one total. Below 3.0, cross it off and feel zero guilt. At 3.5+, congratulations — you have a real candidate, and the rest of this book just became very practical.
+**Before the next chapter, do one thing.** Take the five-town list you made after Chapter 2 and run ONE of those towns through the Scoring Matrix tonight. Twenty minutes, five scores, one total. Below 3.0, cross it off and feel zero guilt. At 3.5+, congratulations: you have a real candidate, and the rest of this book just became very practical.
 
 You've picked the market. Now you have to buy a house in it without ever standing inside it, and that's exactly what the next chapter teaches.
 
@@ -251,3 +251,5 @@ You've picked the market. Now you have to buy a house in it without ever standin
 - Watch three metrics: listings growth, ADR trend, occupancy trend. They tell you where you are on the curve before prices do.
 - Ryu turned 12 weeks, spreadsheet to launch, into $83,937.81 in his first year live. Repeatable, not lucky.
 - You don't need to know the area. You need to know the math.
+
+---

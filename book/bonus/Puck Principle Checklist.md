@@ -1,4 +1,4 @@
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*
 
 # The Puck Principle Checklist
 

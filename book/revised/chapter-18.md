@@ -72,11 +72,11 @@ If you like watching the gears turn (every purchase, every refinance haircut, ev
 
 ### What Each Year Feels Like
 
-- **Year 1 — Learn and launch.** Buy your first rural STR with a 10–15% down loan. Reviews, systems, stability — not perfection. Launch months run 40–60 hours; by month three you're near three hours a week, and by December you're an owner with cash flowing.
-- **Year 2 — Stack another.** The refi on Property 1 plus your saved cash flow funds deal two (if the refi doesn't come through, you buy a year later; the plan slows, it doesn't break). Hire your first VA.
-- **Year 3 — Optimize and reinvest.** The pair's own cash flow funds deal three. Don't inflate your lifestyle; feed the machine.
-- **Year 4 — Buy bigger or braver.** A new market, or a new model like co-hosting. You know how to build systems now.
-- **Year 5 — Pull the freedom lever.** No new purchases. Optimize the portfolio, and your time drops to 5–10 hours a month. More time with family, more flexibility, and an income that isn't tied to your hours. That's the freedom part, and it's real.
+- **Year 1: Learn and launch.** Buy your first rural STR with a 10–15% down loan. Reviews, systems, stability, not perfection. Launch months run 40–60 hours; by month three you're near three hours a week, and by December you're an owner with cash flowing.
+- **Year 2: Stack another.** The refi on Property 1 plus your saved cash flow funds deal two (if the refi doesn't come through, you buy a year later; the plan slows, it doesn't break). Hire your first VA.
+- **Year 3: Optimize and reinvest.** The pair's own cash flow funds deal three. Don't inflate your lifestyle; feed the machine.
+- **Year 4: Buy bigger or braver.** A new market, or a new model like co-hosting. You know how to build systems now.
+- **Year 5: Pull the freedom lever.** No new purchases. Optimize the portfolio, and your time drops to 5–10 hours a month. More time with family, more flexibility, and an income that isn't tied to your hours. That's the freedom part, and it's real.
 
 If you want to see this math run on a live deal first, watch the Deal Analysis Video in the Bonus Pack at the back of this book.
 

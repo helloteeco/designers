@@ -20,21 +20,21 @@ One rule for the whole timeline: if you hire help, approve mood boards and picks
 - [ ] **Hit "order" on the major pieces:** beds, bunks, mattresses, sofas, dining table. Deliver to the property or a storage unit.
 - [ ] Keep a master list matching every order number to its room. It keeps things simple for whoever unpacks.
 
-## Week 1 — Paint and Prep
+## Week 1. Paint and Prep
 
 - [ ] Contractor work underway: paint and fixtures only. Skip full remodels, luxury flooring, high-end appliances, and anything structural; structural changes are never worth the timeline delays.
 - [ ] Splurge where the camera sees it: mattresses ($300–$500 per bed), linens and pillows ($200–$300 per bed), lighting, paint, art and décor.
 - [ ] Pre-order any remaining major furniture.
 - [ ] Quick wins as budget allows: swapped light fixtures, peel-and-stick backsplash, oversized prints or mirrors, front-door and outdoor-lighting refresh, fire pit.
 
-## Week 2 — Delivery and Assembly
+## Week 2. Delivery and Assembly
 
 - [ ] Furniture arriving; check every order against the master list.
 - [ ] Hire local hands for assembly (TaskRabbit, Thumbtack, or your handyman; cleaners often take setup work gladly).
 - [ ] Give your team a printed setup checklist with photos, order summaries with tracking info, room-by-room placement instructions, and your emergency contact. Have them send photos as they go.
 - [ ] Approve any designer picks within 24 hours.
 
-## Week 3 — Styling and Staging
+## Week 3. Styling and Staging
 
 - [ ] Interior styling and décor: rugs anchored, art hung, lamps placed, textures layered.
 - [ ] Build the lifestyle setups that sell the dream: coffee station, s'mores kit at the fire pit, wine on the patio.
@@ -42,7 +42,7 @@ One rule for the whole timeline: if you hire help, approve mood boards and picks
 - [ ] Create a detailed inventory checklist.
 - [ ] Confirm the photographer for this week or next.
 
-## Week 4 — Install Complete and Photos
+## Week 4. Install Complete and Photos
 
 - [ ] Walk the property as the largest group the listing claims to hold. Every spot where the last sleeper has nowhere to sit, eat, or set down a coffee will show up in your reviews.
 - [ ] Run the full staging checklist: pillows styled, throws layered, cords and bins hidden, beds hotel-crisp, table set for max occupancy, fire pit staged, hot tub cover visible, string lights on.
@@ -54,4 +54,4 @@ Design install done. The listing build, pricing ladder, and launch live in the S
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

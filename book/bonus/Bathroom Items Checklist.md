@@ -16,7 +16,7 @@ Counts marked [MAX GUESTS] mean your maximum occupancy. Repeat the per-bathroom 
 | Bath mats (washable) | 1–2 per bathroom | [ADD YOUR LINK] |
 | Hot tub / pool towels (if you have the amenity; a second color is fine here so they stay out of the bathrooms) | [MAX GUESTS] | [ADD YOUR LINK] |
 
-## Per Bathroom — Fixtures and Hardware
+## Per Bathroom: Fixtures and Hardware
 
 | Item | Count | Link |
 |---|---|---|
@@ -28,7 +28,7 @@ Counts marked [MAX GUESTS] mean your maximum occupancy. Repeat the per-bathroom 
 | Mirror (well lit; matte black, bronze, or brushed nickel hardware hides fingerprints) | 1 | [ADD YOUR LINK] |
 | Nightlight | 1 | [ADD YOUR LINK] |
 
-## Per Bathroom — The Staged Counter
+## Per Bathroom: The Staged Counter
 
 - [ ] Tray · [ADD YOUR LINK]
 - [ ] Hand soap · [ADD YOUR LINK]
@@ -54,4 +54,4 @@ Toiletries get restocked every turnover; keep the owner's closet ahead of demand
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*

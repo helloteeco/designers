@@ -4,7 +4,7 @@ Pricing is your profit lever, it works from anywhere, and it is never set-it-and
 
 Pair this with the Pricing SOP in this pack. One line from it applies to everything below: the weekly review is the one job you never delegate.
 
-## Template 1 — Property Settings Sheet
+## Template 1. Property Settings Sheet
 
 Fill in once per property, then keep it current. The six rules, as settings:
 
@@ -25,7 +25,7 @@ Fill in once per property, then keep it current. The six rules, as settings:
 | Amenity premium (validate with Rabbu before you buy the amenity) | +$______/night |
 | Extra-guest fee: base count / per-guest per-night fee (set it against your market's top listings) | ______ guests / $______ |
 
-## Template 2 — The Weekly 15-Minute Calendar Review
+## Template 2. The Weekly 15-Minute Calendar Review
 
 Once a week, every other week at minimum. Open the PriceLabs Market Dashboard and run the five checks. Log one row per review so drift has nowhere to hide.
 
@@ -44,7 +44,7 @@ The five checks:
 | ____/____ | $______ | ______% | ______ days | ☐ | ☐ | ☐ | ☐ | ☐ |
 | ____/____ | $______ | ______% | ______ days | ☐ | ☐ | ☐ | ☐ | ☐ |
 
-## Template 3 — The Seasonal and Event Calendar
+## Template 3. The Seasonal and Event Calendar
 
 Rule 6, written down a year ahead. Fill in your market's dates, set the boost and minimum before the booking window opens, and check the box when the settings are live. The book's benchmark boosts: 20–50% for Thanksgiving, July 4, ski season, and local festivals, with minimums stretched to match.
 
@@ -60,7 +60,7 @@ Rule 6, written down a year ahead. Fill in your market's dates, set the boost an
 
 Holidays are also when minimums stretch: 3–4 nights on holidays against 2 nights off-peak on the reference cabin in the Pricing SOP.
 
-## Template 4 — The Cadence Calendar
+## Template 4. The Cadence Calendar
 
 How often each job happens, by phase:
 
@@ -76,4 +76,4 @@ Who does what: PriceLabs handles most of it, and a VA can glance at the dashboar
 
 ---
 
-*From the RURAL Method — teeco.co/bookbonus*
+*From the RURAL Method, teeco.co/bookbonus*
