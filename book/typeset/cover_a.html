@@ -1,0 +1,116 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+* { margin:0; padding:0; }
+body { width:1600px; height:2560px; overflow:hidden; }
+</style></head><body>
+<svg width="1600" height="2560" viewBox="0 0 1600 2560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#06140f"/>
+      <stop offset="0.45" stop-color="#0c261c"/>
+      <stop offset="0.78" stop-color="#14382a"/>
+      <stop offset="1" stop-color="#0d2a1f"/>
+    </linearGradient>
+    <radialGradient id="moonglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff6dd" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#fff6dd" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#fff6dd" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="winglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb347" stop-opacity="0.85"/>
+      <stop offset="0.5" stop-color="#ffb347" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0e2419"/>
+      <stop offset="1" stop-color="#071510"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="2560" fill="url(#sky)"/>
+
+  <!-- stars -->
+  <g fill="#f6eeda">
+    <circle cx="150" cy="180" r="3" opacity="0.8"/><circle cx="420" cy="120" r="2" opacity="0.5"/>
+    <circle cx="700" cy="200" r="2.5" opacity="0.7"/><circle cx="1050" cy="150" r="2" opacity="0.5"/>
+    <circle cx="1500" cy="240" r="2.5" opacity="0.6"/><circle cx="240" cy="380" r="2" opacity="0.5"/>
+    <circle cx="880" cy="90" r="2" opacity="0.6"/><circle cx="1250" cy="330" r="3" opacity="0.5"/>
+    <circle cx="90" cy="700" r="2" opacity="0.4"/><circle cx="1540" cy="640" r="2" opacity="0.5"/>
+    <circle cx="360" cy="620" r="2.5" opacity="0.45"/><circle cx="1130" cy="540" r="2" opacity="0.4"/>
+    <circle cx="620" cy="450" r="2" opacity="0.35"/><circle cx="1440" cy="450" r="2" opacity="0.45"/>
+    <circle cx="760" cy="640" r="2" opacity="0.3"/><circle cx="200" cy="530" r="2" opacity="0.4"/>
+  </g>
+
+  <!-- moon -->
+  <circle cx="1400" cy="270" r="200" fill="url(#moonglow)"/>
+  <circle cx="1400" cy="270" r="72" fill="#f7efdc"/>
+  <circle cx="1376" cy="252" r="13" fill="#e6dcc2" opacity="0.7"/>
+  <circle cx="1420" cy="292" r="9" fill="#e6dcc2" opacity="0.6"/>
+  <circle cx="1404" cy="234" r="6" fill="#e6dcc2" opacity="0.5"/>
+
+  <!-- distant ridge -->
+  <path d="M0 1610 L260 1500 L520 1590 L820 1470 L1120 1585 L1380 1500 L1600 1570 L1600 1800 L0 1800 Z" fill="#0a1e16"/>
+
+  <!-- pine rows -->
+  <g fill="#08160f">
+    <path d="M60 1710 l52 -150 l52 150 z"/><path d="M60 1660 l52 -130 l52 130 z"/>
+    <path d="M190 1720 l44 -120 l44 120 z"/><path d="M190 1680 l44 -104 l44 104 z"/>
+    <path d="M330 1705 l58 -170 l58 170 z"/><path d="M330 1650 l58 -140 l58 140 z"/>
+    <path d="M1180 1700 l56 -160 l56 160 z"/><path d="M1180 1650 l56 -132 l56 132 z"/>
+    <path d="M1340 1715 l46 -128 l46 128 z"/><path d="M1340 1672 l46 -108 l46 108 z"/>
+    <path d="M1470 1700 l60 -175 l60 175 z"/><path d="M1470 1645 l60 -145 l60 145 z"/>
+  </g>
+
+  <!-- ground -->
+  <rect x="0" y="1690" width="1600" height="870" fill="url(#ground)"/>
+  <path d="M0 1690 Q400 1660 800 1690 T1600 1690 L1600 1740 L0 1740 Z" fill="#0e2419"/>
+
+  <!-- cabin glow -->
+  <ellipse cx="800" cy="1960" rx="560" ry="330" fill="url(#winglow)" opacity="0.5"/>
+
+  <!-- cabin -->
+  <g>
+    <!-- chimney + smoke -->
+    <rect x="950" y="1690" width="54" height="150" fill="#1c1410"/>
+    <path d="M977 1660 q30 -28 10 -58 q-16 -26 6 -52" stroke="#cfd8ce" stroke-width="10" fill="none" opacity="0.35" stroke-linecap="round"/>
+    <!-- roof -->
+    <path d="M560 1840 L800 1660 L1040 1840 Z" fill="#171009"/>
+    <path d="M535 1848 L800 1648 L1065 1848 L1032 1848 L800 1673 L568 1848 Z" fill="#221a10"/>
+    <!-- walls -->
+    <rect x="600" y="1840" width="400" height="290" fill="#2a1e13"/>
+    <g stroke="#1d1409" stroke-width="5"><line x1="600" y1="1890" x2="1000" y2="1890"/><line x1="600" y1="1940" x2="1000" y2="1940"/><line x1="600" y1="1990" x2="1000" y2="1990"/><line x1="600" y1="2040" x2="1000" y2="2040"/><line x1="600" y1="2090" x2="1000" y2="2090"/></g>
+    <!-- windows -->
+    <rect x="648" y="1905" width="92" height="104" rx="5" fill="#ffbf59"/>
+    <g stroke="#3a2a16" stroke-width="7"><line x1="694" y1="1905" x2="694" y2="2009"/><line x1="648" y1="1957" x2="740" y2="1957"/></g>
+    <rect x="860" y="1905" width="92" height="104" rx="5" fill="#ffbf59"/>
+    <g stroke="#3a2a16" stroke-width="7"><line x1="906" y1="1905" x2="906" y2="2009"/><line x1="860" y1="1957" x2="952" y2="1957"/></g>
+    <!-- door -->
+    <rect x="762" y="1978" width="76" height="152" rx="6" fill="#191009"/>
+    <circle cx="822" cy="2058" r="6" fill="#c9a25c"/>
+    <!-- gable window -->
+    <circle cx="800" cy="1780" r="30" fill="#ffbf59"/>
+    <g stroke="#3a2a16" stroke-width="6"><line x1="800" y1="1750" x2="800" y2="1810"/><line x1="770" y1="1780" x2="830" y2="1780"/></g>
+    <!-- porch light pools -->
+    <ellipse cx="694" cy="2140" rx="120" ry="22" fill="#ffb347" opacity="0.10"/>
+    <ellipse cx="906" cy="2140" rx="120" ry="22" fill="#ffb347" opacity="0.10"/>
+  </g>
+
+  <!-- path -->
+  <path d="M770 2130 Q740 2260 640 2380 Q560 2470 470 2560 L900 2560 Q850 2420 840 2280 Q835 2190 830 2130 Z" fill="#122e21" opacity="0.9"/>
+
+  <!-- eyebrow -->
+  <text x="800" y="360" text-anchor="middle" font-family="Inter" font-size="40" letter-spacing="14" fill="#d9cfae">THE 5-STEP RURAL METHOD</text>
+  <line x1="560" y1="404" x2="1040" y2="404" stroke="#c9a25c" stroke-width="3"/>
+
+  <!-- title -->
+  <text x="800" y="640" text-anchor="middle" font-family="Libre Baskerville" font-weight="700" font-size="238" fill="#f3e9d2">AIRBNB</text>
+  <text x="800" y="900" text-anchor="middle" font-family="Libre Baskerville" font-weight="700" font-size="200" letter-spacing="2" fill="#f3e9d2">ANYWHERE</text>
+
+  <!-- subtitle -->
+  <text x="800" y="1060" text-anchor="middle" font-family="Inter" font-size="52" fill="#cfe0d2">Buy vacation rentals that pay you,</text>
+  <text x="800" y="1135" text-anchor="middle" font-family="Inter" font-size="52" fill="#cfe0d2">in towns you&#8217;ve never visited</text>
+
+  <!-- author -->
+  <text x="800" y="2420" text-anchor="middle" font-family="Inter" font-size="64" letter-spacing="20" fill="#f3e9d2">DR. JEFF CHHEUY</text>
+  <line x1="640" y1="2470" x2="960" y2="2470" stroke="#c9a25c" stroke-width="3"/>
+</svg>
+</body></html>
