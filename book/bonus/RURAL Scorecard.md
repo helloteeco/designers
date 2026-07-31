@@ -30,7 +30,7 @@ Cheap entry means a cheap payment, and the payment is what protects you in slow 
 
   (Annual Revenue $________ × 0.6) − Annual Mortgage $________ = $________ /yr = $________ /month
 
-- [ ] **Bindable STR insurance quote in hand** before the inspection contingency expires. Rural cabins with hot tubs and wood stoves commonly quote $2,500–$6,000 a year, and a number like that kills a marginal deal fast. Quote: $________ /yr
+- [ ] **Firm STR insurance quote in hand** before the inspection contingency expires. Expect $1,500–$4,000 a year at time of writing for the cabins the book targets, higher with a hot tub, and a number at the high end kills a marginal deal fast. Quote: $________ /yr
 - [ ] **Room left for furniture and a repair reserve** after closing. Setup budget: $________ Reserve: $________
 
 ## R. Room for Everyone

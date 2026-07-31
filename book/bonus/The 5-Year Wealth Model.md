@@ -56,7 +56,7 @@ Debt service plus operating expenses: mortgage, insurance, utilities, cleaning, 
 - Property 3: ~$38,000/year
 - Property 4: ~$36,000/year
 
-One flag: Property 1 nets about 16% on its deployed capital here, a hair under Chapter 8's 18% Floor, and that's deliberate. The floor screens a deal before you buy, at the conservative underwrite. This model runs at conservative realized numbers, the returns you accept after a rough year, not the ones you screen for.
+One flag: Property 1 nets about 16% on its deployed capital here, a hair under Chapter 8's 18% Floor, and that's deliberate. The floor screens a deal before you buy, at the honest underwrite. This model runs at conservative realized numbers, the returns you accept after a rough year, not the ones you screen for.
 
 ---
 

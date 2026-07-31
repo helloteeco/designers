@@ -18,9 +18,9 @@ One permission slip before we start, because this is the numbers chapter. If den
 
 - **Why it works:** Not all deals are created equal, and STR income fluctuates. The floor is your buffer.
 - **Use it when:** Deciding whether to move forward on a property.
-- **The lesson:** If it can't clear 18%+ cash-on-cash at the conservative underwrite, walk away.
+- **The lesson:** If it can't clear 18%+ cash-on-cash at an honest underwrite, walk away.
 
-One rule, three checks. Judge the 18% Floor at the conservative 25th-percentile underwrite; under 18% there, walk. At the median comps the same deal should look meaningfully better, mid-20s or beyond, because that gap above the floor is your margin for slow seasons and surprises. And the house has to survive as a plain long-term rental if Airbnb vanished tomorrow. Fail any one, walk.
+One rule, three checks. Judge the 18% Floor at the moderate underwrite, meaning the median of what comparable listings actually earn (I'll show you why in a moment); under 18% there, walk. Then check survival: at the conservative 25th-percentile number, the deal must still cash flow. And the house has to survive as a plain long-term rental if Airbnb vanished tomorrow. Fail any one, walk.
 
 Hold that line. Now let's build the math that enforces it.
 
@@ -68,14 +68,14 @@ Example. You invest $60,000 total:
 
 The property nets $20,000 per year. Return: 33% cash-on-cash.
 
-**My rule of thumb, judged at the conservative underwrite:**
+**My rule of thumb, judged at the moderate underwrite:**
 
 - **18%+ →** A real deal. Keep going.
 - **Under 18% →** Walk, unless it's genuinely unique: off-market, underpriced, or extremely value-add.
 
-The floor is a trapdoor, not a target. Deals that screen well usually land in the 20s and 30s at the conservative case (this example did 33% at its expected case), and everything above 18% is buffer doing its job in a rough year.
+The floor is a trapdoor, not a target. Deals that screen well usually land in the 20s and 30s (this example did 33%), and everything above 18% is buffer doing its job in a rough year.
 
-The reason I set the floor at 18%, and judge it at the conservative case, is that rural STRs aren't W2s. Income fluctuates, and I want a deal to clear a real return even in its weak scenario. For perspective, 18% at the worst case still beats nearly anything else a beginner can buy, and the buffer above it is what funds slow seasons, surprise repairs, and the velocity to scale into your next deal.
+The reason I set the floor at 18% is that rural STRs aren't W2s. Income fluctuates, and I want real margin, the buffer that funds slow seasons, surprise repairs, and the velocity to scale into your next deal. And here's why I judge it at the moderate number instead of the most pessimistic one: the revenue estimators already run conservative, mine included. Feed a tool's averaged number through another haircut and no deal in America pencils; you'd never buy anything, and you'd never build the operating skills that only come from owning. Look instead at how individual well-run listings in the market actually perform (the good-looking ones, even the luxury ones) or get real numbers from a friend who operates there. With decent management, moderate is the honest expectation. The conservative case still has a job. It's your survival check, not your buy bar.
 
 ### The Revenue Confidence Interval Framework
 
@@ -87,7 +87,7 @@ Instead, run three revenue scenarios for every deal. Not optimistic, realistic, 
 - **Moderate (50th percentile):** The median. Your "most likely" outcome if you execute reasonably well.
 - **Aggressive (75th percentile):** Top-quartile properties that are decorated, priced, and positioned well. If you execute at a professional level, you can hit this.
 
-The critical rule is to **make your buy decision survive the Conservative number.** If the deal doesn't cash flow at the 25th percentile, don't buy it, no matter what the median promises.
+Two rules come out of those three numbers. First, **underwrite at Moderate.** Too conservative and you'll never move on anything, because the estimators already lowball. Second, **the deal must still survive the Conservative number.** It doesn't have to shine at the 25th percentile. It has to keep cash flowing.
 
 Say your tool shows comps in your market at:
 
@@ -95,15 +95,15 @@ Say your tool shows comps in your market at:
 - Moderate: $70,000/year
 - Aggressive: $90,000/year
 
-Your target is a 4-bed, 3-bath, nice but not luxury. You'll probably hit Moderate with decent management. But you underwrite at Conservative:
+Your target is a 4-bed, 3-bath, nice but not luxury. With decent management, Moderate is the honest expectation, so that's your underwrite:
 
-- Revenue: $50,000
-- Expenses: $33,500 (this example's assumption: $24,000 of PITI with taxes and the STR policy escrowed in, $4,500 of cleaning at the conservative booking pace, $2,850 of utilities budgeted at the seasonal highs, and $2,150 of software, restocking, and small repairs)
-- Net profit: $16,500
+- Revenue: $70,000
+- Expenses: $37,500 (this example's assumption: $24,000 of PITI with taxes and the STR policy escrowed in, cleaning at the median booking pace, utilities budgeted at the seasonal highs, plus software, restocking, and small repairs; expenses creep as bookings climb)
+- Net profit: $32,500
 - Cash invested: $65,000
-- Cash-on-cash return: 25%
+- Cash-on-cash return: 50%
 
-That 25% is your worst case, and it clears the 18% Floor with seven points of buffer to spare. That's exactly the shape you want. Hit the Moderate number and the same deal returns about 50%. (Not 56%, because expenses creep with bookings, more cleans and more restocking, so don't reuse $33,500 at $70K of revenue; call it 50% even.) You're not betting on top-quartile performance. You're betting on avoiding bottom-quartile disaster. Hit Moderate or Aggressive and you have a huge margin of safety; hit Conservative and you still cash flow and own an asset. That's a deal worth doing.
+Comfortably past the floor. Now run the survival check at Conservative: $50,000 of revenue against $33,500 of slower-pace expenses nets $16,500, about 25% on your cash. Read what that pair of numbers is telling you. Your honest expectation is 50%, and even the bottom-quartile version of this deal still clears the 18% Floor with room to spare. That's exactly the shape you want: underwrite the likely outcome, and buy insurance against the bad one. When even the survival case clears the floor, buy with confidence.
 
 ### The Stress Test Framework
 
@@ -113,7 +113,7 @@ That 25% is your worst case, and it clears the 18% Floor with seven points of bu
 
 Why revenue and not just occupancy? Because in a real downturn the two fall together; hosts cut nightly rates to defend their calendars, so you lose bookings and price at once. The Saturation Curve from Chapter 5 already told you this. Cutting occupancy alone flatters the deal.
 
-Here's what I mean. Say your comps show 70% occupancy and $70,000/year in revenue, which is right around my own underwriting bar (occupancy of 60–70% at least, and whatever nightly rate it takes to pencil at least $70K a year). Stress-test at $49,000–$52,500 a year, a 25–30% haircut off the top line. Does the deal still cash flow, comfortably above the 18% Floor? This isn't a second, separate exam; the haircut off the median lands you right around the 25th percentile, so the stress test and the conservative underwrite should roughly agree. If yes, you've got a deal that can weather bad years, new competition, or a poor season.
+Here's what I mean. Say your comps show 70% occupancy and $70,000/year in revenue, which is right around my own underwriting bar (occupancy of 60–70% at least, and whatever nightly rate it takes to pencil at least $70K a year). Stress-test at $49,000–$52,500 a year, a 25–30% haircut off the top line. Does the deal still cash flow? It doesn't need to hit the 18% Floor in its stressed year; it needs to stay solidly positive. This isn't a second, separate exam; the haircut off the median lands you right around the 25th percentile, so the stress test and the survival check should roughly agree. If yes, you've got a deal that can weather bad years, new competition, or a poor season.
 
 Then run the nuclear scenario. If short-term renting stopped working tomorrow, would the house survive as a plain long-term rental at the local market rent? A deal that clears that bar can bend without breaking you.
 
@@ -127,7 +127,7 @@ And when the miss happens in real life? One of my students overspent on the buy,
 
 Beginners always miss costs. Here are the ones that add up fast, and where most people botch the math.
 
-**Turnover supplies and labor.** Every time a guest leaves, you clean, sanitize, restock linens, and refresh the property. Most beginners budget $50–100 per turnover. Real numbers run higher: $100–$150 a turn for a smaller home (1–3 bedrooms), and $150–$400 for larger homes. We pay a premium for good cleaners. On a smaller home doing 45 turns a year, that's $4,500–$6,750 in actual cash, and a big house can run double that. Add this line item explicitly.
+**Turnover supplies and labor.** Every time a guest leaves, you clean, sanitize, restock linens, and refresh the property. Most beginners budget $50–100 per turnover. Real numbers run higher: $100–$150 a turn for a smaller home (1–3 bedrooms), and $150–$400 for larger homes. We pay a premium for good cleaners. On a smaller home doing 45 turns a year, that's $4,500–$6,750 in actual cash, and a big house can run double that. Add this line item explicitly. One offset most beginners forget: guests pay a cleaning fee, and it covers most of this (we set ours a touch above the cleaner's rate to cover supplies). Count the fee inside your gross income and the cleaning inside your expenses anyway. The money still moves through your pocket, and modeling both sides is what keeps the math honest.
 
 **Furniture replacement fund.** You buy $30,000 in furniture. Beds wear out. Sofas get stained. Linens tear. TVs break. Budget 8–10% of your furniture spend annually for replacement: $30,000 × 10% = $3,000/year. Most beginners ignore this and get shocked when they need new beds in year 3.
 
@@ -135,7 +135,7 @@ Beginners always miss costs. Here are the ones that add up fast, and where most 
 
 **Seasonal utility spikes.** Your average utility bill might be $150 a month. Winter propane can triple it and summer AC can double it, so budget the high-season months, not the average: on a typical cabin that's roughly $2,850 a year, not the $1,800 the average suggests.
 
-**Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy. A homeowners policy typically voids your coverage the moment you host paying guests, and the platforms' damage programs are not insurance; they're goodwill programs with fine print. STR-specific policies on rural cabins with hot tubs and wood stoves commonly run $2,500–$6,000 a year. Get a real quote during due diligence: a firm number you could accept on the spot, not a website estimate.
+**Insurance, the real number.** Budget for a short-term-rental policy, not a homeowners policy; Chapter 6 covered why and what to carry. On the cabins this book targets, my own firm quotes have run $1,500 to $4,000 a year at time of writing, higher with a hot tub. Get the real quote during due diligence, not a website estimate.
 
 **Property taxes and lodging taxes.** The seller's tax bill reflects the seller's assessment. Many counties reassess at your purchase price, so model property taxes on what you're paying, not on the number in the listing. Some counties reclassify short-term rentals at commercial rates. And before you list, call the county and ask about occupancy or lodging tax, the per-night tax on short stays. Platforms collect it in some counties and not in others, and "I didn't know" doesn't erase the bill.
 
@@ -266,8 +266,8 @@ The math saved me. It will save you too. You'll find the Real Estate Numbers Che
 ### Chapter Summary
 
 - When you're starting out, only one number matters: cash-on-cash return.
-- One rule, three checks. The 18% Floor is judged at the conservative 25th-percentile underwrite (under 18% there, walk), the median should look meaningfully better (that gap is your buffer), and the house must survive at long-term market rent. Fail any one, walk.
-- The floor is a trapdoor, not a target. Good deals screen in the 20s and 30s at the conservative case; everything above 18% is your margin for the rough years.
+- One rule, three checks. The 18% Floor is judged at the moderate underwrite, the median of real comps (under 18% there, walk). The conservative 25th percentile is the survival check: the deal must keep cash flowing there. And the house must survive at long-term market rent. Fail any one, walk.
+- The floor is a trapdoor, not a target. Good deals screen in the 20s and 30s and beyond; everything above 18% is your margin for the rough years. And underwrite at the moderate comps, because the estimators already lowball; too much pessimism means you never buy at all.
 - Stress-test every deal with a 25–30% revenue haircut; occupancy and rate fall together in a downturn, and the haircut lands near the 25th percentile anyway. If it kills the deal, that's not a deal. That's a hope.
 - Count hidden costs: turnovers, furniture replacement, platform fees, seasonal utilities, real STR insurance, taxes at your purchase price, and a capex fund with $10K liquid per property.
 - Know the five deal-killers and walk fast: fragile occupancy, one season, hostile HOAs, dying septic, saturated markets.

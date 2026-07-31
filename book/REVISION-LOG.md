@@ -154,6 +154,20 @@ You asked whether your "this chapter is so boring I can't read it" notes were ad
 
 ---
 
+## July 31 corrections (your second read-through batch)
+
+- **The underwriting doctrine changed, book-wide.** Per your call: the 18% Floor is now judged at the **Moderate (median)** underwrite, because the estimators already lowball and pure pessimism means never buying; the **Conservative 25th percentile is the survival check** (the deal must keep cash flowing there, not hit the floor). Chapter 8's worked example now underwrites at $70K Moderate (50% CoC) with the $50K Conservative case as the survival check (25%), and the change swept Chapter 2's cross-reference, the stress test, the summaries, the Framework Index, and two Bonus docs. Bonus catch: the Numbers Cheat Sheet was still carrying the retired **30% Floor**; it's now the 18% version.
+- **Insurance numbers are yours now**: $1,500–$4,000 a year at time of writing, higher with a hot tub, and no more phantom wood stoves. Fixed in Chapters 6 and 8 plus four Bonus docs (two of which also still said "Bindable").
+- **Chapter 8's insurance item no longer repeats Chapter 6** — it's two sentences and a pointer now.
+- **The cleaning-fee reality is in Chapter 8's turnover costs**: guests' cleaning fees cover most of it (you set yours a touch above the cleaner's rate), but the fee counts as gross income and the cleaning as an expense, so the math models both sides.
+- **"A platform like TaskRabbit"** phrasing throughout Chapter 6, with your rural trust caveat: the apps run thin out there, unvetted helpers cause more problems than they solve, get referrals from your agent or cleaner.
+- **Turno is named once** in the Chapter 6 cleaning cadence, exactly as you framed it: "I use Turno, but use whatever system works for you," with the job description (auto-scheduling, photo proof, supply tracking) doing the evergreen work.
+- **Trimming contingencies is now labeled an advanced move** with the honest warning: it's your right to walk away free that you're giving up, you've done it, you don't recommend it for first-timers.
+- **Private money got the ethics it deserves**: existing relationships, total honesty, the lender added to the insurance policy, your own parents-and-friends origin story, and "borrow like their retirement depends on you being right." Legal and human.
+- **The funding stack's design line is honest**: $0 if you DIY everything, up to $40K+ for full service on a 2,000+ sq ft home (space planning, ordering, vendor coordination, photography, install labor).
+
+---
+
 ## Still waiting on you (nothing blocks reading the draft)
 
 1. **The "90,000+ over two years" growth stat** — I never printed it because the unit is ambiguous (guests? nights? dollars?). Tell me what it counts and where you want it, and I'll add it.

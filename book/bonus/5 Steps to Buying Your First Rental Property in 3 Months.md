@@ -55,7 +55,7 @@ Three months is the aggressive-but-real pace, not a stunt. Steps overlap where t
 
 - [ ] Run the 3-Touch Due Diligence: data, visual (video walkthrough, not photos), human (local agent, handyman, other hosts). All three align, proceed. Any layer disagrees, dig deeper.
 - [ ] Independent inspections, $500–$1,200. Non-negotiable when buying remotely. Findings become credits.
-- [ ] Bindable STR insurance quote before the inspection contingency expires (rural cabins with hot tubs and wood stoves commonly quote $2,500–$6,000 a year)
+- [ ] Firm STR insurance quote before the inspection contingency expires ($1,500–$4,000 a year at time of writing for the cabins the book targets, higher with a hot tub)
 - [ ] Hire the local team before you close: cleaner (the MVP), handyman, STR-savvy realtor, backup contacts
 - [ ] Confirm WiFi speed, delivery availability, furniture access, guest parking
 - [ ] Ask the Final Question: "If I never saw this property in person for a year, would I still feel good about this deal?"

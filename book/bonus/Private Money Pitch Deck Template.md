@@ -78,4 +78,4 @@ For a warm contact, keep it simple and honest:
 
 > "I've been buying cash-flowing short-term rentals and I have a new deal projected to bring in 30–40% returns. Would you be open to lending $20K at 12% annual interest? It's secured by real property and paid monthly or quarterly, much better than letting it sit in savings."
 
-Always get it in writing: a promissory note plus terms, and for larger loans, record a lien or deed of trust.
+Always get it in writing: a promissory note plus terms; for larger loans, record a lien or deed of trust, and many lenders are also added to the property's insurance policy, the same protection a bank would demand. This path runs on existing relationships and total honesty: tell them exactly what the money is for, plan to pay them back from day one, and pay them back.

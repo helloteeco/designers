@@ -35,19 +35,19 @@
 
 Initial cash invested = down payment + closing costs (net of seller credits) + furnishing, design, and setup. Count 0% card balances as cash invested, you're still on the hook for it, and your ROI should reflect the full picture. Example: $60,000 in ($25K down + $5K closing + $30K furniture), $20,000/year net out = 33%.
 
-**The 30% Floor, one rule, three checks (fail any one, walk)**
+**The 18% Floor, one rule, three checks (fail any one, walk)**
 
-1. Judge the Floor at the **moderate projection, the median of the comps**: 30%+ → great deal; under 30% → walk, unless it's genuinely unique (off-market, underpriced, or extremely value-add).
-2. Underwrite at the **conservative 25th percentile**: the deal must still cash flow there, ideally near 25% on your cash.
+1. Judge the Floor at the **moderate underwrite, the median of the comps**: 18%+ → a real deal; under 18% → walk, unless it's genuinely unique (off-market, underpriced, or extremely value-add). Underwrite at moderate, because the revenue estimators already lowball; too much pessimism means you never buy at all.
+2. Run the survival check at the **conservative 25th percentile**: the deal must still cash flow there.
 3. The house has to **survive as a plain long-term rental** if Airbnb vanished tomorrow.
 
-A 15–30% realized return on a deal that screened at 30%+ isn't failure, that's conservative territory doing its job.
+Good deals screen in the 20s and 30s; everything above 18% is buffer for the rough years.
 
 **The stress test**
 
 > Cut revenue **25–30%** off the top line. Still cash flows? Real deal. If the haircut kills the cash flow, that's not a deal. That's a hope.
 
-Cut revenue, not just occupancy: in a real downturn hosts cut nightly rates to defend their calendars, so you lose bookings and price at once. The haircut off the median lands you right around the 25th percentile, so the stress test and the conservative underwrite should roughly agree.
+Cut revenue, not just occupancy: in a real downturn hosts cut nightly rates to defend their calendars, so you lose bookings and price at once. The haircut off the median lands you right around the 25th percentile, so the stress test and the survival check should roughly agree.
 
 **The quick deal calculator (the 0.6 rule)**
 
@@ -102,7 +102,7 @@ The actual ranges we use, built from running remote Airbnbs across multiple stat
 | Mortgage (PITI) | $1,200–$2,400/month |
 | Cleaning and turnover | $100–$150/stay (1–3BR), $150–$400 larger homes |
 | Utilities (all) | $150–$300/month, higher in winter with heating |
-| STR insurance | $210–$500/month ($2,500–$6,000/year for the cabins the book targets) |
+| STR insurance | $125–$335/month ($1,500–$4,000/year at time of writing for the cabins the book targets, higher with a hot tub) |
 | Property taxes | $50–$200/month, if not escrowed |
 | Maintenance and repairs | $150–$300/month |
 | Restocking and amenities | $100–$200/month |
