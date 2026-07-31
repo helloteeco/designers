@@ -64,7 +64,7 @@ Part 1, the three chapters you're about to read, tears down the assumptions keep
 
 Read it straight through the first time. After that, use it like a field manual; each part stands on its own when you're mid-deal and need the checklist.
 
-I've also kept this book deliberately lean. The deep worksheets, calculators, checklists, and step-by-step SOPs live in the free Bonus Pack at the back of this book, so the chapters stay readable and the depth is there the day you need it. When a chapter points you to the Bonus Pack, that's where to go.
+I've also kept this book deliberately lean. The deep worksheets, calculators, checklists, and step-by-step SOPs live in the free Bonus Pack at the back of this book, so the chapters stay readable and the depth is there the day you need it. When a chapter points you to the Bonus Pack, that's where to go. And if you ever hit a term you don't recognize, the Plain-English Glossary at the back defines every piece of investor-speak in this book, one line each.
 
 One more thing before we start. Every number in this book is real: real purchase prices, real revenue, real mortgage payments, from my own properties, my business partner's, and my students'. When a figure is gross revenue rather than take-home profit, I'll say so, because booked is not banked: gross revenue is what guests paid, not what you keep. I'd rather under-promise on paper and let the deals over-deliver in your bank account.
 

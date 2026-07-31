@@ -71,7 +71,7 @@ First Edition
 
 **Conclusion: One Deal Can Change Everything**
 
-Your Free Book Bonus Pack · About the Author · The Framework Index
+Your Free Book Bonus Pack · About the Author · The Plain-English Glossary · The Framework Index
 
 ---
 
@@ -141,7 +141,7 @@ Part 1, the three chapters you're about to read, tears down the assumptions keep
 
 Read it straight through the first time. After that, use it like a field manual; each part stands on its own when you're mid-deal and need the checklist.
 
-I've also kept this book deliberately lean. The deep worksheets, calculators, checklists, and step-by-step SOPs live in the free Bonus Pack at the back of this book, so the chapters stay readable and the depth is there the day you need it. When a chapter points you to the Bonus Pack, that's where to go.
+I've also kept this book deliberately lean. The deep worksheets, calculators, checklists, and step-by-step SOPs live in the free Bonus Pack at the back of this book, so the chapters stay readable and the depth is there the day you need it. When a chapter points you to the Bonus Pack, that's where to go. And if you ever hit a term you don't recognize, the Plain-English Glossary at the back defines every piece of investor-speak in this book, one line each.
 
 One more thing before we start. Every number in this book is real: real purchase prices, real revenue, real mortgage payments, from my own properties, my business partner's, and my students'. When a figure is gross revenue rather than take-home profit, I'll say so, because booked is not banked: gross revenue is what guests paid, not what you keep. I'd rather under-promise on paper and let the deals over-deliver in your bank account.
 
@@ -3803,6 +3803,78 @@ Dr. Jeff Chheuy is a pharmacist turned real estate investor and the founder of T
 Follow Jeff on Instagram: @jeffchheuy
 
 Learn more: teeco.co
+
+## The Plain-English Glossary
+
+Every piece of investor-speak this book uses, one line each. Each term is also defined the first time it appears in the chapters; this is the flip-back version, for the day you jump straight to Chapter 9 with keys in your hand.
+
+**ADR (average daily rate).** Your revenue divided by nights booked; what a booked night actually sells for.
+
+**Anchor demand.** Something near the property that pulls visitors year after year: a national park, a lake, a base. The first R of RURAL wants it within 30 minutes. No anchor, no deal.
+
+**Balloon payment.** A loan where the whole remaining balance comes due at once on a set date; you refinance or sell to pay it.
+
+**BRRRR.** Buy, rehab, rent, refinance, repeat: force value into a property, then pull your cash back out with a new loan and run it again.
+
+**Buy box.** The spec you shop to before you tour anything. This book's: a 4 bed, 3 bath with 2,000-plus square feet and good bones; never smaller than 3 bed, 2 bath, 1,500.
+
+**Cap rate.** Deliberately not used in this book. When you're starting out, cash-on-cash is the number that matters.
+
+**Cash-on-cash return (CoC).** The percentage of your actual invested cash that comes back to you each year in profit. Real cash, not equity or paper gains. The book's litmus test.
+
+**Cash-out refinance.** A new, bigger loan that pays off the old one and hands you the difference in cash, usually up to 70–75% of the appraised value when underwritten on STR income.
+
+**Comps.** Comparable properties: what similar homes nearby really earn or, for a sale, what they actually sold for.
+
+**Contingency.** Your contractual right to walk away from a purchase free (inspection, financing, appraisal) when something turns up. First-timers keep them.
+
+**DSCR (debt-service coverage ratio).** The property's income measured against its loan payment. A DSCR loan qualifies on the property's income, not your W2, and lenders like a 1.2, meaning income about 20% above the payment.
+
+**Earnest money.** The good-faith deposit that rides with your offer and counts toward the purchase.
+
+**Extra-guest fee.** A per-guest, per-night charge for every guest beyond a base count you choose. Turn it on.
+
+**Gross vs. net.** Gross is what guests paid; net is what's left after every bill. Booked is not banked, and every headline number in this book is gross unless it says otherwise.
+
+**Guest avatar.** The specific guest you design the home for. Your anchor decides it: parks pull families, bases pull work travelers.
+
+**HOA (homeowners association).** Its covenants can restrict or kill short-term renting. Read them before you offer.
+
+**LTV (loan-to-value).** A 75% LTV loan can run up to 75% of what the home appraises for.
+
+**Material participation.** The tax test for whether you actively run the rental yourself. Pass it, with guest stays averaging about a week or less, and the depreciation losses can offset your W2 income this year. Your CPA gets the final word.
+
+**Occupancy.** The share of nights that actually get booked. Target 60–70% as a health band: far above it usually means you're underpriced, far below means fix price, photos, or amenities.
+
+**Orphan nights.** Stranded one- or two-night gaps between longer bookings. Discount them to fill.
+
+**Pencils.** Investor slang for "the math works."
+
+**PITI.** Principal, interest, taxes, insurance: the all-in monthly mortgage payment. Close with six months of it in reserve.
+
+**Points.** Upfront closing fees of 1% of the loan each.
+
+**Private money.** A loan from a person instead of a bank, secured by the property and papered with a promissory note and, for larger loans, a deed of trust.
+
+**Seasoning.** Lender-speak for months of real income history on the books. Most want a full year before a cash-out refi.
+
+**Second deed of trust.** A recorded claim on the house behind the bank's, so a private lender is in line to be paid from a sale.
+
+**Seller credit.** Cash the seller agrees to put toward your costs at closing. Ask for credits, not price cuts; sellers care about their net, not the headline.
+
+**Seller financing.** The seller acts as the bank and you make your payments to them. Take it when it's offered on good terms; don't chase it.
+
+**Shoulder season.** The quieter weeks on either side of peak.
+
+**STR (short-term rental).** A furnished home rented by the night: the cabin you book on Airbnb.
+
+**Turnover.** Everything that resets the home between guests: clean, sanitize, restock. It costs roughly the same whether the stay was two nights or five, which is why longer stays win.
+
+**Underwriting.** Running all the numbers on a deal before you buy. This book's bar: judge the 18% Floor at the moderate (median) comps, confirm the deal survives at the conservative 25th percentile, and confirm the house survives as a plain long-term rental.
+
+**VA (virtual assistant).** Remote help, often part-time and overseas, who runs guest messages, scheduling, and coordination.
+
+**W2.** The wage income on your tax form; shorthand for your day job. Keep it while the machine ramps.
 
 ## The Framework Index
 

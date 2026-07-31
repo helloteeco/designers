@@ -168,6 +168,13 @@ You asked whether your "this chapter is so boring I can't read it" notes were ad
 
 ---
 
+## July 31, later: The Plain-English Glossary (your call, option 2)
+
+- Added **"The Plain-English Glossary"** to the book's back matter, right before the Framework Index: 34 terms, one line each, written in your voice and aligned with current doctrine (the 18% Floor entry teaches moderate-underwrite-plus-survival-check; "cap rate" is honestly listed as deliberately unused). Every term still gets defined at first use in the chapters; the glossary is the flip-back rescue for readers who jump straight to Chapter 9 with keys in hand.
+- The Contents line and the intro's "How to Read This Book" now both point to it.
+
+---
+
 ## Still waiting on you (nothing blocks reading the draft)
 
 1. **The "90,000+ over two years" growth stat** — I never printed it because the unit is ambiguous (guests? nights? dollars?). Tell me what it counts and where you want it, and I'll add it.
